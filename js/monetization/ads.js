@@ -35,7 +35,7 @@ export function initAds() {
     if (bannerEl) bannerEl.hidden = true;
     if (banner) banner.hidden = !accepted;
     showToast({
-      icon: accepted ? '🍪' : '👍',
+      icon: accepted ? 'ic-check' : 'ic-shield',
       title: accepted ? 'Obrigado!' : 'Tudo bem',
       desc: accepted ? 'Você pode apagar isso nas configurações.' : 'Só o essencial será usado.',
     });
@@ -91,7 +91,7 @@ export function showInterstitial() {
     if (secs <= 0) {
       clearInterval(countdownTimer);
       btn.disabled = false;
-      btn.innerHTML = '✕ Fechar';
+      btn.innerHTML = '<svg class="ic" aria-hidden="true"><use href="#ic-close"/></svg> Fechar';
     }
   }, 1000);
 
@@ -121,7 +121,7 @@ export function showRewarded(onReward) {
     if (secs <= 0) {
       clearInterval(countdownTimer);
       btn.disabled = false;
-      btn.innerHTML = '🎁 Resgatar recompensa';
+      btn.innerHTML = '<svg class="ic" aria-hidden="true"><use href="#ic-check"/></svg> Resgatar recompensa';
     }
   }, 1000);
 

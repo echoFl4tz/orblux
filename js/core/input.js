@@ -35,6 +35,9 @@ export function initInput(canvasEl) {
       e.preventDefault();
     }
     if (e.code === 'Space' || e.code === 'Enter') {
+      // não duplica a ativação nativa de botões/links com foco
+      const t = e.target;
+      if (t && (t.tagName === 'BUTTON' || t.tagName === 'A' || t.getAttribute?.('role') === 'button')) return;
       emit('input:confirm');
       e.preventDefault();
     }

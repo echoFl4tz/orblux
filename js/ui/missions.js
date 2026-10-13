@@ -1,5 +1,6 @@
 /* =========================================================
    Missões diárias — 3 objetivos por dia + recompensa em bônus
+   Ícones = ids do sprite SVG (sem emojis na interface)
    ========================================================= */
 
 import { state, saveMissions, todayKey } from '../core/state.js';
@@ -10,14 +11,14 @@ import { showToast } from './toasts.js';
 const BONUS_PER_MISSION = 100; // pontos de bônus na próxima partida
 
 const TEMPLATES = [
-  { id: 'collect20', icon: '✨', text: 'Colete 20 pulsos', target: 20, field: 'pickups', mode: 'sum' },
-  { id: 'collect45', icon: '💫', text: 'Colete 45 pulsos', target: 45, field: 'pickups', mode: 'sum' },
-  { id: 'score1500', icon: '💯', text: 'Faça 1500 pontos numa partida', target: 1500, field: 'score', mode: 'max' },
-  { id: 'score3000', icon: '🚀', text: 'Faça 3000 pontos numa partida', target: 3000, field: 'score', mode: 'max' },
-  { id: 'combo4', icon: '🔥', text: 'Alcance o combo x4', target: 4, field: 'maxCombo', mode: 'max' },
-  { id: 'survive45', icon: '⏱️', text: 'Sobreviva 45 segundos', target: 45, field: 'elapsed', mode: 'max' },
-  { id: 'play3', icon: '🎮', text: 'Jogue 3 partidas', target: 3, field: 'runs', mode: 'sum' },
-  { id: 'powerups2', icon: '🛡️', text: 'Pegue 2 power-ups', target: 2, field: 'powerups', mode: 'sum' },
+  { id: 'collect20', icon: 'ic-pulse', text: 'Colete 20 pulsos', target: 20, field: 'pickups', mode: 'sum' },
+  { id: 'collect45', icon: 'ic-pulse', text: 'Colete 45 pulsos', target: 45, field: 'pickups', mode: 'sum' },
+  { id: 'score1500', icon: 'ic-bolt', text: 'Faça 1500 pontos numa partida', target: 1500, field: 'score', mode: 'max' },
+  { id: 'score3000', icon: 'ic-bolt', text: 'Faça 3000 pontos numa partida', target: 3000, field: 'score', mode: 'max' },
+  { id: 'combo4', icon: 'ic-flame', text: 'Alcance o combo x4', target: 4, field: 'maxCombo', mode: 'max' },
+  { id: 'survive45', icon: 'ic-clock', text: 'Sobreviva 45 segundos', target: 45, field: 'elapsed', mode: 'max' },
+  { id: 'play3', icon: 'ic-play', text: 'Jogue 3 partidas', target: 3, field: 'runs', mode: 'sum' },
+  { id: 'powerups2', icon: 'ic-shield', text: 'Pegue 2 power-ups', target: 2, field: 'powerups', mode: 'sum' },
 ];
 
 /** Pick determinístico por dia (sem aleatoriedade entre recargas). */
@@ -93,7 +94,7 @@ function complete(m) {
   m.done = true;
   state.missions.bonus = (state.missions.bonus || 0) + BONUS_PER_MISSION;
   sfx('mission');
-  showToast({ icon: m.icon, title: 'Missão concluída!', desc: `${m.text} — bônus +${BONUS_PER_MISSION} na próxima partida` });
+  showToast({ icon: 'ic-mission', title: 'Missão concluída!', desc: `${m.text} — bônus +${BONUS_PER_MISSION} na próxima partida` });
   emit('missions:completed');
 }
 
@@ -113,12 +114,12 @@ export function renderMissions() {
   list.innerHTML = state.missions.list.map((m) => {
     const pct = Math.min(100, Math.round((m.progress / m.target) * 100));
     return `<li class="mission-row ${m.done ? 'done' : ''}">
-      <span class="mission-icon">${m.done ? '✅' : m.icon}</span>
+      <span class="mission-ic"><svg class="ic" aria-hidden="true"><use href="#${m.done ? 'ic-check' : m.icon}"/></svg></span>
       <div class="mission-info">
         <div>${m.text} <span class="muted">(${Math.floor(m.progress)}/${m.target})</span></div>
         <div class="mission-bar"><span style="width:${pct}%"></span></div>
       </div>
-      ${m.done ? '' : `<span class="muted small">+${BONUS_PER_MISSION}</span>`}
+      <span class="chip ${m.done ? 'chip-success' : 'chip-reward'} mission-reward">+${BONUS_PER_MISSION}</span>
     </li>`;
   }).join('');
 }

@@ -439,11 +439,11 @@ function collectPowerup(pw) {
   }
   if (pw.kind === 'shield') {
     g.player.shield = true;
-    floatText(pw.x, pw.y - 20 * S, '🛡️ ESCUDO', COLORS.green, 18);
+    floatText(pw.x, pw.y - 20 * S, 'ESCUDO!', COLORS.green, 18);
     emit('game:powerup', { kind: 'shield' });
   } else {
     g.x2Timer = X2_DURATION;
-    floatText(pw.x, pw.y - 20 * S, '⚡ PONTOS x2', COLORS.yellow, 18);
+    floatText(pw.x, pw.y - 20 * S, 'PONTOS x2!', COLORS.yellow, 18);
     emit('game:powerup', { kind: 'x2', duration: X2_DURATION });
   }
   ring(pw.x, pw.y, pw.kind === 'shield' ? COLORS.green : COLORS.yellow, 14, 240);

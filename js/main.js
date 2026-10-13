@@ -66,7 +66,7 @@ function boot() {
 
     if (isRecord) {
       sfx('record');
-      showToast({ icon: '🏆', title: 'Novo recorde!', desc: `${run.score.toLocaleString('pt-BR')} pontos` });
+      showToast({ icon: 'ic-trophy', title: 'Novo recorde!', desc: `${run.score.toLocaleString('pt-BR')} pontos` });
     }
 
     showGameOver({ ...run, best: state.stats.best, isRecord, position });

@@ -1,5 +1,7 @@
 /* =========================================================
    Screens — gerencia telas, botões e configurações
+   Foco gerenciado (a11y), modal de confirmação próprio
+   (sem confirm() nativo) e colapso de missões
    ========================================================= */
 
 import { on, emit } from '../core/events.js';
@@ -20,11 +22,14 @@ const SCREEN_IDS = {
 
 let current = 'menu';
 let deferredInstallPrompt = null;
+let lastFocused = null; // elemento que tinha o foco antes de abrir um modal
 
 export function initScreens() {
   bindActions();
   bindSettings();
+  bindModals();
   updateBestDisplay();
+  collapseMissionsOnShortScreens();
 
   // prompt de instalação (PWA) — Chrome/Edge Android
   window.addEventListener('beforeinstallprompt', (e) => {
@@ -77,6 +82,16 @@ export function showScreen(name) {
     if (el) el.classList.toggle('active', key === name);
   }
   document.body.dataset.screen = name || 'playing';
+
+  // foco no painel aberto (a11y): painel recebe tabindex=-1 dinamicamente.
+  // Focar o painel (não um botão) evita duplo-disparo de Enter com o jogo.
+  if (name) {
+    const panel = document.querySelector(`#screen-${name} .panel, #screen-${name} .menu-wrap`);
+    if (panel) {
+      panel.setAttribute('tabindex', '-1');
+      panel.focus({ preventScroll: true });
+    }
+  }
 }
 
 export function getCurrentScreen() { return current; }
@@ -90,13 +105,14 @@ export function showGameOver({ score, best, isRecord, position, elapsed, pickups
   const stats = document.getElementById('go-stats');
   const mins = Math.floor(elapsed / 60);
   const secs = Math.floor(elapsed % 60);
+  const icon = (id) => `<svg class="ic" aria-hidden="true"><use href="#${id}"/></svg>`;
   stats.innerHTML = `
-    <span>⏱️ <b>${mins}:${String(secs).padStart(2, '0')}</b></span>
-    <span>✨ <b>${pickups}</b> pulsos</span>
-    <span>🔥 máx <b>x${maxCombo}</b></span>
-    <span>📈 <b>Nv ${level}</b></span>
-    ${revived ? '<span>🎬 reviveu</span>' : ''}
-    ${position && position <= 5 ? `<span>🏅 <b>${position}º</b> lugar</span>` : ''}`;
+    <div class="go-stat">${icon('ic-clock')}<b>${mins}:${String(secs).padStart(2, '0')}</b></div>
+    <div class="go-stat">${icon('ic-pulse')}<b>${pickups}</b> pulsos</div>
+    <div class="go-stat">${icon('ic-flame')}máx <b>x${maxCombo}</b></div>
+    <div class="go-stat">${icon('ic-bolt')}<b>Nv ${level}</b></div>
+    ${revived ? `<div class="go-stat">${icon('ic-video')}reviveu</div>` : ''}
+    ${position && position <= 5 ? `<div class="go-stat go-rank">${icon('ic-trophy')}<b>${position}º</b> lugar</div>` : ''}`;
 
   // botão de reviver: só na primeira derrota da sessão
   const btnRevive = document.getElementById('btn-revive');
@@ -127,6 +143,60 @@ function updateBestDisplay() {
 }
 
 // ---------------------------------------------------------
+//  Modais (confirmação / compartilhar) com foco gerenciado
+// ---------------------------------------------------------
+function openModal(id) {
+  const modal = document.getElementById(id);
+  if (!modal) return;
+  lastFocused = document.activeElement;
+  modal.hidden = false;
+  const panel = modal.querySelector('.panel');
+  if (panel) {
+    panel.setAttribute('tabindex', '-1');
+    panel.focus({ preventScroll: true });
+  }
+}
+
+function closeModal(id) {
+  const modal = document.getElementById(id);
+  if (!modal || modal.hidden) return;
+  modal.hidden = true;
+  if (lastFocused && lastFocused.isConnected) lastFocused.focus({ preventScroll: true });
+  lastFocused = null;
+}
+
+function bindModals() {
+  // Esc fecha o modal aberto (sem afetar a pausa, que tem fluxo próprio)
+  document.addEventListener('keydown', (e) => {
+    if (e.key !== 'Escape') return;
+    for (const id of ['modal-confirm', 'modal-share']) {
+      const m = document.getElementById(id);
+      if (m && !m.hidden) { closeModal(id); return; }
+    }
+  });
+}
+
+// ---------------------------------------------------------
+//  Missões colapsáveis
+// ---------------------------------------------------------
+function collapseMissionsOnShortScreens() {
+  // em telas baixas, missões começam recolhidas para o menu não rolar
+  const card = document.getElementById('missions-card');
+  if (!card) return;
+  if (window.innerHeight < 720 || window.innerWidth < 380) {
+    card.classList.add('collapsed');
+    card.querySelector('.missions-toggle')?.setAttribute('aria-expanded', 'false');
+  }
+}
+
+function toggleMissions(btn) {
+  const card = document.getElementById('missions-card');
+  if (!card) return;
+  const collapsed = card.classList.toggle('collapsed');
+  btn.setAttribute('aria-expanded', String(!collapsed));
+}
+
+// ---------------------------------------------------------
 //  Botões (delegação por data-action)
 // ---------------------------------------------------------
 function bindActions() {
@@ -134,6 +204,11 @@ function bindActions() {
     const btn = e.target.closest('[data-action], [data-consent]');
     if (!btn) return;
     initAudio(); resumeAudio();
+
+    // vibração sutil de feedback nos botões (quando haptics ativo)
+    if (state.settings.haptics && navigator.vibrate) {
+      try { navigator.vibrate(10); } catch { /* ignore */ }
+    }
 
     const consent = btn.dataset.consent;
     if (consent) { emit('consent:answer', consent === 'accepted'); return; }
@@ -154,14 +229,17 @@ function bindActions() {
       case 'resume': sfx('ui'); resumeGame(); showScreen(null); break;
       case 'revive': sfx('ui'); emit('ads:rewarded-revive'); break;
       case 'share-score': case 'share-rank': sfx('ui'); emit('share:open', action === 'share-score' ? 'score' : 'rank'); break;
-      case 'close-share': sfx('ui'); document.getElementById('modal-share').hidden = true; break;
-      case 'reset':
+      case 'close-share': sfx('ui'); closeModal('modal-share'); break;
+      case 'toggle-missions': sfx('ui'); toggleMissions(btn); break;
+      // reset com modal de confirmação próprio (sem confirm() nativo)
+      case 'reset': sfx('ui'); openModal('modal-confirm'); break;
+      case 'reset-confirm':
         sfx('ui');
-        if (confirm('Apagar TODO o progresso (recorde, conquistas e ranking)?')) {
-          resetAllProgress();
-          showToast({ icon: '🗑️', title: 'Progresso apagado', desc: 'Comece do zero!' });
-        }
+        resetAllProgress();
+        closeModal('modal-confirm');
+        showToast({ icon: 'ic-trash', title: 'Progresso apagado', desc: 'Comece do zero!' });
         break;
+      case 'reset-cancel': sfx('ui'); closeModal('modal-confirm'); break;
       case 'install':
         sfx('ui');
         if (deferredInstallPrompt) {

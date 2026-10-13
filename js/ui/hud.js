@@ -1,6 +1,7 @@
 /* =========================================================
    HUD — placar, combo, vidas, nível, power-ups e tutorial
    Atualiza o DOM somente quando algo muda (barato p/ mobile)
+   Vidas e power-ups usam o sprite SVG (sem emojis)
    ========================================================= */
 
 import { on } from '../core/events.js';
@@ -35,15 +36,28 @@ export function initHud() {
     if (score !== last.score) {
       last.score = score;
       el.score.textContent = score.toLocaleString('pt-BR');
+      // "pop" ao subir (a animação CSS respeita prefers-reduced-motion)
+      el.score.classList.remove('pop');
+      void el.score.offsetWidth; // reinicia a animação
+      el.score.classList.add('pop');
     }
   });
 
   on('game:lives', ({ lives }) => {
     if (lives === last.lives) return;
+    const lost = lives < last.lives && last.lives >= 0;
     last.lives = lives;
-    const full = '❤️'.repeat(Math.max(0, lives));
-    const empty = '🖤'.repeat(Math.max(0, 3 - lives));
-    el.lives.textContent = full + empty;
+    let html = '';
+    for (let i = 0; i < 3; i++) {
+      const full = i < lives;
+      html += `<svg class="ic${full ? '' : ' empty'}" aria-hidden="true"><use href="#${full ? 'ic-heart' : 'ic-heart-empty'}"/></svg>`;
+    }
+    el.lives.innerHTML = html;
+    if (lost) {
+      // anima o coração recém-perdido
+      const hearts = el.lives.querySelectorAll('.ic');
+      hearts[lives]?.classList.add('hit');
+    }
   });
 
   on('game:level', ({ level }) => {
@@ -67,12 +81,15 @@ export function initHud() {
   });
 
   on('game:powerup', ({ kind }) => {
+    document.getElementById(`power-${kind}`)?.remove();
     const chip = document.createElement('div');
     chip.className = 'power-chip';
     chip.id = `power-${kind}`;
-    chip.textContent = kind === 'shield' ? '🛡️ ESCUDO' : '⚡ x2 (8s)';
-    document.getElementById('power-shield')?.remove();
-    document.getElementById('power-x2')?.remove();
+    chip.innerHTML = `
+      <svg class="ic ic-sm" aria-hidden="true"><use href="#${kind === 'shield' ? 'ic-shield' : 'ic-bolt'}"/></svg>
+      <span class="chip-label">${kind === 'shield' ? 'ESCUDO' : 'x2'}</span>
+      ${kind === 'x2' ? '<span class="chip-time">8.0s</span>' : ''}
+      <span class="chip-bar"></span>`;
     el.powerups.appendChild(chip);
   });
   on('game:shield', () => document.getElementById('power-shield')?.remove());
@@ -91,7 +108,7 @@ export function initHud() {
     el.tutorial.hidden = false;
   });
   on('tutorial:hide', () => { el.tutorial.hidden = true; });
-  on('tutorial:done', () => showHudToast('VAMO LÁ! 🚀'));
+  on('tutorial:done', () => showHudToast('VAMO LÁ!'));
 }
 
 export function showHudToast(text) {

@@ -55,7 +55,7 @@ async function copyToClipboard(text) {
       return;
     }
     await navigator.clipboard.writeText(text);
-    showToast({ icon: '🔗', title: 'Copiado!', desc: 'Cole onde quiser compartilhar.' });
+    showToast({ icon: 'ic-copy', title: 'Copiado!', desc: 'Cole onde quiser compartilhar.' });
   } catch {
     // fallback (navegadores antigos / permissão negada)
     try {
@@ -67,9 +67,9 @@ async function copyToClipboard(text) {
       ta.select();
       document.execCommand('copy');
       ta.remove();
-      showToast({ icon: '🔗', title: 'Copiado!', desc: 'Cole onde quiser compartilhar.' });
+      showToast({ icon: 'ic-copy', title: 'Copiado!', desc: 'Cole onde quiser compartilhar.' });
     } catch {
-      showToast({ icon: '😕', title: 'Não foi possível copiar', desc: 'Copie manualmente o link.' });
+      showToast({ icon: 'ic-help', title: 'Não foi possível copiar', desc: 'Copie manualmente o link.' });
     }
   }
 }

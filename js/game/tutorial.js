@@ -1,25 +1,28 @@
 /* =========================================================
    Tutorial — primeiras dicas interativas na 1ª partida
    (some sozinho quando o jogador aprende cada passo)
+   Textos sem emojis; ícones vem do sprite SVG
    ========================================================= */
 
 import { emit } from '../core/events.js';
 import { markTutorialDone } from '../core/state.js';
 
+const icon = (id) => `<svg class="ic" aria-hidden="true"><use href="#${id}"/></svg>`;
+
 const STEPS = [
   {
     id: 'move',
-    text: '📱 <b>Arraste o dedo</b> na tela para mover a orbe. <br>🖥️ No computador: <b>WASD</b> ou <b>setas</b>.',
+    text: `${icon('ic-play')}<span><b>Arraste o dedo</b> na tela para mover a orbe.<br>No computador: <b>WASD</b> ou <b>setas</b>.</span>`,
     done: (g) => g.moved,
   },
   {
     id: 'collect',
-    text: '✨ Toque nos <b>pulsos brilhantes</b> para coletar pontos e aumentar o combo!',
+    text: `${icon('ic-pulse')}<span>Toque nos <b>pulsos brilhantes</b> para coletar pontos e aumentar o combo!</span>`,
     done: (g) => g.runStats.pickups >= 1,
   },
   {
     id: 'avoid',
-    text: '🟥 Desvie das <b>barras vermelhas</b>! Sobreviva 5 segundos para começar.',
+    text: `${icon('ic-close')}<span>Desvie das <b>barras vermelhas</b>! Sobreviva 5 segundos para começar.</span>`,
     done: (g) => g.sinceHit >= 5 && g.elapsed >= 8,
   },
 ];

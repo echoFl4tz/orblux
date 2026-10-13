@@ -42,24 +42,61 @@
 </head>
 <body data-screen="menu">
 
+  <!-- ================= SPRITE DE ÍCONES (SVG inline, traço 2px) ================= -->
+  <svg xmlns="http://www.w3.org/2000/svg" style="display:none" aria-hidden="true" focusable="false">
+    <defs>
+      <symbol id="ic-play" viewBox="0 0 24 24"><path d="M7 4.5v15l13-7.5z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></symbol>
+      <symbol id="ic-help" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="2"/><path d="M9.3 9.2a2.8 2.8 0 1 1 3.6 3.4c-.7.3-1 1-1 1.7v.4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><circle cx="12" cy="17.4" r="1.1" fill="currentColor"/></symbol>
+      <symbol id="ic-trophy" viewBox="0 0 24 24"><path d="M7 4h10v5a5 5 0 0 1-10 0zM7 5H4v2a3 3 0 0 0 3 3M17 5h3v2a3 3 0 0 1-3 3M12 14v4M8.5 21h7M10 18h4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+      <symbol id="ic-gear" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3.2" fill="none" stroke="currentColor" stroke-width="2"/><path d="M12 2.8l1.2 2.4 2.6-.6 .6 2.6 2.4 1.2-1.4 2.2 1.4 2.2-2.4 1.2-.6 2.6-2.6-.6L12 21.2l-1.2-2.4-2.6.6-.6-2.6-2.4-1.2L6.6 13 5.2 10.8l2.4-1.2.6-2.6 2.6.6z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></symbol>
+      <symbol id="ic-pause" viewBox="0 0 24 24"><path d="M9 5v14M15 5v14" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></symbol>
+      <symbol id="ic-volume" viewBox="0 0 24 24"><path d="M4 9.5v5h3.5L12 19V5L7.5 9.5zM15.5 9a4.2 4.2 0 0 1 0 6M18 6.5a8 8 0 0 1 0 11" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+      <symbol id="ic-vibrate" viewBox="0 0 24 24"><rect x="8.5" y="4" width="7" height="16" rx="2" fill="none" stroke="currentColor" stroke-width="2"/><path d="M4.5 9v6M2 10.5v3M19.5 9v6M22 10.5v3" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></symbol>
+      <symbol id="ic-share" viewBox="0 0 24 24"><circle cx="18" cy="5.5" r="2.5" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="6" cy="12" r="2.5" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="18" cy="18.5" r="2.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="M8.3 10.8l7.4-4M8.3 13.2l7.4 4" fill="none" stroke="currentColor" stroke-width="2"/></symbol>
+      <symbol id="ic-install" viewBox="0 0 24 24"><path d="M12 3v10m0 0l-3.5-3.5M12 13l3.5-3.5M4.5 16v3a1.5 1.5 0 0 0 1.5 1.5h12a1.5 1.5 0 0 0 1.5-1.5v-3" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+      <symbol id="ic-mission" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="12" cy="12" r="4.6" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="12" cy="12" r="1.3" fill="currentColor"/></symbol>
+      <symbol id="ic-medal" viewBox="0 0 24 24"><circle cx="12" cy="14.5" r="5.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="M9 10L7 3.5h10L15 10M12 12.4l.8 1.6 1.7.3-1.2 1.3.3 1.7-1.6-.8-1.6.8.3-1.7-1.2-1.3 1.7-.3z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></symbol>
+      <symbol id="ic-shield" viewBox="0 0 24 24"><path d="M12 3l7 2.8V12c0 4.4-3 7.7-7 9-4-1.3-7-4.6-7-9V5.8z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></symbol>
+      <symbol id="ic-bolt" viewBox="0 0 24 24"><path d="M13 2.5L5.5 13.5H11L9.8 21.5 18.5 10H13z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></symbol>
+      <symbol id="ic-heart" viewBox="0 0 24 24"><path d="M12 20.3S3.8 15 3.8 9.2A4.7 4.7 0 0 1 12 6.1a4.7 4.7 0 0 1 8.2 3.1c0 5.8-8.2 11.1-8.2 11.1z" fill="currentColor" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></symbol>
+      <symbol id="ic-heart-empty" viewBox="0 0 24 24"><path d="M12 20.3S3.8 15 3.8 9.2A4.7 4.7 0 0 1 12 6.1a4.7 4.7 0 0 1 8.2 3.1c0 5.8-8.2 11.1-8.2 11.1z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></symbol>
+      <symbol id="ic-close" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></symbol>
+      <symbol id="ic-restart" viewBox="0 0 24 24"><path d="M4.5 12a7.5 7.5 0 1 1 2.4 5.5M4.5 12V7.5M4.5 12H9" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+      <symbol id="ic-menu" viewBox="0 0 24 24"><path d="M4 10.5L12 4l8 6.5V20a1 1 0 0 1-1 1h-4.5v-6h-5v6H5a1 1 0 0 1-1-1z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></symbol>
+      <symbol id="ic-check" viewBox="0 0 24 24"><path d="M4.5 12.5l5 5 10-11" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+      <symbol id="ic-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="M12 7v5.3l3.4 2" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></symbol>
+      <symbol id="ic-pulse" viewBox="0 0 24 24"><path d="M12 2.8l3 6.2 6.8 1-4.9 4.7 1.2 6.8-6.1-3.2-6.1 3.2 1.2-6.8L2.2 10l6.8-1z" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round"/></symbol>
+      <symbol id="ic-video" viewBox="0 0 24 24"><rect x="2.5" y="6" width="13" height="12" rx="2.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="M15.5 10.5l6-3v9l-6-3z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></symbol>
+      <symbol id="ic-copy" viewBox="0 0 24 24"><rect x="8.5" y="8.5" width="12" height="12" rx="2.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="M15.5 5.5H5.5a2 2 0 0 0-2 2v10" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></symbol>
+      <symbol id="ic-trash" viewBox="0 0 24 24"><path d="M4.5 7h15M9.5 7V4.8h5V7M6.5 7l1 13h9l1-13M10.2 10.5v6M13.8 10.5v6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+      <symbol id="ic-flame" viewBox="0 0 24 24"><path d="M12 3c1 3.4-2.5 4.4-2.5 7.5 0 1.3.7 2.2 1.5 2.6-.2-2 1.2-3 2-4.6 2.6 1.9 4 4.3 4 6.6A5.5 5.5 0 0 1 6.5 15c0-4.5 5.5-6 5.5-12z" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round"/></symbol>
+      <symbol id="ic-whatsapp" viewBox="0 0 24 24"><path d="M12 3.2a8.8 8.8 0 0 0-7.5 13.3L3.2 21l4.7-1.2A8.8 8.8 0 1 0 12 3.2z" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round"/><path d="M9 8.2c.5-.2.8 0 1 .5l.5 1c.1.3 0 .6-.3.8l-.4.4c.5 1 1.3 1.7 2.3 2.2l.4-.4c.2-.3.5-.4.8-.3l1 .5c.5.2.7.5.5 1-.4.9-1.3 1.3-2.2 1.1-2.8-.6-5-2.8-5.6-5.6-.2-.9.2-1.8 1-2.2z" fill="currentColor"/></symbol>
+      <symbol id="ic-x" viewBox="0 0 24 24"><path d="M4 4l7.2 9.3L4.4 20h2.4l5.5-5.6L16.8 20H20l-7.5-9.7L18.9 4h-2.4l-4.9 5.1L8 4z" fill="currentColor"/></symbol>
+      <symbol id="ic-chevron" viewBox="0 0 24 24"><path d="M6 9.5l6 6 6-6" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+    </defs>
+  </svg>
+
   <canvas id="game-canvas" aria-label="Área do jogo ORBLUX"></canvas>
 
   <!-- ================= HUD (durante a partida) ================= -->
   <div id="hud" class="hud" hidden>
+    <div class="hud-danger" id="hud-danger" aria-hidden="true"></div>
     <div class="hud-top">
       <div class="hud-score">
-        <span class="hud-score-label">PONTOS</span>
+        <span class="hud-score-label">Pontos</span>
         <span id="hud-score" class="hud-score-value">0</span>
       </div>
-      <button id="btn-pause" class="icon-btn" aria-label="Pausar jogo" data-action="pause">⏸</button>
+      <div class="hud-combo" id="hud-combo-wrap" aria-label="Barra de combo">
+        <div id="combo-fill" class="combo-fill"></div>
+        <span id="hud-combo" class="hud-combo-x">x1</span>
+      </div>
     </div>
-    <div class="hud-combo" id="hud-combo-wrap">
-      <div id="combo-fill" class="combo-fill"></div>
-      <span id="hud-combo" class="hud-combo-value">x1</span>
-    </div>
+    <button id="btn-pause" class="icon-btn hud-pause" aria-label="Pausar jogo" data-action="pause">
+      <svg class="ic" aria-hidden="true"><use href="#ic-pause"/></svg>
+    </button>
     <div class="hud-bottom">
+      <div id="hud-lives" class="hud-lives" aria-label="Vidas restantes"></div>
       <div id="hud-level" class="hud-level">NÍVEL 1</div>
-      <div id="hud-lives" class="hud-lives" aria-label="Vidas"></div>
     </div>
     <div id="hud-powerups" class="hud-powerups"></div>
     <div id="hud-toast" class="hud-toast" hidden></div>
@@ -67,215 +104,345 @@
 
   <!-- ================= TUTORIAL ================= -->
   <div id="tutorial" class="tutorial" hidden>
-    <div id="tutorial-text" class="tutorial-text"></div>
+    <div id="tutorial-text" class="tutorial-text" role="status" aria-live="polite"></div>
   </div>
 
   <!-- ================= TELA: MENU ================= -->
   <section id="screen-menu" class="screen active" data-screen="menu" aria-label="Menu principal">
-    <div class="panel menu-panel">
-      <h1 class="logo" aria-label="ORBLUX">
-        <svg class="logo-orb" viewBox="0 0 64 64" aria-hidden="true" focusable="false">
-          <defs>
-            <radialGradient id="orbGrad" cx="38%" cy="38%" r="65%">
-              <stop offset="0%" stop-color="#ffffff"/>
-              <stop offset="45%" stop-color="#22e6ff"/>
-              <stop offset="100%" stop-color="#ff3df0"/>
-            </radialGradient>
-          </defs>
-          <circle cx="32" cy="32" r="16" fill="url(#orbGrad)"/>
-          <circle cx="32" cy="32" r="21.5" fill="none" stroke="#22e6ff" stroke-width="2" opacity="0.75"/>
-          <circle cx="32" cy="32" r="27" fill="none" stroke="#ff3df0" stroke-width="1.6" opacity="0.4"/>
-        </svg><span class="logo-a">RB</span><span class="logo-b">LUX</span>
-      </h1>
-      <p class="tagline">Colete · Combine · Sobreviva</p>
-      <div class="best-champ">🏆 Recorde: <span id="menu-best">0</span></div>
+    <div class="menu-wrap">
+      <header class="menu-brand">
+        <h1 class="logo" aria-label="ORBLUX">
+          <svg class="logo-orb" viewBox="0 0 64 64" aria-hidden="true" focusable="false">
+            <defs>
+              <radialGradient id="orbGrad" cx="38%" cy="38%" r="65%">
+                <stop offset="0%" stop-color="#ffffff"/>
+                <stop offset="45%" stop-color="#22e6ff"/>
+                <stop offset="100%" stop-color="#ff3df0"/>
+              </radialGradient>
+            </defs>
+            <circle cx="32" cy="32" r="27" fill="none" stroke="#ff3df0" stroke-width="1.6" opacity="0.4"/>
+            <circle cx="32" cy="32" r="21.5" fill="none" stroke="#22e6ff" stroke-width="2" opacity="0.75"/>
+            <circle cx="32" cy="32" r="16" fill="url(#orbGrad)"/>
+            <circle cx="27" cy="27" r="4.5" fill="#ffffff" opacity="0.85"/>
+          </svg><span class="logo-a">RB</span><span class="logo-b">LUX</span>
+        </h1>
+        <p class="tagline">Colete · Combine · Sobreviva</p>
+      </header>
 
-      <nav class="menu-buttons">
-        <button class="btn btn-primary btn-big" data-action="play">▶&nbsp; JOGAR</button>
-        <div class="menu-row">
-          <button class="btn" data-action="howto">❓ Como jogar</button>
-          <button class="btn" data-action="ranking">🏆 Ranking</button>
-          <button class="btn" data-action="settings">⚙️ Config.</button>
+      <div class="menu-main">
+        <div class="record-card">
+          <svg class="ic" aria-hidden="true"><use href="#ic-trophy"/></svg>
+          <div>
+            <span class="record-label">Seu recorde</span>
+            <span id="menu-best" class="record-value">0</span>
+          </div>
         </div>
-      </nav>
-
-      <div id="missions-card" class="missions-card">
-        <h3 class="card-title">🎯 Missões do dia <span id="missions-count" class="card-badge"></span></h3>
-        <ul id="missions-list" class="missions-list"></ul>
+        <button class="btn btn-primary btn-big btn-play" data-action="play">
+          <svg class="ic ic-lg" aria-hidden="true"><use href="#ic-play"/></svg> JOGAR
+        </button>
+        <nav class="menu-grid" aria-label="Opções">
+          <button class="btn" data-action="howto">
+            <svg class="ic" aria-hidden="true"><use href="#ic-help"/></svg> Como jogar
+          </button>
+          <button class="btn" data-action="ranking">
+            <svg class="ic" aria-hidden="true"><use href="#ic-trophy"/></svg> Ranking
+          </button>
+          <button class="btn" data-action="settings">
+            <svg class="ic" aria-hidden="true"><use href="#ic-gear"/></svg> Configurações
+          </button>
+          <button class="btn" data-action="install" id="btn-install" hidden>
+            <svg class="ic" aria-hidden="true"><use href="#ic-install"/></svg> Instalar
+          </button>
+        </nav>
       </div>
 
-      <!-- Espaço de anúncio (banner). Sem AdSense configurado, mostra um placeholder.
-           Ao colar o código do AdSense acima, o placeholder some e o anúncio real entra. -->
-      <div id="ad-banner" class="ad-slot" aria-label="Espaço publicitário">
-        <span class="ad-label">PUBLICIDADE</span>
-        <span class="ad-hint">Banner 320×100 — cole aqui o código do AdSense</span>
-      </div>
+      <aside class="menu-side">
+        <section id="missions-card" class="missions-card" aria-label="Missões do dia">
+          <button class="missions-toggle" data-action="toggle-missions" aria-expanded="true" aria-controls="missions-list">
+            <svg class="ic" aria-hidden="true"><use href="#ic-mission"/></svg>
+            <span>Missões do dia</span>
+            <span id="missions-count" class="chip"></span>
+            <svg class="ic chev" aria-hidden="true"><use href="#ic-chevron"/></svg>
+          </button>
+          <ul id="missions-list" class="missions-list"></ul>
+        </section>
 
-      <footer class="menu-footer">
-        <a href="privacy.html">Política de Privacidade</a>
-        <span aria-hidden="true">·</span>
-        <button class="link-btn" data-action="install" id="btn-install" hidden>📲 Instalar app</button>
-      </footer>
+        <!-- Espaço de anúncio (banner). Escondido sem anúncio real/consentimento.
+             Ao colar o código do AdSense no <head>, o conteúdo real entra aqui. -->
+        <div id="ad-banner" class="ad-slot" hidden>
+          <span class="ad-label">Publicidade</span>
+          <span>Banner 320×100 — cole aqui o código do AdSense</span>
+        </div>
+
+        <footer class="menu-footer">
+          <a href="privacy.html">Política de Privacidade</a>
+        </footer>
+      </aside>
     </div>
   </section>
 
   <!-- ================= TELA: COMO JOGAR ================= -->
-  <section id="screen-howto" class="screen" data-screen="howto" aria-label="Como jogar">
+  <section id="screen-howto" class="screen" data-screen="howto" aria-label="Como jogar" role="dialog" aria-modal="true">
     <div class="panel">
-      <h2 class="panel-title">COMO JOGAR</h2>
-      <ul class="howto-list">
-        <li><span class="howto-icon">🛸</span><div><b>Mova a orbe</b><br>📱 Arraste o dedo na tela · 🖥️ Use WASD ou setas</div></li>
-        <li><span class="howto-icon">✨</span><div><b>Colete os pulsos</b><br>Cada coleta aumenta seu <b>combo</b> (até ×5). Sem coletar por 3,5 s, o combo zera.</div></li>
-        <li><span class="howto-icon">🟥</span><div><b>Desvie das barras e drones</b><br>Bater custa 1 vida e zera o combo. Você fica invulnerável por 1,5 s.</div></li>
-        <li><span class="howto-icon">🛡️</span><div><b>Power-ups</b><br>🛡️ escudo absorve 1 batida · ⚡ dobra os pontos por 8 s</div></li>
-        <li><span class="howto-icon">📈</span><div><b>Sobreviva</b><br>A velocidade sobe a cada segundo. A cada 1000 pontos você sobe de nível!</div></li>
-      </ul>
-      <div class="panel-actions">
-        <button class="btn btn-primary" data-action="play">▶&nbsp; JOGAR AGORA</button>
-        <button class="btn" data-action="menu">← Voltar</button>
+      <div class="panel-head">
+        <h2 class="panel-title">Como jogar</h2>
+        <button class="icon-btn" data-action="menu" aria-label="Fechar">
+          <svg class="ic" aria-hidden="true"><use href="#ic-close"/></svg>
+        </button>
+      </div>
+      <div class="panel-body">
+        <ul class="howto-list">
+          <li>
+            <span class="howto-ic"><svg class="ic" aria-hidden="true"><use href="#ic-play"/></svg></span>
+            <div><b>Mova a orbe</b>No celular, arraste o dedo na tela. No computador, use WASD ou as setas.</div>
+          </li>
+          <li>
+            <span class="howto-ic"><svg class="ic" aria-hidden="true"><use href="#ic-pulse"/></svg></span>
+            <div><b>Colete os pulsos</b>Cada coleta aumenta seu combo (até x5). Sem coletar por 3,5 s, o combo zera.</div>
+          </li>
+          <li>
+            <span class="howto-ic"><svg class="ic" aria-hidden="true"><use href="#ic-close"/></svg></span>
+            <div><b>Desvie das barreiras</b>Barras vermelhas descem e drones magenta oscilam. Bater custa 1 vida e zera o combo.</div>
+          </li>
+          <li>
+            <span class="howto-ic"><svg class="ic" aria-hidden="true"><use href="#ic-shield"/></svg></span>
+            <div><b>Power-ups</b>Escudo absorve 1 batida. O raio dobra seus pontos por 8 segundos.</div>
+          </li>
+          <li>
+            <span class="howto-ic"><svg class="ic" aria-hidden="true"><use href="#ic-bolt"/></svg></span>
+            <div><b>Sobreviva</b>A velocidade sobe a cada segundo. A cada 1000 pontos você sobe de nível!</div>
+          </li>
+        </ul>
+      </div>
+      <div class="panel-foot">
+        <button class="btn btn-primary" data-action="play">
+          <svg class="ic" aria-hidden="true"><use href="#ic-play"/></svg> Jogar agora
+        </button>
+        <button class="btn" data-action="menu">Voltar</button>
       </div>
     </div>
   </section>
 
   <!-- ================= TELA: RANKING + CONQUISTAS ================= -->
-  <section id="screen-ranking" class="screen" data-screen="ranking" aria-label="Ranking e conquistas">
+  <section id="screen-ranking" class="screen" data-screen="ranking" aria-label="Ranking e conquistas" role="dialog" aria-modal="true">
     <div class="panel panel-wide">
-      <h2 class="panel-title">🏆 RANKING</h2>
-      <ol id="ranking-list" class="ranking-list"></ol>
-      <p id="ranking-empty" class="muted">Nenhuma partida ainda — jogue e entre no ranking!</p>
+      <div class="panel-head">
+        <h2 class="panel-title">Ranking</h2>
+        <button class="icon-btn" data-action="menu" aria-label="Fechar">
+          <svg class="ic" aria-hidden="true"><use href="#ic-close"/></svg>
+        </button>
+      </div>
+      <div class="panel-body">
+        <div id="ranking-podium" class="podium" hidden></div>
+        <ol id="ranking-list" class="ranking-list"></ol>
+        <div id="ranking-empty" class="empty-state" hidden>
+          <svg class="ic" aria-hidden="true"><use href="#ic-trophy"/></svg>
+          <p>Nenhuma partida ainda.<br>Jogue e conquiste o primeiro lugar!</p>
+        </div>
 
-      <!-- Ranking global: aparece quando GLOBAL_RANKING.enabled = true em js/ui/ranking.js -->
-      <h3 class="card-title" id="ranking-global-title" hidden>🌍 Ranking global</h3>
-      <ol id="ranking-global-list" class="ranking-list"></ol>
+        <!-- Ranking global: aparece quando GLOBAL_RANKING.enabled = true em js/ui/ranking.js -->
+        <h3 class="card-title" id="ranking-global-title" hidden>
+          <svg class="ic" aria-hidden="true"><use href="#ic-mission"/></svg> Ranking global
+        </h3>
+        <ol id="ranking-global-list" class="ranking-list"></ol>
 
-      <h3 class="card-title">🎖️ Conquistas <span id="achievements-count" class="card-badge"></span></h3>
-      <div id="achievements-grid" class="achievements-grid"></div>
-
-      <div class="panel-actions">
-        <button class="btn" data-action="share-rank">📤 Compartilhar recorde</button>
-        <button class="btn" data-action="menu">← Voltar</button>
+        <h3 class="card-title" style="margin-top:16px">
+          <svg class="ic" aria-hidden="true"><use href="#ic-medal"/></svg> Conquistas
+          <span id="achievements-count" class="chip"></span>
+        </h3>
+        <div id="achievements-grid" class="achievements-grid"></div>
+      </div>
+      <div class="panel-foot">
+        <button class="btn" data-action="share-rank">
+          <svg class="ic" aria-hidden="true"><use href="#ic-share"/></svg> Compartilhar recorde
+        </button>
+        <button class="btn" data-action="menu">Voltar</button>
       </div>
     </div>
   </section>
 
   <!-- ================= TELA: CONFIGURAÇÕES ================= -->
-  <section id="screen-settings" class="screen" data-screen="settings" aria-label="Configurações">
+  <section id="screen-settings" class="screen" data-screen="settings" aria-label="Configurações" role="dialog" aria-modal="true">
     <div class="panel">
-      <h2 class="panel-title">⚙️ CONFIGURAÇÕES</h2>
-
-      <label class="setting-row">
-        <span>🔊 Efeitos sonoros</span>
-        <input type="checkbox" id="set-sound" class="switch" checked>
-      </label>
-      <label class="setting-row">
-        <span>🎵 Música</span>
-        <input type="checkbox" id="set-music" class="switch" checked>
-      </label>
-      <label class="setting-row setting-range">
-        <span>🔉 Volume</span>
-        <input type="range" id="set-volume" min="0" max="100" value="70">
-      </label>
-      <label class="setting-row">
-        <span>📳 Vibrar ao acertar</span>
-        <input type="checkbox" id="set-haptics" class="switch" checked>
-      </label>
-      <label class="setting-row">
-        <span>🐢 Reduzir animações</span>
-        <input type="checkbox" id="set-reduce" class="switch">
-      </label>
-      <label class="setting-row">
-        <span>🎓 Repetir tutorial</span>
-        <input type="checkbox" id="set-tutorial" class="switch">
-      </label>
-
-      <div class="panel-actions">
-        <button class="btn btn-danger" data-action="reset">🗑️ Apagar progresso</button>
-        <button class="btn" data-action="menu">← Voltar</button>
+      <div class="panel-head">
+        <h2 class="panel-title">Configurações</h2>
+        <button class="icon-btn" data-action="menu" aria-label="Fechar">
+          <svg class="ic" aria-hidden="true"><use href="#ic-close"/></svg>
+        </button>
       </div>
-      <p class="muted small">Seu recorde e progresso ficam salvos apenas neste dispositivo (localStorage).</p>
+      <div class="panel-body">
+        <div class="settings-group">
+          <h3>Áudio</h3>
+          <label class="setting-row">
+            <span class="label"><svg class="ic" aria-hidden="true"><use href="#ic-volume"/></svg> Efeitos sonoros</span>
+            <input type="checkbox" id="set-sound" class="switch">
+          </label>
+          <label class="setting-row">
+            <span class="label"><svg class="ic" aria-hidden="true"><use href="#ic-volume"/></svg> Música</span>
+            <input type="checkbox" id="set-music" class="switch">
+          </label>
+          <label class="setting-row">
+            <span class="label">Volume</span>
+            <input type="range" id="set-volume" class="range" min="0" max="100" value="70" aria-label="Volume">
+          </label>
+        </div>
+        <div class="settings-group">
+          <h3>Jogabilidade</h3>
+          <label class="setting-row">
+            <span class="label"><svg class="ic" aria-hidden="true"><use href="#ic-vibrate"/></svg> Vibrar ao acertar</span>
+            <input type="checkbox" id="set-haptics" class="switch">
+          </label>
+          <label class="setting-row">
+            <span class="label"><svg class="ic" aria-hidden="true"><use href="#ic-restart"/></svg> Repetir tutorial</span>
+            <input type="checkbox" id="set-tutorial" class="switch">
+          </label>
+        </div>
+        <div class="settings-group">
+          <h3>Acessibilidade</h3>
+          <label class="setting-row">
+            <span class="label"><svg class="ic" aria-hidden="true"><use href="#ic-pulse"/></svg> Reduzir movimento</span>
+            <input type="checkbox" id="set-reduce" class="switch">
+          </label>
+        </div>
+        <div class="settings-group">
+          <h3>Dados</h3>
+          <p class="small muted" style="padding:8px 4px">Seu recorde e progresso ficam salvos apenas neste dispositivo (localStorage).</p>
+          <button class="btn btn-danger" data-action="reset" style="width:100%">
+            <svg class="ic" aria-hidden="true"><use href="#ic-trash"/></svg> Apagar progresso
+          </button>
+        </div>
+      </div>
+      <div class="panel-foot">
+        <button class="btn" data-action="menu">Voltar</button>
+      </div>
     </div>
   </section>
 
+  <!-- ================= MODAL: CONFIRMAR RESET ================= -->
+  <div id="modal-confirm" class="modal" hidden role="dialog" aria-modal="true" aria-labelledby="confirm-title">
+    <div class="panel modal-panel">
+      <div class="panel-head">
+        <h3 class="panel-title" id="confirm-title">Apagar progresso?</h3>
+      </div>
+      <p>Seu recorde, ranking, conquistas e missões serão apagados deste dispositivo. <b>Isso não pode ser desfeito.</b></p>
+      <div class="panel-foot">
+        <button class="btn btn-danger" data-action="reset-confirm">
+          <svg class="ic" aria-hidden="true"><use href="#ic-trash"/></svg> Apagar tudo
+        </button>
+        <button class="btn" data-action="reset-cancel">Cancelar</button>
+      </div>
+    </div>
+  </div>
+
   <!-- ================= TELA: PAUSA ================= -->
-  <section id="screen-pause" class="screen" data-screen="pause" aria-label="Jogo pausado">
+  <section id="screen-pause" class="screen" data-screen="pause" aria-label="Jogo pausado" role="dialog" aria-modal="true">
     <div class="panel">
-      <h2 class="panel-title">PAUSADO</h2>
-      <div class="pause-score">Pontos: <span id="pause-score">0</span></div>
-      <div class="panel-actions column">
-        <button class="btn btn-primary" data-action="resume">▶ Continuar</button>
-        <button class="btn" data-action="restart">🔄 Reiniciar</button>
-        <button class="btn" data-action="menu">🏠 Sair para o menu</button>
+      <div class="panel-head">
+        <h2 class="panel-title">Pausado</h2>
+      </div>
+      <p class="pause-score">Pontos: <b id="pause-score">0</b></p>
+      <div class="panel-foot column">
+        <button class="btn btn-primary" data-action="resume">
+          <svg class="ic" aria-hidden="true"><use href="#ic-play"/></svg> Continuar
+        </button>
+        <button class="btn" data-action="restart">
+          <svg class="ic" aria-hidden="true"><use href="#ic-restart"/></svg> Reiniciar
+        </button>
+        <button class="btn" data-action="menu">
+          <svg class="ic" aria-hidden="true"><use href="#ic-menu"/></svg> Sair para o menu
+        </button>
       </div>
     </div>
   </section>
 
   <!-- ================= TELA: FIM DE JOGO ================= -->
-  <section id="screen-gameover" class="screen" data-screen="gameover" aria-label="Fim de jogo">
+  <section id="screen-gameover" class="screen" data-screen="gameover" aria-label="Fim de jogo" role="dialog" aria-modal="true">
     <div class="panel">
-      <h2 class="panel-title">FIM DE JOGO</h2>
-      <div id="go-record" class="record-badge" hidden>🏆 NOVO RECORDE!</div>
+      <div id="go-record" class="record-badge" hidden>
+        <svg class="ic" aria-hidden="true"><use href="#ic-trophy"/></svg> NOVO RECORDE
+      </div>
       <div class="go-score"><span id="go-score">0</span></div>
       <div class="go-best">Recorde: <span id="go-best">0</span></div>
       <div id="go-stats" class="go-stats"></div>
-      <div class="panel-actions column">
-        <button class="btn btn-primary btn-big" data-action="replay">🔄 JOGAR NOVAMENTE</button>
-        <button class="btn btn-reward" id="btn-revive" data-action="revive" hidden>🎬 Assistir anúncio e reviver</button>
-        <button class="btn" data-action="share-score">📤 Compartilhar</button>
-        <button class="btn" data-action="menu">🏠 Menu</button>
+      <div class="panel-foot column">
+        <button class="btn btn-primary btn-big" data-action="replay">
+          <svg class="ic ic-lg" aria-hidden="true"><use href="#ic-restart"/></svg> JOGAR DE NOVO
+        </button>
+        <button class="btn btn-success" id="btn-revive" data-action="revive" hidden>
+          <svg class="ic" aria-hidden="true"><use href="#ic-video"/></svg> Assistir anúncio e reviver
+        </button>
+        <button class="btn" data-action="share-score">
+          <svg class="ic" aria-hidden="true"><use href="#ic-share"/></svg> Compartilhar
+        </button>
+        <button class="btn" data-action="menu">
+          <svg class="ic" aria-hidden="true"><use href="#ic-menu"/></svg> Menu
+        </button>
       </div>
     </div>
   </section>
 
   <!-- ================= MODAL: COMPARTILHAR ================= -->
-  <div id="modal-share" class="modal" hidden>
+  <div id="modal-share" class="modal" hidden role="dialog" aria-modal="true" aria-labelledby="share-title">
     <div class="panel modal-panel">
-      <h3 class="panel-title">📤 Compartilhar</h3>
+      <div class="panel-head">
+        <h3 class="panel-title" id="share-title">Compartilhar</h3>
+        <button class="icon-btn" data-action="close-share" aria-label="Fechar">
+          <svg class="ic" aria-hidden="true"><use href="#ic-close"/></svg>
+        </button>
+      </div>
       <p id="share-text-preview" class="share-preview"></p>
       <div class="share-buttons">
-        <button class="btn btn-whatsapp" data-share="whatsapp">💬 WhatsApp</button>
-        <button class="btn btn-x" data-share="x">𝕏 (Twitter)</button>
-        <button class="btn" data-share="copy">🔗 Copiar link</button>
-      </div>
-      <div class="panel-actions">
-        <button class="btn" data-action="close-share">Fechar</button>
+        <button class="btn btn-whatsapp" data-share="whatsapp">
+          <svg class="ic" aria-hidden="true"><use href="#ic-whatsapp"/></svg> WhatsApp
+        </button>
+        <button class="btn btn-x" data-share="x">
+          <svg class="ic" aria-hidden="true"><use href="#ic-x"/></svg> X
+        </button>
+        <button class="btn" data-share="copy">
+          <svg class="ic" aria-hidden="true"><use href="#ic-copy"/></svg> Copiar
+        </button>
       </div>
     </div>
   </div>
 
   <!-- ================= ANÚNCIO INTERSTICIAL ================= -->
-  <div id="ad-interstitial" class="modal" hidden>
-    <div class="panel modal-panel ad-modal">
-      <span class="ad-label">PUBLICIDADE</span>
+  <div id="ad-interstitial" class="modal" hidden role="dialog" aria-modal="true" aria-label="Publicidade">
+    <div class="panel modal-panel">
+      <span class="ad-label">Publicidade</span>
       <div class="ad-box-big">
-        <span class="ad-hint">Espaço intersticial (300×250 ou tela cheia)<br>Cole aqui o código do AdSense / AdSterra</span>
+        <span>Espaço intersticial (300×250 ou tela cheia)<br>Cole aqui o código do AdSense / AdSterra</span>
       </div>
-      <button id="btn-close-ad" class="btn" disabled>Fechar em <span id="ad-countdown">5</span>s</button>
+      <button id="btn-close-ad" class="btn" style="width:100%" disabled aria-live="polite">
+        Fechar em <span id="ad-countdown">5</span>s
+      </button>
     </div>
   </div>
 
   <!-- ================= ANÚNCIO REWARDED (reviver) ================= -->
-  <div id="ad-reward" class="modal" hidden>
-    <div class="panel modal-panel ad-modal">
-      <span class="ad-label">ANÚNCIO RECOMPENSADO</span>
+  <div id="ad-reward" class="modal" hidden role="dialog" aria-modal="true" aria-label="Anúncio recompensado">
+    <div class="panel modal-panel">
+      <span class="ad-label">Anúncio recompensado</span>
       <div class="ad-box-big">
-        <span class="ad-hint" id="reward-ad-text">Anúncio de exemplo rodando…<br>(no modo real, o vídeo do AdSense aparece aqui)</span>
+        <span id="reward-ad-text">Anúncio de exemplo rodando…<br>(no modo real, o vídeo do AdSense aparece aqui)</span>
       </div>
-      <button id="btn-claim-reward" class="btn btn-primary" disabled>🎁 Resgatar em <span id="reward-countdown">5</span>s</button>
+      <button id="btn-claim-reward" class="btn btn-primary" style="width:100%" disabled aria-live="polite">
+        Resgatar em <span id="reward-countdown">5</span>s
+      </button>
     </div>
   </div>
 
   <!-- ================= AVISO DE COOKIES (LGPD) ================= -->
-  <div id="cookie-banner" class="cookie-banner" hidden>
-    <p>🍪 Usamos cookies e anúncios (Google AdSense) para manter o jogo gratuito. Ao continuar, você concorda com a nossa
+  <div id="cookie-banner" class="cookie-banner" hidden role="dialog" aria-label="Aviso de cookies">
+    <p>Usamos cookies e anúncios (Google AdSense) para manter o jogo gratuito. Ao continuar, você concorda com a nossa
       <a href="privacy.html" target="_blank" rel="noopener">Política de Privacidade</a>.</p>
     <div class="cookie-actions">
-      <button class="btn btn-primary btn-small" data-consent="accepted">Aceitar</button>
+      <button class="btn btn-small" data-consent="accepted">Aceitar</button>
       <button class="btn btn-small" data-consent="declined">Só o essencial</button>
     </div>
   </div>
 
   <!-- ================= TOASTS (conquistas, missões, recorde) ================= -->
-  <div id="toasts" class="toasts" aria-live="polite"></div>
+  <div id="toasts" class="toasts" aria-live="polite" aria-atomic="false"></div>
 
   <script type="module" src="js/main.js"></script>
   <noscript><p style="color:#fff;text-align:center;padding:2rem">Este jogo precisa de JavaScript habilitado.</p></noscript>

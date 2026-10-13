@@ -178,11 +178,41 @@ export function drawPowerup(ctx, pw, time, reduceMotion) {
   ctx.stroke();
   ctx.shadowBlur = 0;
 
-  ctx.font = `${Math.round(r * 1.1)}px sans-serif`;
-  ctx.textAlign = 'center';
-  ctx.textBaseline = 'middle';
+  // glifos vetoriais (sem emoji: renderizam igual em qualquer SO/fonte)
+  ctx.strokeStyle = color;
   ctx.fillStyle = color;
-  ctx.fillText(pw.kind === 'shield' ? '🛡️' : '⚡', pw.x, pw.y + 1);
+  ctx.lineWidth = Math.max(1.6, r * 0.16);
+  ctx.lineJoin = 'round';
+  if (pw.kind === 'shield') drawShieldGlyph(ctx, pw.x, pw.y, r);
+  else drawBoltGlyph(ctx, pw.x, pw.y, r);
+}
+
+/** Escudo (contorno). */
+function drawShieldGlyph(ctx, cx, cy, r) {
+  const k = r * 0.6;
+  ctx.beginPath();
+  ctx.moveTo(cx, cy - k);
+  ctx.lineTo(cx + k * 0.8, cy - k * 0.5);
+  ctx.lineTo(cx + k * 0.8, cy + k * 0.15);
+  ctx.quadraticCurveTo(cx + k * 0.8, cy + k * 0.75, cx, cy + k);
+  ctx.quadraticCurveTo(cx - k * 0.8, cy + k * 0.75, cx - k * 0.8, cy + k * 0.15);
+  ctx.lineTo(cx - k * 0.8, cy - k * 0.5);
+  ctx.closePath();
+  ctx.stroke();
+}
+
+/** Raio (preenchido). */
+function drawBoltGlyph(ctx, cx, cy, r) {
+  const k = r * 0.62;
+  ctx.beginPath();
+  ctx.moveTo(cx + k * 0.3, cy - k);
+  ctx.lineTo(cx - k * 0.55, cy + k * 0.15);
+  ctx.lineTo(cx - k * 0.05, cy + k * 0.15);
+  ctx.lineTo(cx - k * 0.3, cy + k);
+  ctx.lineTo(cx + k * 0.55, cy - k * 0.15);
+  ctx.lineTo(cx + k * 0.05, cy - k * 0.15);
+  ctx.closePath();
+  ctx.fill();
 }
 
 function roundRect(ctx, x, y, w, h, r) {
