@@ -40,7 +40,7 @@ Antes de publicar, troque os placeholders:
 ### Netlify (mais fácil)
 1. Acesse [netlify.com](https://www.netlify.com) → *Add new site* → *Deploy manually*.
 2. Arraste a **pasta `pulso-neon`** inteira na área de upload. Pronto.
-3. Em *Site settings* → *Change site name* para um nome curto (ex.: `pulsonenon`).
+3. Em *Site settings* → *Change site name* para um nome curto (ex.: `orblux`).
 
 ### Vercel
 1. Suba a pasta para um repositório no GitHub.
@@ -89,8 +89,18 @@ O ranking local (localStorage) já funciona. Para global, siga o passo a passo S
 ```bash
 node tests/smoke.mjs           # simula o jogo inteiro: 42 testes (lógica, colisões, ranking, missões…)
 node tools/validate-refs.mjs   # confere imports, IDs do HTML e assets
-node tools/gen-icons.mjs       # regenera os PNGs de ícone e preview
+node tools/audit-ui.mjs        # QA: sem emojis na interface, aria, tokens, peso < 150 KB
+node tools/gen-icons.mjs       # regenera os PNGs de ícone, maskable, apple-touch e og-image
+node tools/fetch-fonts.mjs     # baixa as fontes (subset latin) e gera css/fonts.css
 ```
+
+### QA visual (redesign ORBLUX)
+1. Abra `http://localhost:8080/tools/qa-sizes.html` — o jogo em iframes nos 6 tamanhos alvo
+   (360×640, 390×844, 412×915, 768×1024, 1366×768, 1920×1080).
+2. Em cada aba, rode no console `OX.auditLayout()` — deve retornar `{ ok: true }` (zero overflow-x).
+3. Confira também: foco visível com Tab, Esc fechando modais, `Reduzir movimento` nas configurações.
+
+Veja `STYLEGUIDE.md` para tokens e regras do design system.
 
 ---
 
@@ -98,18 +108,23 @@ node tools/gen-icons.mjs       # regenera os PNGs de ícone e preview
 
 ```
 pulso-neon/
-├── index.html            # telas, HUD, modais de anúncio, banner LGPD
-├── css/style.css         # tema neon, responsivo, acessível
+├── index.html            # sprite SVG, telas, HUD, modais de anúncio, banner LGPD
+├── logo.svg              # logotipo de referência (orbe + ORB ciano + LUX magenta)
+├── css/
+│   ├── style.css         # design system (tokens em :root) + telas + HUD
+│   └── fonts.css         # @font-face local (gerado por tools/fetch-fonts.mjs)
+├── assets/fonts/         # woff2 auto-hospedados (Orblux Display + Orblux Sans)
 ├── js/
-│   ├── main.js           # bootstrap + fluxo de fim de partida
+│   ├── main.js           # bootstrap + fluxo de fim de partida + OX.auditLayout()
 │   ├── core/             # loop, input, áudio (Web Audio), storage, estado, eventos
 │   ├── game/             # game.js (regras), entities, spawner (dificuldade), particles, tutorial
 │   ├── ui/               # screens, hud, toasts, achievements, missions, ranking, share
 │   └── monetization/ads.js
-├── sw.js · manifest.webmanifest · favicon.svg · icons/ (PNGs gerados)
+├── sw.js · manifest.webmanifest · favicon.svg · icons/ (PNGs da marca)
 ├── privacy.html          # Política de Privacidade (LGPD)
+├── STYLEGUIDE.md         # tokens, componentes e regras do design system
 ├── dev-server.mjs        # servidor local sem dependências
-└── tests/ · tools/
+└── tests/ · tools/       # smoke, auditorias, geradores e QA multi-tamanho
 ```
 
 ---

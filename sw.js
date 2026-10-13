@@ -4,7 +4,7 @@
    Atualize CACHE_VERSION a cada deploy.
    ========================================================= */
 
-const CACHE_VERSION = 'orblux-v1';
+const CACHE_VERSION = 'orblux-v2';
 
 const PRECACHE = [
   './',
