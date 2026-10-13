@@ -17,6 +17,7 @@ import { initMissions, allMissionsDone } from './ui/missions.js';
 import { initRanking } from './ui/ranking.js';
 import { initShare } from './ui/share.js';
 import { initAds, onRunEnd as adsOnRunEnd, showRewarded } from './monetization/ads.js';
+import { burst, ring, floatText } from './game/particles.js';
 
 function boot() {
   const canvas = document.getElementById('game-canvas');
@@ -120,6 +121,10 @@ function boot() {
         for (let i = 0; i < steps; i++) update(1 / 60);
       },
       endRun: () => forceGameOver(),
+      // captura/QA: emitir eventos e disparar FX de cena (sem tocar na lógica)
+      emit,
+      screen: (name = null) => showScreen(name),
+      fx: { burst, ring, floatText },
       // QA de layout: OX.auditLayout() no console verifica overflow-x/altura
       // em todas as telas (use nos tamanhos: 360x640, 390x844, 412x915,
       // 768x1024, 1366x768 e 1920x1080, retrato e paisagem)
