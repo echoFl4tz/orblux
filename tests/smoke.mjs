@@ -86,7 +86,7 @@ globalThis.document = {
   querySelectorAll: () => [],
   execCommand() {},
 };
-globalThis.location = { protocol: 'http:', href: 'http://localhost/', origin: 'http://localhost' };
+globalThis.location = { protocol: 'http:', href: 'http://localhost/', origin: 'http://localhost', hostname: 'localhost', search: '' };
 // navigator já existe no Node 24 (sem vibrate — caminho de fallback é exercitado)
 try { Object.defineProperty(globalThis, 'navigator', { value: { vibrate() {}, share: null }, configurable: true }); } catch { /* usa o nativo */ }
 globalThis.requestAnimationFrame = () => 1;   // loop único (não repete)
@@ -106,7 +106,7 @@ function assert(cond, label) {
 //  Carrega o jogo inteiro (main.js faz o boot)
 // ---------------------------------------------------------
 await import('../js/main.js');
-const PN = globalThis.window.PN; // main.js grava em window (mock no Node)
+const OX = globalThis.window.OX; // main.js grava em window (mock no Node)
 const { state, resetAllProgress } = await import('../js/core/state.js');
 const { game, revive, quitToMenu } = await import('../js/game/game.js');
 const { difficultyParams } = await import('../js/game/spawner.js');
@@ -114,7 +114,7 @@ const { createPickup, createObstacle } = await import('../js/game/entities.js');
 const events = await import('../js/core/events.js');
 
 console.log('\n— Etapa A: boot e menu —');
-assert(PN && PN.version, 'main.js inicializou e expôs window.PN');
+assert(OX && OX.version, 'main.js inicializou e expôs window.OX');
 assert(game.mode === 'menu', 'jogo começa no menu');
 assert(Array.isArray(state.missions.list) && state.missions.list.length === 3, 'missões do dia geradas (3)');
 assert(state.tutorialDone === false, 'tutorial habilitado na 1ª partida');
@@ -122,19 +122,19 @@ assert(state.tutorialDone === false, 'tutorial habilitado na 1ª partida');
 console.log('\n— Etapa B: iniciar partida (com tutorial) —');
 let overPayload = null;
 events.on('game:over', (p) => { overPayload = p; });
-PN.start();
+OX.start();
 assert(game.mode === 'playing', 'partida iniciada');
 assert(game.lives === 3, '3 vidas no início');
 assert(game.player && game.player.y > 0, 'jogador criado');
 
 // roda 2 s sem erros
-PN.advance(2);
+OX.advance(2);
 assert(game.mode === 'playing', '2 s de jogo sem erros');
 assert(game.elapsed > 1.5, 'delta time acumulando');
 
 console.log('\n— Etapa C: coleta de pulsos e combo —');
 game.pickups.push(createPickup(game.player.x, game.player.y, game.S));
-PN.advance(0.2);
+OX.advance(0.2);
 assert(game.score > 0, `ponto coletado (score=${game.score})`);
 assert(game.combo === 1, 'combo incrementa ao coletar');
 assert(game.runStats.pickups === 1, 'estatística de pulsos da partida');
@@ -142,7 +142,7 @@ assert(game.runStats.pickups === 1, 'estatística de pulsos da partida');
 // coleta mais 7 → multiplicador deve subir para x2 (combo 8)
 for (let i = 0; i < 7; i++) {
   game.pickups.push(createPickup(game.player.x, game.player.y, game.S));
-  PN.advance(0.05);
+  OX.advance(0.05);
 }
 assert(game.multiplier === 3, `multiplicador sobe conforme o combo (combo=${game.combo}, mult=${game.multiplier})`);
 
@@ -150,7 +150,7 @@ console.log('\n— Etapa D: colisão e vidas —');
 const livesBefore = game.lives;
 game.player.invuln = 0;
 game.obstacles.push(createObstacle('drone', game.player.x, game.player.y, game.S, 0));
-PN.advance(0.2);
+OX.advance(0.2);
 assert(game.lives === livesBefore - 1, 'batida custa 1 vida');
 assert(game.combo === 0, 'combo zera ao bater');
 assert(game.player.invuln > 0, 'invulnerabilidade ativada');
@@ -160,7 +160,7 @@ game.player.invuln = 0;
 game.player.shield = true;
 const livesShield = game.lives;
 game.obstacles.push(createObstacle('drone', game.player.x, game.player.y, game.S, 0));
-PN.advance(0.2);
+OX.advance(0.2);
 assert(game.lives === livesShield, 'escudo absorve a batida');
 assert(game.player.shield === false, 'escudo é consumido');
 
@@ -179,7 +179,7 @@ game.player.invuln = 0;
 game.player.shield = false;
 game.lives = 1;
 game.obstacles.push(createObstacle('drone', game.player.x, game.player.y, game.S, 0));
-PN.advance(0.2);
+OX.advance(0.2);
 assert(game.mode === 'gameover', 'modo gameover ao zerar vidas');
 assert(overPayload && typeof overPayload.score === 'number', 'evento game:over emitido com resumo');
 assert(state.stats.runs === 1, 'estatística de partidas incrementada');
@@ -199,7 +199,7 @@ overPayload = null;
 game.player.invuln = 0;
 game.lives = 1;
 game.obstacles.push(createObstacle('drone', game.player.x, game.player.y, game.S, 0));
-PN.advance(0.2);
+OX.advance(0.2);
 assert(game.mode === 'gameover', 'segundo game over ok');
 assert(state.stats.runs === 2, '2 partidas registradas');
 assert(state.ranking.length === 2, 'ranking com 2 entradas');
@@ -208,9 +208,9 @@ quitToMenu();
 assert(game.mode === 'menu', 'sair para o menu funciona');
 
 console.log('\n— Etapa J: sobrevivência com jogador parado (balanceamento) —');
-PN.start({ tutorial: false });
+OX.start({ tutorial: false });
 let t = 0;
-while (game.mode === 'playing' && t < 120) { PN.advance(1); t++; }
+while (game.mode === 'playing' && t < 120) { OX.advance(1); t++; }
 assert(game.mode === 'gameover', `jogador parado morre em ${t}s (nem eterno, nem instantâneo)`);
 assert(t >= 5, 'não é game over instantâneo (dá reação)');
 assert(t <= 110, 'não é impossível sobreviver um tempo com jogo ativo');

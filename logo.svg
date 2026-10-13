@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 420 96" role="img" aria-label="ORBLUX">
+  <!-- Logotipo ORBLUX — a orbe substitui o "O" de ORB.
+       Versão inline (usada no jogo) fica em index.html; este arquivo é a referência. -->
+  <defs>
+    <radialGradient id="lo-og" cx="38%" cy="38%" r="65%">
+      <stop offset="0%" stop-color="#ffffff"/>
+      <stop offset="45%" stop-color="#22e6ff"/>
+      <stop offset="100%" stop-color="#ff3df0"/>
+    </radialGradient>
+  </defs>
+  <g>
+    <circle cx="48" cy="48" r="27" fill="none" stroke="#ff3df0" stroke-width="1.6" opacity="0.4"/>
+    <circle cx="48" cy="48" r="21.5" fill="none" stroke="#22e6ff" stroke-width="2" opacity="0.75"/>
+    <circle cx="48" cy="48" r="16" fill="url(#lo-og)"/>
+    <circle cx="43" cy="43" r="4.5" fill="#ffffff" opacity="0.85"/>
+  </g>
+  <text x="86" y="70" font-family="'Orblux Display','Orbitron',sans-serif" font-weight="800" font-size="52" letter-spacing="2" fill="#22e6ff">RB</text>
+  <text x="176" y="70" font-family="'Orblux Display','Orbitron',sans-serif" font-weight="800" font-size="52" letter-spacing="2" fill="#ff3df0">LUX</text>
+</svg>

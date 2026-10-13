@@ -3,35 +3,34 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-  <title>Pulso Neon — jogo arcade retrô grátis no navegador</title>
-  <meta name="description" content="Pulso Neon é um jogo arcade neon rápido e viciante: colete pulsos, acumule combos e desvie das barras. Grátis, funciona no celular e no computador.">
-  <meta name="keywords" content="jogo, arcade, neon, retrô, browser game, jogo gratuito, jogar online, pulso neon">
-  <meta name="author" content="Pulso Neon">
+  <title>ORBLUX — jogo arcade neon grátis no navegador</title>
+  <meta name="description" content="ORBLUX é um jogo arcade neon rápido e viciante: colete pulsos, acumule combos e desvie das barreiras. Grátis, funciona no celular e no computador.">
+  <meta name="keywords" content="orblux, jogo, arcade, neon, retrô, browser game, jogo gratuito, jogar online">
+  <meta name="author" content="ORBLUX">
   <meta name="theme-color" content="#05060f">
   <link rel="canonical" href="https://EXEMPLO.com/">
 
   <!-- Open Graph (preview ao compartilhar no WhatsApp/Facebook/LinkedIn) -->
   <meta property="og:type" content="website">
-  <meta property="og:site_name" content="Pulso Neon">
-  <meta property="og:title" content="Pulso Neon — jogo arcade retrô grátis no navegador">
-  <meta property="og:description" content="Colete pulsos, acumule combos e desvie das barras. Partidas de 1 a 3 minutos. Jogue grátis no celular ou computador.">
+  <meta property="og:site_name" content="ORBLUX">
+  <meta property="og:title" content="ORBLUX — jogo arcade neon grátis no navegador">
+  <meta property="og:description" content="Colete pulsos, acumule combos e desvie das barreiras. Partidas de 1 a 3 minutos. Jogue grátis no celular ou computador.">
   <meta property="og:url" content="https://EXEMPLO.com/">
   <meta property="og:image" content="https://EXEMPLO.com/icons/og-image.png">
   <meta property="og:locale" content="pt_BR">
   <!-- Twitter / X -->
   <meta name="twitter:card" content="summary_large_image">
-  <meta name="twitter:title" content="Pulso Neon — jogo arcade retrô grátis no navegador">
-  <meta name="twitter:description" content="Colete pulsos, acumule combos e desvie das barras. Partidas de 1 a 3 minutos.">
+  <meta name="twitter:title" content="ORBLUX — jogo arcade neon grátis no navegador">
+  <meta name="twitter:description" content="Colete pulsos, acumule combos e desvie das barreiras. Partidas de 1 a 3 minutos.">
   <meta name="twitter:image" content="https://EXEMPLO.com/icons/og-image.png">
 
   <link rel="icon" href="favicon.svg" type="image/svg+xml">
-  <link rel="apple-touch-icon" href="icons/icon-192.png">
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
   <link rel="manifest" href="manifest.webmanifest">
 
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600;800;900&family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
-
+  <link rel="preload" href="assets/fonts/orblux-display.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="assets/fonts/orblux-sans.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="css/fonts.css">
   <link rel="stylesheet" href="css/style.css">
 
   <!-- =========================================================
@@ -43,7 +42,7 @@
 </head>
 <body data-screen="menu">
 
-  <canvas id="game-canvas" aria-label="Área do jogo Pulso Neon"></canvas>
+  <canvas id="game-canvas" aria-label="Área do jogo ORBLUX"></canvas>
 
   <!-- ================= HUD (durante a partida) ================= -->
   <div id="hud" class="hud" hidden>
@@ -74,7 +73,20 @@
   <!-- ================= TELA: MENU ================= -->
   <section id="screen-menu" class="screen active" data-screen="menu" aria-label="Menu principal">
     <div class="panel menu-panel">
-      <h1 class="logo">PULSO<span>NEON</span></h1>
+      <h1 class="logo" aria-label="ORBLUX">
+        <svg class="logo-orb" viewBox="0 0 64 64" aria-hidden="true" focusable="false">
+          <defs>
+            <radialGradient id="orbGrad" cx="38%" cy="38%" r="65%">
+              <stop offset="0%" stop-color="#ffffff"/>
+              <stop offset="45%" stop-color="#22e6ff"/>
+              <stop offset="100%" stop-color="#ff3df0"/>
+            </radialGradient>
+          </defs>
+          <circle cx="32" cy="32" r="16" fill="url(#orbGrad)"/>
+          <circle cx="32" cy="32" r="21.5" fill="none" stroke="#22e6ff" stroke-width="2" opacity="0.75"/>
+          <circle cx="32" cy="32" r="27" fill="none" stroke="#ff3df0" stroke-width="1.6" opacity="0.4"/>
+        </svg><span class="logo-a">RB</span><span class="logo-b">LUX</span>
+      </h1>
       <p class="tagline">Colete · Combine · Sobreviva</p>
       <div class="best-champ">🏆 Recorde: <span id="menu-best">0</span></div>
 

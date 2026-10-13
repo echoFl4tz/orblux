@@ -1,6 +1,10 @@
 /* =========================================================
    Estado global — configurações, estatísticas, ranking,
    conquistas e missões diárias (salvo no localStorage)
+
+   ⚠️ O prefixo das chaves é 'pn_' (legado do nome anterior
+   "Pulso Neon") de propósito: mantê-lo preserva o recorde e o
+   progresso de quem já jogou. NÃO renomear sem criar migração.
    ========================================================= */
 
 import { getItem, setItem, removeItem, clearAll } from './storage.js';

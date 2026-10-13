@@ -1,5 +1,5 @@
 /* =========================================================
-   PULSO NEON — ponto de entrada (main.js)
+   ORBLUX — ponto de entrada (main.js)
    Liga todos os módulos: core, jogo, UI, ads e PWA.
    ========================================================= */
 
@@ -105,20 +105,23 @@ function boot() {
     if (!document.hidden) resumeAudio();
   });
 
-  // ---- API de debug/testes (inofensiva em produção) ----
-  window.PN = {
-    version: '1.0.0',
-    state,
-    game,
-    start: (opts = {}) => startGame(opts),
-    advance: (seconds = 1) => {              // simula N segundos de jogo
-      const steps = Math.round(seconds * 60);
-      for (let i = 0; i < steps; i++) update(1 / 60);
-    },
-    endRun: () => forceGameOver(),
-  };
-
-  console.info('%c🕹️ Pulso Neon pronto!', 'color:#22e6ff;font-weight:bold', `v${window.PN.version}`);
+  // ---- API de debug (somente localhost ou ?debug=1) ----
+  const isDebug = ['localhost', '127.0.0.1', '[::1]'].includes(location.hostname)
+    || /[?&]debug=1/.test(location.search || '');
+  if (isDebug) {
+    window.OX = {
+      version: '1.0.0',
+      state,
+      game,
+      start: (opts = {}) => startGame(opts),
+      advance: (seconds = 1) => {              // simula N segundos de jogo
+        const steps = Math.round(seconds * 60);
+        for (let i = 0; i < steps; i++) update(1 / 60);
+      },
+      endRun: () => forceGameOver(),
+    };
+    console.info('%c[ORBLUX] pronto', 'color:#22e6ff;font-weight:bold', `v${window.OX.version}`);
+  }
 }
 
 try {

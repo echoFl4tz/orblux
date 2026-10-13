@@ -1,8 +1,11 @@
-# 🕹️ PULSO NEON
+# 🕹️ ORBLUX
 
-Jogo arcade neon para navegador — **colete pulsos, acumule combos (até ×5) e desvie das barras**.
-Partidas de 1 a 3 minutos, grátis, leve (< 300 KB), funciona no celular e no computador.
-100% HTML + CSS + JavaScript puro (sem frameworks, sem dependências).
+Jogo arcade neon para navegador — **colete pulsos, acumule combos (até ×5) e desvie das barreiras**.
+Partidas de 1 a 3 minutos, grátis, leve, funciona no celular e no computador.
+100% HTML + CSS + JavaScript puro (sem frameworks, sem dependências, fontes auto-hospedadas).
+
+> 📌 Renomeado de "Pulso Neon" para **ORBLUX**. O prefixo das chaves do `localStorage`
+> permanece `pn_` de propósito, para não apagar o progresso de jogadores antigos.
 
 ---
 

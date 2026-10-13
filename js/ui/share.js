@@ -19,9 +19,9 @@ export function initShare() {
 function buildText(mode) {
   const best = state.stats.best || 0;
   if (mode === 'rank' || best > 0) {
-    return `🔥 Marquei ${best.toLocaleString('pt-BR')} pontos no Pulso Neon! Consegue me superar? 🏆\nJogue grátis aqui: ${SITE_URL}`;
+    return `🔥 Marquei ${best.toLocaleString('pt-BR')} pontos no ORBLUX! Consegue me superar? 🏆\nJogue grátis aqui: ${SITE_URL}`;
   }
-  return ` Acabei de jogar Pulso Neon 🕹️ jogo neon viciante, partidas de 1 minuto!\nJogue grátis: ${SITE_URL}`;
+  return `Acabei de jogar ORBLUX 🕹️ jogo neon viciante, partidas de 1 minuto!\nJogue grátis: ${SITE_URL}`;
 }
 
 function openShare(mode) {
@@ -51,7 +51,7 @@ function doShare(network) {
 async function copyToClipboard(text) {
   try {
     if (navigator.share) {
-      await navigator.share({ title: 'Pulso Neon', text, url: SITE_URL }).catch(() => {});
+      await navigator.share({ title: 'ORBLUX', text, url: SITE_URL }).catch(() => {});
       return;
     }
     await navigator.clipboard.writeText(text);

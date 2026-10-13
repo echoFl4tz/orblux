@@ -1,5 +1,5 @@
 /* =========================================================
-   GAME — controlador principal do Pulso Neon
+   GAME — controlador principal do ORBLUX
    Pontuação, combo, vidas, dificuldade, colisões, render.
    ========================================================= */
 

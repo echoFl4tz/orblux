@@ -45,5 +45,5 @@ createServer(async (req, res) => {
     res.end('404 — arquivo não encontrado');
   }
 }).listen(PORT, () => {
-  console.log(`🕹️  Pulso Neon rodando em  http://localhost:${PORT}`);
+  console.log(`  ORBLUX rodando em  http://localhost:${PORT}`);
 });

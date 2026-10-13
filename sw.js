@@ -4,14 +4,18 @@
    Atualize CACHE_VERSION a cada deploy.
    ========================================================= */
 
-const CACHE_VERSION = 'pulso-neon-v1';
+const CACHE_VERSION = 'orblux-v1';
 
 const PRECACHE = [
   './',
   './index.html',
   './css/style.css',
+  './css/fonts.css',
+  './assets/fonts/orblux-display.woff2',
+  './assets/fonts/orblux-sans.woff2',
   './manifest.webmanifest',
   './favicon.svg',
+  './logo.svg',
   './privacy.html',
   './js/main.js',
   './js/core/loop.js',
