@@ -24,6 +24,7 @@ const DEFAULT_SETTINGS = {
   volume: 0.7,
   haptics: true,
   reduceMotion: false,
+  highContrast: false,   // obstáculos com contorno branco extra (a11y)
 };
 
 const DEFAULT_STATS = {

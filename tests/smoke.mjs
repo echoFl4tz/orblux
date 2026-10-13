@@ -81,8 +81,13 @@ globalThis.document = {
   hidden: false,
   body: stubEl('body'),
   getElementById: (id) => (id === 'game-canvas' ? fakeCanvas : getEl(id)),
-  createElement: () => stubEl(),
+  createElement: () => {
+    const el = stubEl();
+    el.getContext = () => fakeCtx;   // canvas offscreen do fundo (prerender)
+    return el;
+  },
   addEventListener() {},
+  querySelector: () => null,
   querySelectorAll: () => [],
   execCommand() {},
 };

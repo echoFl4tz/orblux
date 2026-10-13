@@ -107,7 +107,7 @@ export function drawTexts(ctx) {
     if (!t.active) continue;
     const k = t.life / t.maxLife;
     ctx.globalAlpha = Math.min(1, k * 1.6);
-    ctx.font = `800 ${Math.round(t.size * (0.85 + (1 - k) * 0.35))}px Orbitron, sans-serif`;
+    ctx.font = `800 ${Math.round(t.size * (0.85 + (1 - k) * 0.35))}px 'Orblux Display', sans-serif`;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     ctx.fillStyle = t.color;

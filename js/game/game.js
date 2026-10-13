@@ -49,8 +49,8 @@ export const game = {
   x2Timer: 0, reviveUsed: false, moved: false,
   runStats: { pickups: 0, maxCombo: 1, powerups: 0 },
 
-  stars: [], ambient: [], bgOffset: 0,
-  bgGradient: null, vignette: null,
+  stars: [], bgOffset: 0,
+  bgStatic: null, fogLayer: null, vignette: null,
   reduceMotion: false,
 };
 
@@ -91,34 +91,72 @@ export function resize() {
   }
 }
 
+/** Cria um canvas offscreen em resolução de dispositivo e desenha nele. */
+function prerender(paint) {
+  const g = game;
+  const c = document.createElement('canvas');
+  if (!c.getContext) return null; // ambiente sem canvas (testes/sem DOM)
+  c.width = Math.max(1, Math.round(g.W * g.dpr));
+  c.height = Math.max(1, Math.round(g.H * g.dpr));
+  const ctx = c.getContext('2d');
+  ctx.scale(g.dpr, g.dpr);
+  paint(ctx, g.W, g.H);
+  return c;
+}
+
 function buildBackdrop() {
   const g = game;
   const area = g.W * g.H;
-  // menos partículas em telas pequenas ou com movimento reduzido
   const density = state.settings.reduceMotion ? 0.6 : 1;
-  const starCount = Math.max(20, Math.min(70, Math.round(area / 16000 * density)));
-  g.stars = new Array(starCount).fill(0).map(() => ({
-    x: Math.random() * g.W,
-    y: Math.random() * g.H,
-    r: Math.random() * 1.6 + 0.4,
-    v: Math.random() * 26 + 8,
-    a: Math.random() * 0.5 + 0.2,
-  }));
-  const ambCount = Math.max(6, Math.min(14, Math.round(area / 60000)));
-  g.ambient = new Array(ambCount).fill(0).map(() => ({
-    x: Math.random() * g.W,
-    y: Math.random() * g.H,
-    r: (Math.random() * 9 + 5),
-    v: Math.random() * 14 + 5,
-    t: Math.random() * Math.PI * 2,
-    color: Math.random() < 0.5 ? COLORS.cyan : COLORS.magenta,
-  }));
 
-  const grad = g.ctx.createLinearGradient(0, 0, 0, g.H);
-  grad.addColorStop(0, '#070a1c');
-  grad.addColorStop(0.6, '#05060f');
-  grad.addColorStop(1, '#0a0620');
-  g.bgGradient = grad;
+  // estrelas em 2 profundidades (paralaxe): perto = maior e rápida,
+  // longe = miúda e lenta. Alpha fixo por profundidade (menos troca de estado)
+  const mk = (near) => ({
+    x: Math.random() * g.W,
+    y: Math.random() * g.H,
+    r: near ? 1.5 + Math.random() * 1.1 : 0.7 + Math.random() * 0.6,
+    v: near ? 16 + Math.random() * 18 : 6 + Math.random() * 8,
+    a: near ? 0.55 : 0.26,
+    near,
+  });
+  const nearCount = Math.max(8, Math.min(26, Math.round(area / 52000 * density)));
+  const farCount = Math.max(16, Math.min(60, Math.round(area / 14000 * density)));
+  g.stars = [];
+  for (let i = 0; i < nearCount; i++) g.stars.push(mk(true));
+  for (let i = 0; i < farCount; i++) g.stars.push(mk(false));
+
+  // camada estática (gradiente vertical + brilho sutil do horizonte)
+  g.bgStatic = prerender((ctx, w, h) => {
+    const grad = ctx.createLinearGradient(0, 0, 0, h);
+    grad.addColorStop(0, '#070a1c');
+    grad.addColorStop(0.6, '#05060f');
+    grad.addColorStop(1, '#0a0620');
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, w, h);
+    const hz = h * 0.45;
+    const glow = ctx.createLinearGradient(0, hz - h * 0.14, 0, hz + h * 0.12);
+    glow.addColorStop(0, 'rgba(40,70,160,0)');
+    glow.addColorStop(0.5, 'rgba(64,96,200,0.10)');
+    glow.addColorStop(1, 'rgba(40,70,160,0)');
+    ctx.fillStyle = glow;
+    ctx.fillRect(0, hz - h * 0.14, w, h * 0.26);
+  });
+
+  // névoa: manchas largas e muito dessaturadas (roxo/azul-marinho, ≤ 0.15)
+  g.fogLayer = prerender((ctx, w, h) => {
+    const blobs = [
+      { x: w * 0.2, y: h * 0.26, r: Math.max(w, h) * 0.5, c: 'rgba(96,74,178,0.13)' },
+      { x: w * 0.85, y: h * 0.56, r: Math.max(w, h) * 0.46, c: 'rgba(46,78,160,0.12)' },
+      { x: w * 0.5, y: h * 0.94, r: Math.max(w, h) * 0.5, c: 'rgba(112,58,158,0.10)' },
+    ];
+    for (const b of blobs) {
+      const grad = ctx.createRadialGradient(b.x, b.y, 0, b.x, b.y, b.r);
+      grad.addColorStop(0, b.c);
+      grad.addColorStop(1, 'rgba(0,0,0,0)');
+      ctx.fillStyle = grad;
+      ctx.fillRect(0, 0, w, h);
+    }
+  });
 
   // vinheta cacheada como Gradiente (CanvasGradient é reutilizável:
   // evita criar gradiente radial a cada frame)
@@ -237,14 +275,11 @@ export function update(dt) {
 
   // fundo e efeitos continuam animando em qualquer tela
   g.bgOffset += dt * 70 * g.S;
-  for (const s of g.stars) {
-    s.y += s.v * dt;
-    if (s.y > g.H) { s.y = -4; s.x = Math.random() * g.W; }
-  }
-  for (const a of g.ambient) {
-    a.y += a.v * dt;
-    a.t += dt;
-    if (a.y - a.r > g.H) { a.y = -a.r * 2; a.x = Math.random() * g.W; }
+  if (!g.reduceMotion) {
+    for (const s of g.stars) {
+      s.y += s.v * dt;
+      if (s.y > g.H) { s.y = -4; s.x = Math.random() * g.W; }
+    }
   }
   updateParticles(dt);
   updateTexts(dt);
@@ -291,7 +326,7 @@ export function update(dt) {
 
   if (!g.reduceMotion) {
     p.trail.push({ x: p.x, y: p.y });
-    if (p.trail.length > 10) p.trail.shift();
+    if (p.trail.length > 16) p.trail.shift();   // rastro mais longo
   } else p.trail.length = 0;
 
   // ---------- spawn ----------
@@ -476,7 +511,9 @@ export function render(time) {
   if (inRun && g.player) {
     for (const pk of g.pickups) drawPickup(ctx, pk, time, g.reduceMotion);
     for (const pw of g.powerups) drawPowerup(ctx, pw, time, g.reduceMotion);
-    for (const o of g.obstacles) drawObstacle(ctx, o);
+    const contrast = state.settings.highContrast;
+    for (const o of g.obstacles) drawObstacle(ctx, o, { contrast });
+    if (g.mode !== 'gameover') drawDangerChevrons(ctx);
     drawPlayer(ctx, g.player, time, g.reduceMotion);
     drawParticles(ctx);
     drawTexts(ctx);
@@ -488,55 +525,58 @@ export function render(time) {
   ctx.setTransform(1, 0, 0, 1, 0, 0);
 }
 
+/**
+ * Marcadores de perigo: chevron vermelho na borda superior, na coluna X
+ * de cada barra/drone prestes a entrar (~0,6 s de antecedência),
+ * desaparecendo quando o objeto entra em cena.
+ */
+function drawDangerChevrons(ctx) {
+  const g = game;
+  const LEAD = 0.6; // s de antecedência (limitado pela posição de spawn)
+  ctx.lineCap = 'round';
+  ctx.lineWidth = 3;
+  ctx.strokeStyle = COLORS.red;
+  const y = 9 * g.S;
+  const s = 7 * g.S;
+  for (const o of g.obstacles) {
+    const edge = o.type === 'bar' ? o.y : o.y + o.r;
+    const cx = o.type === 'bar' ? o.x + o.w / 2 : o.x;
+    const limit = -(o.vy * LEAD);
+    if (edge >= 0 || edge <= limit) continue;
+    // intensifica conforme se aproxima da borda
+    ctx.globalAlpha = 0.35 + 0.65 * ((edge - limit) / -limit);
+    ctx.beginPath();
+    ctx.moveTo(cx - s, y - s * 0.55);
+    ctx.lineTo(cx, y + s * 0.55);
+    ctx.lineTo(cx + s, y - s * 0.55);
+    ctx.stroke();
+  }
+  ctx.globalAlpha = 1;
+  ctx.lineCap = 'butt';
+}
+
 function drawBackdrop(ctx, time) {
   const g = game;
-  ctx.fillStyle = g.bgGradient || '#05060f';
-  ctx.fillRect(-20, -20, g.W + 40, g.H + 40);
 
-  // grade neon em movimento (paralaxe)
-  const spacing = 64 * g.S;
-  const offset = g.bgOffset % spacing;
-  ctx.lineWidth = 1;
-  for (let y = offset - spacing; y < g.H + spacing; y += spacing) {
-    ctx.strokeStyle = 'rgba(34, 230, 255, 0.07)';
-    ctx.beginPath();
-    ctx.moveTo(0, y);
-    ctx.lineTo(g.W, y);
-    ctx.stroke();
-  }
-  const vSpacing = 90 * g.S;
-  for (let x = 0; x < g.W + vSpacing; x += vSpacing) {
-    ctx.strokeStyle = 'rgba(255, 61, 240, 0.05)';
-    ctx.beginPath();
-    ctx.moveTo(x, 0);
-    ctx.lineTo(x, g.H);
-    ctx.stroke();
+  // camada estática pré-renderizada (gradiente vertical + horizonte)
+  if (g.bgStatic) {
+    ctx.drawImage(g.bgStatic, 0, 0, g.W, g.H);
+  } else {
+    ctx.fillStyle = '#05060f';
+    ctx.fillRect(-20, -20, g.W + 40, g.H + 40);
   }
 
-  // fundo mais vivo no menu/gameover: grade em perspectiva (custo baixo)
-  if (g.mode === 'menu' || g.mode === 'gameover') drawMenuGrid(ctx);
+  // névoa larga e dessaturada (pré-renderizada no resize)
+  if (g.fogLayer) ctx.drawImage(g.fogLayer, 0, 0, g.W, g.H);
 
-  // estrelas
+  // grade em perspectiva convergindo ao horizonte (rola devagar)
+  drawPerspectiveGrid(ctx);
+
+  // estrelas em 2 profundidades (paralaxe)
   ctx.fillStyle = '#ffffff';
   for (const s of g.stars) {
     ctx.globalAlpha = s.a;
     ctx.fillRect(s.x, s.y, s.r, s.r);
-  }
-  ctx.globalAlpha = 1;
-
-  // pulsos ambientes (usados no menu; discretos durante o jogo)
-  const alpha = g.mode === 'menu' || g.mode === 'gameover' ? 0.5 : 0.16;
-  for (const a of g.ambient) {
-    const pulse = g.reduceMotion ? 1 : 1 + Math.sin(a.t * 2) * 0.2;
-    ctx.globalAlpha = alpha;
-    ctx.fillStyle = a.color;
-    ctx.beginPath();
-    ctx.arc(a.x, a.y, a.r * pulse, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.globalAlpha = alpha * 0.4;
-    ctx.beginPath();
-    ctx.arc(a.x, a.y, a.r * 2.2 * pulse, 0, Math.PI * 2);
-    ctx.fill();
   }
   ctx.globalAlpha = 1;
 
@@ -547,36 +587,38 @@ function drawBackdrop(ctx, time) {
   }
 }
 
-/** Grade em perspectiva (chão neon) para o menu — linhas simples, custo baixo. */
-function drawMenuGrid(ctx) {
+/** Grade em perspectiva: linhas verticais convergem ao horizonte e as
+ *  horizontais rolam devagar (fase do fundo; congelada com movimento reduzido). */
+function drawPerspectiveGrid(ctx) {
   const g = game;
-  const horizon = g.H * 0.62;
+  const horizon = g.H * 0.45;
+  const cx = g.W / 2;
   ctx.lineWidth = 1;
 
-  // linhas horizontais com perspectiva (deslizam com o fundo)
-  const rows = 9;
-  ctx.strokeStyle = 'rgba(255, 61, 240, 0.10)';
+  // verticais convergentes (um único path)
+  ctx.strokeStyle = 'rgba(34,230,255,0.06)';
+  ctx.beginPath();
+  const cols = 11;
+  for (let i = 0; i <= cols; i++) {
+    const xb = cx + ((i / cols) - 0.5) * g.W * 1.7;
+    const xt = cx + (xb - cx) * 0.05;
+    ctx.moveTo(xt, horizon);
+    ctx.lineTo(xb, g.H);
+  }
+  ctx.stroke();
+
+  // horizontais com perspectiva, rolando para baixo
+  const rows = 10;
+  const phase = g.reduceMotion ? 0 : (g.bgOffset * 0.0045) % 1;
+  ctx.strokeStyle = 'rgba(122,96,255,0.15)';
   for (let i = 0; i < rows; i++) {
-    const t = (i + (g.bgOffset * 0.012) % 1) / rows;
+    const t = (i + phase) / rows;
+    if (t <= 0.02) continue;
     const y = horizon + Math.pow(t, 2.1) * (g.H - horizon);
-    ctx.globalAlpha = Math.min(1, t * 2.2) * 0.9;
+    ctx.globalAlpha = Math.min(1, t * 2.4) * 0.55;
     ctx.beginPath();
     ctx.moveTo(0, y);
     ctx.lineTo(g.W, y);
-    ctx.stroke();
-  }
-
-  // linhas verticais convergindo para o ponto de fuga
-  const cols = 13;
-  const vpX = g.W / 2;
-  ctx.strokeStyle = 'rgba(34, 230, 255, 0.09)';
-  ctx.globalAlpha = 0.8;
-  for (let i = 0; i <= cols; i++) {
-    const xBottom = (i / cols) * g.W;
-    const xTop = vpX + (xBottom - vpX) * 0.1; // converge ao centro
-    ctx.beginPath();
-    ctx.moveTo(xTop, horizon);
-    ctx.lineTo(xBottom, g.H);
     ctx.stroke();
   }
   ctx.globalAlpha = 1;

@@ -262,6 +262,7 @@ function bindSettings() {
   const haptics = document.getElementById('set-haptics');
   const reduce = document.getElementById('set-reduce');
   const tut = document.getElementById('set-tutorial');
+  const contrast = document.getElementById('set-contrast');
 
   sound.addEventListener('change', () => {
     state.settings.sound = sound.checked; saveSettings(); applyVolume(); sfx('ui');
@@ -285,6 +286,11 @@ function bindSettings() {
     if (tut.checked) resetTutorialFlag();
     else markTutorialDone();
   });
+  contrast.addEventListener('change', () => {
+    state.settings.highContrast = contrast.checked;
+    saveSettings();
+    sfx('ui');
+  });
 }
 
 export function applySettingsToUI() {
@@ -294,6 +300,7 @@ export function applySettingsToUI() {
   document.getElementById('set-volume').value = Math.round(s.volume * 100);
   document.getElementById('set-haptics').checked = s.haptics;
   document.getElementById('set-reduce').checked = s.reduceMotion;
+  document.getElementById('set-contrast').checked = !!s.highContrast;
   document.getElementById('set-tutorial').checked = !state.tutorialDone;
   document.body.classList.toggle('reduce-motion', s.reduceMotion);
   setReduceMotion(s.reduceMotion);

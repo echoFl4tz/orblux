@@ -22,7 +22,6 @@ export function initHud() {
     comboFill: document.getElementById('combo-fill'),
     powerups: document.getElementById('hud-powerups'),
     toast: document.getElementById('hud-toast'),
-    danger: document.getElementById('hud-danger'),
     tutorial: document.getElementById('tutorial'),
     tutorialText: document.getElementById('tutorial-text'),
   };
@@ -116,8 +115,8 @@ export function initHud() {
 
 /**
  * Chamado a cada frame pelo loop principal (barato: só escreve no DOM
- * quando o valor muda). Atualiza a contagem regressiva real do x2 e o
- * aviso de perigo na borda superior quando um obstáculo está por entrar.
+ * quando o valor muda). Atualiza a contagem regressiva real do x2.
+ * (O aviso de perigo virou chevrons desenhados no canvas — ver game.js)
  */
 export function hudTick() {
   if (!el.hud || el.hud.hidden) return;
@@ -134,15 +133,6 @@ export function hudTick() {
         bar.style.transform = `scaleX(${Math.max(0, Math.min(1, game.x2Timer / total))})`;
       }
     }
-  }
-
-  // aviso sutil de perigo: barra/drone prestes a entrar em cena
-  if (el.danger) {
-    const near = game.mode === 'playing' && game.obstacles.some((o) => {
-      const edge = o.type === 'bar' ? o.y + o.h : o.y + o.r;
-      return edge > -70 && edge < 4;
-    });
-    el.danger.classList.toggle('on', near);
   }
 }
 
