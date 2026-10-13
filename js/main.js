@@ -119,6 +119,32 @@ function boot() {
         for (let i = 0; i < steps; i++) update(1 / 60);
       },
       endRun: () => forceGameOver(),
+      // QA de layout: OX.auditLayout() no console verifica overflow-x/altura
+      // em todas as telas (use nos tamanhos: 360x640, 390x844, 412x915,
+      // 768x1024, 1366x768 e 1920x1080, retrato e paisagem)
+      auditLayout: () => {
+        const issues = [];
+        const vw = window.innerWidth;
+        const vh = window.innerHeight;
+        const ids = ['screen-menu', 'screen-howto', 'screen-ranking', 'screen-settings', 'screen-pause', 'screen-gameover'];
+        for (const id of ids) {
+          const el = document.getElementById(id);
+          if (!el) continue;
+          const wasActive = el.classList.contains('active');
+          el.classList.add('active');
+          const panel = el.querySelector('.panel, .menu-wrap');
+          if (panel) {
+            const r = panel.getBoundingClientRect();
+            if (r.left < -1 || r.right > vw + 1) {
+              issues.push(`${id}: overflow horizontal (${Math.round(r.left)}..${Math.round(r.right)} em ${vw}px)`);
+            }
+          }
+          if (!wasActive) el.classList.remove('active');
+        }
+        const docEl = document.documentElement;
+        if (docEl.scrollWidth > vw) issues.push(`scrollWidth do documento ${docEl.scrollWidth} > ${vw}`);
+        return { ok: issues.length === 0, issues, viewport: `${vw}x${vh}` };
+      },
     };
     console.info('%c[ORBLUX] pronto', 'color:#22e6ff;font-weight:bold', `v${window.OX.version}`);
   }

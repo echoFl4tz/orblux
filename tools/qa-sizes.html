@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ORBLUX — QA de tamanhos de tela</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { background: #0a0c18; color: #cfd8f5; font: 14px/1.5 system-ui, sans-serif; padding: 24px; }
+    h1 { font-size: 20px; margin-bottom: 4px; }
+    p.muted { color: #8a94b8; margin-bottom: 20px; }
+    .grid { display: flex; flex-wrap: wrap; gap: 28px; align-items: flex-start; }
+    .case h3 { font-size: 13px; margin-bottom: 8px; color: #22e6ff; }
+    .frame {
+      position: relative;
+      overflow: hidden;
+      border: 1px solid #2a3358;
+      border-radius: 8px;
+      background: #000;
+    }
+    .frame iframe {
+      position: absolute;
+      top: 0; left: 0;
+      border: 0;
+      transform-origin: 0 0;
+    }
+    .hint { margin-top: 24px; font-size: 12px; color: #8a94b8; }
+    code { background: #171d36; padding: 1px 6px; border-radius: 4px; color: #ffe45e; }
+  </style>
+</head>
+<body>
+  <h1>QA visual — ORBLUX</h1>
+  <p class="muted">Iframes reais do jogo nos tamanhos alvo (escala 50%). Confira: sem overflow horizontal,
+    logo inteiro, JOGAR visível sem rolagem, alvos de toque grandes.</p>
+  <div class="grid" id="grid"></div>
+  <p class="hint">Também rode no console do jogo (aba do iframe): <code>OX.auditLayout()</code> —
+    deve retornar <code>{ ok: true }</code> em todos os tamanhos.</p>
+  <script>
+    const SIZES = [
+      ['360×640 (celular pequeno)', 360, 640],
+      ['390×844 (iPhone 14)', 390, 844],
+      ['412×915 (Android grande)', 412, 915],
+      ['768×1024 (tablet retrato)', 768, 1024],
+      ['1366×768 (notebook)', 1366, 768],
+      ['1920×1080 (desktop)', 1920, 1080],
+    ];
+    const SCALE = 0.5;
+    const grid = document.getElementById('grid');
+    for (const [label, w, h] of SIZES) {
+      const caseEl = document.createElement('div');
+      caseEl.className = 'case';
+      caseEl.innerHTML = `<h3>${label}</h3>
+        <div class="frame" style="width:${w * SCALE}px;height:${h * SCALE}px">
+          <iframe src="/index.html" title="${label}" loading="lazy"
+            style="width:${w}px;height:${h}px;transform:scale(${SCALE})"></iframe>
+        </div>`;
+      grid.appendChild(caseEl);
+    }
+  </script>
+</body>
+</html>
