@@ -993,7 +993,16 @@ a:hover { text-decoration: underline; }
   color: var(--reward);
   text-shadow: var(--glow-pink-1), var(--glow-pink-2);
   white-space: nowrap;
-  animation: hudToast 1.2s var(--ease) both;
+  padding: 4px 26px;
+  border-radius: var(--r-full);
+  /* faixa rápida de nível: brilho passando atrás do texto */
+  background: linear-gradient(100deg, transparent 20%, rgba(255, 228, 94, 0.16) 50%, transparent 80%);
+  background-size: 240% 100%;
+  animation: hudToast 1.2s var(--ease) both, hudSweep 0.7s var(--ease) both;
+}
+@keyframes hudSweep {
+  from { background-position: 120% 0; }
+  to { background-position: -120% 0; }
 }
 @keyframes hudToast {
   0% { opacity: 0; transform: translate(-50%, 10px) scale(0.85); }
