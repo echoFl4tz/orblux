@@ -8,8 +8,11 @@ import { showToast } from './toasts.js';
 
 const SITE_URL = 'https://EXEMPLO.com/'; // <-- troque pelo endereço do seu jogo
 
+let shareLastFocused = null;
+
 export function initShare() {
   on('share:open', (mode) => openShare(mode));
+  on('share:close', () => closeShare());
 
   document.querySelectorAll('[data-share]').forEach((btn) => {
     btn.addEventListener('click', () => doShare(btn.dataset.share));
@@ -29,7 +32,22 @@ function openShare(mode) {
   const preview = document.getElementById('share-text-preview');
   preview.textContent = buildText(mode).replace(/\n/g, ' ');
   modal.dataset.mode = mode;
+  shareLastFocused = document.activeElement;
   modal.hidden = false;
+  // foco no painel do modal (a11y) — evita perder o foco ao fechar
+  const panel = modal.querySelector('.panel');
+  if (panel) {
+    panel.setAttribute('tabindex', '-1');
+    panel.focus({ preventScroll: true });
+  }
+}
+
+function closeShare() {
+  const modal = document.getElementById('modal-share');
+  if (!modal || modal.hidden) return;
+  modal.hidden = true;
+  if (shareLastFocused && shareLastFocused.isConnected) shareLastFocused.focus({ preventScroll: true });
+  shareLastFocused = null;
 }
 
 function doShare(network) {
@@ -44,7 +62,7 @@ function doShare(network) {
   } else if (network === 'copy') {
     copyToClipboard(`${text}`);
   }
-  document.getElementById('modal-share').hidden = true;
+  closeShare();
   emit('share:done', network);
 }
 

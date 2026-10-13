@@ -169,10 +169,10 @@ function bindModals() {
   // Esc fecha o modal aberto (sem afetar a pausa, que tem fluxo próprio)
   document.addEventListener('keydown', (e) => {
     if (e.key !== 'Escape') return;
-    for (const id of ['modal-confirm', 'modal-share']) {
-      const m = document.getElementById(id);
-      if (m && !m.hidden) { closeModal(id); return; }
-    }
+    const confirmM = document.getElementById('modal-confirm');
+    if (confirmM && !confirmM.hidden) { closeModal('modal-confirm'); return; }
+    const shareM = document.getElementById('modal-share');
+    if (shareM && !shareM.hidden) { emit('share:close'); return; }
   });
 }
 
@@ -229,7 +229,7 @@ function bindActions() {
       case 'resume': sfx('ui'); resumeGame(); showScreen(null); break;
       case 'revive': sfx('ui'); emit('ads:rewarded-revive'); break;
       case 'share-score': case 'share-rank': sfx('ui'); emit('share:open', action === 'share-score' ? 'score' : 'rank'); break;
-      case 'close-share': sfx('ui'); closeModal('modal-share'); break;
+      case 'close-share': sfx('ui'); emit('share:close'); break;
       case 'toggle-missions': sfx('ui'); toggleMissions(btn); break;
       // reset com modal de confirmação próprio (sem confirm() nativo)
       case 'reset': sfx('ui'); openModal('modal-confirm'); break;
