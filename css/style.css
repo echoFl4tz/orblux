@@ -880,8 +880,8 @@ a:hover { text-decoration: underline; }
 
 .hud-combo {
   position: relative;
-  width: min(42vw, 210px);
-  height: 8px;
+  width: min(46vw, 230px);
+  height: 11px;                         /* barra de combo mais grossa e visível */
   border-radius: var(--r-full);
   background: rgba(154, 166, 200, 0.18);
   overflow: hidden;
@@ -892,6 +892,7 @@ a:hover { text-decoration: underline; }
   transform-origin: left;
   border-radius: var(--r-full);
   background: linear-gradient(90deg, var(--primary), var(--secondary));
+  box-shadow: 0 0 10px rgba(34, 230, 255, 0.45);
 }
 .hud-combo-x {
   position: absolute;
@@ -929,8 +930,14 @@ a:hover { text-decoration: underline; }
 .hud-lives { display: flex; gap: 5px; color: var(--danger); }
 .hud-lives .ic { width: 22px; height: 22px; filter: drop-shadow(0 0 6px rgba(255, 77, 109, 0.55)); }
 .hud-lives .ic.empty { color: rgba(154, 166, 200, 0.45); filter: none; }
-.hud-lives .ic.hit { animation: heartHit 0.5s var(--ease); }
-@keyframes heartHit { 0% { transform: scale(1); } 35% { transform: scale(1.5); } 100% { transform: scale(1); } }
+.hud-lives .ic.hit { animation: heartBreak 0.5s var(--ease); }
+/* Coração "quebra" ao perder vida: estoura, gira e esvazia */
+@keyframes heartBreak {
+  0% { transform: scale(1); filter: brightness(2.2); }
+  30% { transform: scale(1.55) rotate(9deg); filter: brightness(1.6); }
+  60% { transform: scale(0.72) rotate(-7deg); filter: brightness(1); }
+  100% { transform: scale(1) rotate(0); filter: brightness(1); }
+}
 
 .hud-level {
   font-family: var(--font-display);
@@ -1011,17 +1018,18 @@ a:hover { text-decoration: underline; }
   100% { opacity: 0; transform: translate(-50%, -14px) scale(1); }
 }
 
-/* Aviso de perigo: borda superior quando barra está por entrar */
-.hud-danger {
-  position: absolute;
-  top: 0; left: 0; right: 0;
-  height: 4px;
-  background: linear-gradient(90deg, transparent, var(--danger), transparent);
+/* Flash vermelho nas bordas ao levar dano (vinheta rápida) */
+.damage-flash {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
   opacity: 0;
-  transition: opacity 0.15s linear;
+  background: radial-gradient(ellipse at center, transparent 52%, rgba(255, 45, 74, 0.55) 100%);
 }
-.hud-danger.on { opacity: 0.9; animation: dangerPulse 0.6s ease-in-out infinite; }
-@keyframes dangerPulse { 0%, 100% { opacity: 0.45; } 50% { opacity: 1; } }
+.damage-flash.on { animation: damageFlash 0.42s ease-out; }
+@keyframes damageFlash { 0% { opacity: 1; } 55% { opacity: 0.5; } 100% { opacity: 0; } }
+/* Movimento reduzido: sem pulso da animação — tampa fixa breve */
+.reduce-motion .damage-flash.on { animation: none; opacity: 0.45; }
 
 /* ---------------------------------------------------------
    14. TUTORIAL

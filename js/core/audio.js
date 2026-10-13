@@ -11,6 +11,7 @@ let musicGain = null;      // gain da música
 let sfxGain = null;        // gain dos efeitos
 let musicTimer = null;     // timer do sequenciador
 let musicStep = 0;
+let stepAt = -1e9;         // instante do último passo (para o fundo reativo)
 let available = true;      // false se Web Audio não existir
 
 /** Deve ser chamado a partir de um gesto do usuário (política de autoplay). */
@@ -159,6 +160,7 @@ function scheduleMusicStep() {
       osc.connect(g); g.connect(musicGain);
       osc.start(t); osc.stop(t + STEP_TIME * 1.4);
     }
+    stepAt = performance.now();
     musicStep++;
   } catch { /* ignore */ }
 }
@@ -176,6 +178,17 @@ export function stopMusic() {
 export function setMusicEnabled(on) {
   state.settings.music = on;
   if (on) { initAudio(); startMusic(); } else stopMusic();
+}
+
+/**
+ * Fase do último passo do sequenciador: 1 logo no pulso, decai até 0
+ * antes do próximo passo (0 se a música está parada). Usado pelo fundo
+ * para pulsar névoa/grade no ritmo (fundo reativo, apresentação pura).
+ */
+export function getMusicPulse() {
+  if (!musicTimer || !state.settings.music) return 0;
+  const k = (performance.now() - stepAt) / (STEP_TIME * 1000);
+  return k >= 0 && k <= 1 ? 1 - k : 0;
 }
 
 export function audioAvailable() {

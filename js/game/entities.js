@@ -192,9 +192,28 @@ export function drawPlayer(ctx, p, time, reduceMotion) {
   drawGlow(ctx, p.x, p.y, R * 2.1, COLORS.cyan, 0.72 * alpha);
 
   // Corpo pré-renderizado (sem gradiente radial por frame)
+  // Squash & stretch: estica na direção do movimento (direção = rastro)
   const box = R / ORB_CIRCLE;
+  let ang = 0, stretch = 0;
+  if (!reduceMotion && p.trail.length >= 2) {
+    const a = p.trail[p.trail.length - 2];
+    const b = p.trail[p.trail.length - 1];
+    const dx = b.x - a.x, dy = b.y - a.y;
+    const sp = Math.hypot(dx, dy);
+    const k = Math.min(1, sp / Math.max(1, p.r * 0.30));
+    if (k > 0.18) { ang = Math.atan2(dy, dx); stretch = k; }
+  }
   ctx.globalAlpha = alpha;
-  ctx.drawImage(getOrbSprite(), p.x - box / 2, p.y - box / 2, box, box);
+  if (stretch > 0) {
+    ctx.save();
+    ctx.translate(p.x, p.y);
+    ctx.rotate(ang);
+    ctx.scale(1 + 0.16 * stretch, 1 / (1 + 0.10 * stretch));
+    ctx.drawImage(getOrbSprite(), -box / 2, -box / 2, box, box);
+    ctx.restore();
+  } else {
+    ctx.drawImage(getOrbSprite(), p.x - box / 2, p.y - box / 2, box, box);
+  }
   ctx.globalAlpha = 1;
 
   // Anel externo sutil

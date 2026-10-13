@@ -10,6 +10,18 @@ import { game } from '../game/game.js';
 let el = {};
 let last = { score: -1, lives: -1, level: -1, combo: -1, mult: -1, frac: -1 };
 let toastTimer = 0;
+let damageTimer = 0;
+
+/** Flash vermelho rápido nas bordas ao levar dano (respeita mov. reduzido no CSS). */
+function flashDamage() {
+  const d = el.damage;
+  if (!d) return;
+  d.classList.remove('on');
+  void d.offsetWidth;                  // reinicia a animação
+  d.classList.add('on');
+  clearTimeout(damageTimer);
+  damageTimer = setTimeout(() => d.classList.remove('on'), 460);
+}
 
 export function initHud() {
   el = {
@@ -22,6 +34,7 @@ export function initHud() {
     comboFill: document.getElementById('combo-fill'),
     powerups: document.getElementById('hud-powerups'),
     toast: document.getElementById('hud-toast'),
+    damage: document.getElementById('damage-flash'),
     tutorial: document.getElementById('tutorial'),
     tutorialText: document.getElementById('tutorial-text'),
   };
@@ -29,6 +42,7 @@ export function initHud() {
   on('game:start', () => {
     last = { score: -1, lives: -1, level: -1, combo: -1, mult: -1, frac: -1 };
     el.powerups.innerHTML = '';
+    el.damage?.classList.remove('on');
     el.hud.hidden = false;
     el.tutorial.hidden = true;
   });
@@ -55,6 +69,7 @@ export function initHud() {
     }
     el.lives.innerHTML = html;
     if (lost) {
+      flashDamage();                    // flash vermelho nas bordas
       // anima o coração recém-perdido
       const hearts = el.lives.querySelectorAll('.ic');
       hearts[lives]?.classList.add('hit');

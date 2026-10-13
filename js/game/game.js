@@ -5,7 +5,7 @@
 
 import { emit } from '../core/events.js';
 import { getAxis, getPointer, resetInput } from '../core/input.js';
-import { sfx } from '../core/audio.js';
+import { sfx, getMusicPulse } from '../core/audio.js';
 import { state } from '../core/state.js';
 import {
   createPlayer, drawPlayer, drawObstacle, drawPickup, drawPowerup,
@@ -13,7 +13,8 @@ import {
 } from './entities.js';
 import { difficultyParams, spawnObstacles, spawnPickupWave, spawnPowerup, resetSpawner } from './spawner.js';
 import {
-  burst, ring, floatText, updateParticles, drawParticles,
+  burst, ring, shockwave, floatText, comboText, levelBanner,
+  updateParticles, drawParticles,
   updateTexts, drawTexts, addShake, updateShake, shakeOffset, resetFX,
 } from './particles.js';
 import { tutorial, startTutorial, updateTutorial } from './tutorial.js';
@@ -51,6 +52,7 @@ export const game = {
 
   stars: [], bgOffset: 0,
   bgStatic: null, fogLayer: null, vignette: null,
+  bgFlash: 0,               // flash sutil do fundo ao subir de nível (s)
   reduceMotion: false,
 };
 
@@ -234,7 +236,7 @@ function gameOver() {
   resetInput();
   sfx('gameover');
   burst(g.player.x, g.player.y, COLORS.magenta, 26, 320, 4);
-  addShake(14);
+  addShake(17);
   emit('game:over', {
     score: Math.floor(g.score),
     elapsed: g.elapsed,
@@ -275,6 +277,7 @@ export function update(dt) {
 
   // fundo e efeitos continuam animando em qualquer tela
   g.bgOffset += dt * 70 * g.S;
+  if (g.bgFlash > 0) g.bgFlash = Math.max(0, g.bgFlash - dt);
   if (!g.reduceMotion) {
     for (const s of g.stars) {
       s.y += s.v * dt;
@@ -374,6 +377,7 @@ export function update(dt) {
       g.obstacles.splice(i, 1);
       sfx('shield');
       ring(p.x, p.y, COLORS.green, 16, 280);
+      if (!g.reduceMotion) shockwave(p.x, p.y, COLORS.green, 130 * S); // onda de choque
       floatText(p.x, p.y - 30 * S, 'ESCUDO!', COLORS.green, 18);
       emit('game:shield');
     } else {
@@ -417,7 +421,9 @@ export function update(dt) {
     g.level = newLevel;
     sfx('level');
     emit('game:level', { level: g.level });
-    emit('hud:toast', { text: `NÍVEL ${g.level}` });
+    // juice: faixa "NÍVEL N" cruzando a tela + flash discreto do fundo
+    levelBanner(g.level, g.W, g.H, g.reduceMotion);
+    g.bgFlash = 0.8;
     burst(p.x, p.y, COLORS.yellow, 18, 260, 3);
   }
 
@@ -438,7 +444,7 @@ function onHit() {
   g.combo = 0; g.comboTimer = 0; g.multiplier = 1;
   g.sinceHit = 0;
   sfx('hit');
-  addShake(11);
+  addShake(16);                         // tremor mais forte (sensível a mov. reduzido)
   burst(p.x, p.y, COLORS.red, 20, 300, 3.4);
   if (state.settings.haptics && navigator.vibrate) {
     try { navigator.vibrate(60); } catch { /* ignore */ }
@@ -462,12 +468,15 @@ function collectPulse(pk) {
   g.runStats.maxCombo = Math.max(g.runStats.maxCombo, g.multiplier);
 
   sfx('pickup', { combo: g.combo });
-  burst(pk.x, pk.y, COLORS.cyan, 8, 160, 2.4);
+  // coleta: explosão mais densa e brilhante (pool fixo; menos com mov. reduzido)
+  burst(pk.x, pk.y, COLORS.cyan, g.reduceMotion ? 6 : 14, 190, 2.6);
+  if (!g.reduceMotion) burst(pk.x, pk.y, COLORS.white, 5, 120, 1.8);
   floatText(pk.x, pk.y - 14 * S, `+${points}`, g.x2Timer > 0 ? COLORS.yellow : COLORS.cyan, 15 + g.multiplier);
 
   if (g.multiplier > prevMult) {
     sfx('combo');
-    floatText(g.W / 2, g.H * 0.4, `COMBO x${g.multiplier}`, COLORS.yellow, 24);
+    // número grande semitransparente ao centro-alto (pulso + fade)
+    comboText(g.W / 2, g.H * 0.3, `x${g.multiplier}`, COLORS.yellow);
   }
   emit('game:score', { score: Math.floor(g.score) });
   emit('game:combo', { combo: g.combo, multiplier: g.multiplier, frac: 1 });
@@ -566,11 +575,24 @@ function drawBackdrop(ctx, time) {
     ctx.fillRect(-20, -20, g.W + 40, g.H + 40);
   }
 
-  // névoa larga e dessaturada (pré-renderizada no resize)
-  if (g.fogLayer) ctx.drawImage(g.fogLayer, 0, 0, g.W, g.H);
+  // névoa larga e dessaturada (pré-renderizada no resize).
+  // Fundo reativo: pulsa no ritmo do sequenciador e intensifica com o combo
+  let energy = 0;
+  if (!g.reduceMotion) {
+    energy = Math.min(0.55,
+      getMusicPulse() * 0.3 + Math.min(0.28, (g.multiplier - 1) * 0.07 + g.combo * 0.006));
+  }
+  if (g.fogLayer) {
+    ctx.drawImage(g.fogLayer, 0, 0, g.W, g.H);
+    if (energy > 0.02) {
+      ctx.globalAlpha = energy * 0.55;         // segunda exposição no pulso
+      ctx.drawImage(g.fogLayer, 0, 0, g.W, g.H);
+      ctx.globalAlpha = 1;
+    }
+  }
 
   // grade em perspectiva convergindo ao horizonte (rola devagar)
-  drawPerspectiveGrid(ctx);
+  drawPerspectiveGrid(ctx, energy);
 
   // estrelas em 2 profundidades (paralaxe)
   ctx.fillStyle = '#ffffff';
@@ -580,6 +602,12 @@ function drawBackdrop(ctx, time) {
   }
   ctx.globalAlpha = 1;
 
+  // flash sutil do fundo ao subir de nível
+  if (g.bgFlash > 0) {
+    ctx.fillStyle = `rgba(255,244,214,${(g.bgFlash * 0.07).toFixed(3)})`;
+    ctx.fillRect(0, 0, g.W, g.H);
+  }
+
   // vinheta (gradiente cacheado no resize)
   if (g.vignette) {
     ctx.fillStyle = g.vignette;
@@ -588,15 +616,17 @@ function drawBackdrop(ctx, time) {
 }
 
 /** Grade em perspectiva: linhas verticais convergem ao horizonte e as
- *  horizontais rolam devagar (fase do fundo; congelada com movimento reduzido). */
-function drawPerspectiveGrid(ctx) {
+ *  horizontais rolam devagar (fase do fundo; congelada com movimento reduzido).
+ *  @param {number} energy 0..0.55 — pulso da música/combinação (fundo reativo) */
+function drawPerspectiveGrid(ctx, energy = 0) {
   const g = game;
   const horizon = g.H * 0.45;
   const cx = g.W / 2;
+  const boost = 1 + energy * 0.9;
   ctx.lineWidth = 1;
 
   // verticais convergentes (um único path)
-  ctx.strokeStyle = 'rgba(34,230,255,0.06)';
+  ctx.strokeStyle = `rgba(34,230,255,${(0.06 * boost).toFixed(3)})`;
   ctx.beginPath();
   const cols = 11;
   for (let i = 0; i <= cols; i++) {
@@ -610,7 +640,7 @@ function drawPerspectiveGrid(ctx) {
   // horizontais com perspectiva, rolando para baixo
   const rows = 10;
   const phase = g.reduceMotion ? 0 : (g.bgOffset * 0.0045) % 1;
-  ctx.strokeStyle = 'rgba(122,96,255,0.15)';
+  ctx.strokeStyle = `rgba(122,96,255,${(0.15 * boost).toFixed(3)})`;
   for (let i = 0; i < rows; i++) {
     const t = (i + phase) / rows;
     if (t <= 0.02) continue;
