@@ -87,9 +87,12 @@
         <span class="hud-score-label">Pontos</span>
         <span id="hud-score" class="hud-score-value">0</span>
       </div>
-      <div class="hud-combo" id="hud-combo-wrap" aria-label="Barra de combo">
-        <div id="combo-fill" class="combo-fill"></div>
-        <span id="hud-combo" class="hud-combo-x">x1</span>
+      <div class="hud-chiprow">
+        <span id="hud-level" class="hud-level">NÍVEL 1</span>
+        <div class="hud-combo" id="hud-combo-wrap" aria-label="Barra de combo">
+          <div class="combo-track"><div id="combo-fill" class="combo-fill"></div></div>
+          <span id="hud-combo" class="hud-combo-x">x1</span>
+        </div>
       </div>
     </div>
     <button id="btn-pause" class="icon-btn hud-pause" aria-label="Pausar jogo" data-action="pause">
@@ -97,7 +100,6 @@
     </button>
     <div class="hud-bottom">
       <div id="hud-lives" class="hud-lives" aria-label="Vidas restantes"></div>
-      <div id="hud-level" class="hud-level">NÍVEL 1</div>
     </div>
     <div id="hud-powerups" class="hud-powerups"></div>
     <div id="hud-toast" class="hud-toast" hidden></div>

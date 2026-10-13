@@ -846,7 +846,7 @@ a:hover { text-decoration: underline; }
     max(var(--s3), env(safe-area-inset-right))
     max(var(--s3), env(safe-area-inset-bottom))
     max(var(--s3), env(safe-area-inset-left));
-  opacity: 0.92;
+  opacity: 0.87;                         /* HUD discreto ~0.85, sem esconder o jogo */
 }
 .hud .icon-btn { pointer-events: auto; position: absolute; top: inherit; }
 
@@ -857,8 +857,8 @@ a:hover { text-decoration: underline; }
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 6px;
-  padding: 0 80px;
+  gap: 7px;
+  padding: 0 56px;                      /* espaço pro botão pausar, sem sufocar a linha de chips */
 }
 .hud-score {
   display: flex;
@@ -869,7 +869,7 @@ a:hover { text-decoration: underline; }
 .hud-score-label { font-size: 0.6rem; letter-spacing: 0.32em; color: var(--text-2); text-transform: uppercase; }
 .hud-score-value {
   font-family: var(--font-display);
-  font-size: clamp(2.2rem, 9vw, 3rem);
+  font-size: clamp(2.5rem, 10.5vw, 3.6rem);  /* placar maior, legível a olho nu */
   font-weight: 900;
   color: #fff;
   font-variant-numeric: tabular-nums;
@@ -878,9 +878,25 @@ a:hover { text-decoration: underline; }
 .hud-score-value.pop { animation: scorePop 0.22s var(--ease); }
 @keyframes scorePop { 0% { transform: scale(1); } 45% { transform: scale(1.12); } 100% { transform: scale(1); } }
 
+/* Linha única: chip de nível + barra de combo + multiplicador (juntos, >= 14px) */
+.hud-chiprow {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  width: min(100%, 470px);              /* cluster compacto, também no paisagem */
+}
 .hud-combo {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+.combo-track {
   position: relative;
-  width: min(46vw, 230px);
+  flex: 1;
+  min-width: 60px;
   height: 11px;                         /* barra de combo mais grossa e visível */
   border-radius: var(--r-full);
   background: rgba(154, 166, 200, 0.18);
@@ -895,19 +911,25 @@ a:hover { text-decoration: underline; }
   box-shadow: 0 0 10px rgba(34, 230, 255, 0.45);
 }
 .hud-combo-x {
-  position: absolute;
-  top: 12px;
-  left: 50%;
-  transform: translateX(-50%);
   font-family: var(--font-display);
   font-weight: 800;
-  font-size: 0.8rem;
+  font-size: 0.9rem;                    /* 14.4px — alto contraste em chip */
   color: var(--text-1);
+  background: rgba(10, 12, 28, 0.78);
+  border: 1px solid rgba(154, 166, 200, 0.38);
+  border-radius: var(--r-full);
+  padding: 3px 8px;
+  min-width: 36px;
+  text-align: center;
   text-shadow: 0 1px 6px rgba(0, 0, 0, 0.8);
-  transition: color var(--dur-2);
+  transition: color var(--dur-2), border-color var(--dur-2);
 }
-.hud-combo.hot .hud-combo-x { color: var(--reward); animation: comboPop 0.3s var(--ease); }
-@keyframes comboPop { 0% { transform: translateX(-50%) scale(1); } 50% { transform: translateX(-50%) scale(1.35); } 100% { transform: translateX(-50%) scale(1); } }
+.hud-combo.hot .hud-combo-x {
+  color: var(--reward);
+  border-color: rgba(255, 228, 94, 0.7);
+  animation: comboPop 0.3s var(--ease);
+}
+@keyframes comboPop { 0% { transform: scale(1); } 50% { transform: scale(1.3); } 100% { transform: scale(1); } }
 
 .hud-pause {
   position: absolute;
@@ -927,8 +949,11 @@ a:hover { text-decoration: underline; }
   justify-content: space-between;
   gap: var(--s2);
 }
-.hud-lives { display: flex; gap: 5px; color: var(--danger); }
-.hud-lives .ic { width: 22px; height: 22px; filter: drop-shadow(0 0 6px rgba(255, 77, 109, 0.55)); }
+.hud-lives { display: flex; gap: 6px; color: var(--danger); }
+.hud-lives .ic {
+  width: 26px; height: 26px;             /* vidas >= 24px (a11y) */
+  filter: drop-shadow(0 0 7px rgba(255, 77, 109, 0.7));
+}
 .hud-lives .ic.empty { color: rgba(154, 166, 200, 0.45); filter: none; }
 .hud-lives .ic.hit { animation: heartBreak 0.5s var(--ease); }
 /* Coração "quebra" ao perder vida: estoura, gira e esvazia */
@@ -941,20 +966,22 @@ a:hover { text-decoration: underline; }
 
 .hud-level {
   font-family: var(--font-display);
-  font-size: 0.72rem;
+  font-size: 0.875rem;                   /* 14px — par do multiplicador */
   font-weight: 700;
-  letter-spacing: 0.2em;
+  letter-spacing: 0.1em;
   color: var(--reward);
-  padding: 5px 12px;
+  padding: 4px 10px;
   border-radius: var(--r-full);
-  background: rgba(255, 228, 94, 0.1);
-  border: 1px solid rgba(255, 228, 94, 0.3);
+  background: rgba(255, 228, 94, 0.12);
+  border: 1px solid rgba(255, 228, 94, 0.38);
   font-variant-numeric: tabular-nums;
+  white-space: nowrap;
 }
 
 .hud-powerups {
   position: absolute;
-  top: calc(max(var(--s3), env(safe-area-inset-top)) + 56px);
+  /* abaixo do cluster do topo (placar + chips) — nunca sobrepõe a linha de combo */
+  top: calc(max(var(--s3), env(safe-area-inset-top)) + 116px);
   right: max(var(--s3), env(safe-area-inset-right));
   display: flex;
   flex-direction: column;
@@ -1059,6 +1086,13 @@ a:hover { text-decoration: underline; }
   animation: panelIn var(--dur-3) var(--ease) both;
 }
 .tutorial-text .ic { color: var(--reward); width: 24px; height: 24px; }
+/* Retrato: a dica fica NO topo, logo abaixo do placar (nunca sob a mão) */
+@media (orientation: portrait) {
+  .tutorial {
+    top: calc(max(var(--s3), env(safe-area-inset-top)) + 118px);
+    bottom: auto;
+  }
+}
 
 /* ---------------------------------------------------------
    15. MOVIMENTO REDUZIDO
