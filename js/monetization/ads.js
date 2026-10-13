@@ -1,0 +1,139 @@
+/* =========================================================
+   Anúncios — placeholders funcionais + integração pronta
+   para Google AdSense / AdSterra (comentários no local certo)
+   ========================================================= */
+
+import { on } from '../core/events.js';
+import { state, saveConsent } from '../core/state.js';
+import { showToast } from '../ui/toasts.js';
+
+/* ------------------------------------------------------------------
+   CONFIGURAÇÃO — quando você colar seu código de anúncio real:
+   1) ADS.enabled = true
+   2) ADS.client = 'ca-pub-XXXXXXXXXXXXXXXX'
+   3) cole o <script async> do AdSense no <head> do index.html
+   4) preencha os slots em index.html (#ad-banner / #ad-interstitial)
+------------------------------------------------------------------ */
+export const ADS = {
+  enabled: false,
+  client: '',
+  interstitialEvery: 3,   // intersticial a cada N partidas
+};
+
+let gamesSinceInterstitial = 0;
+let countdownTimer = null;
+
+export function initAds() {
+  const banner = document.getElementById('ad-banner');
+
+  // LGPD: sem consentimento, esconde os slots de anúncio
+  if (state.consent === false && banner) banner.hidden = true;
+
+  on('consent:answer', (accepted) => {
+    saveConsent(accepted);
+    const bannerEl = document.getElementById('cookie-banner');
+    if (bannerEl) bannerEl.hidden = true;
+    if (banner) banner.hidden = !accepted;
+    showToast({
+      icon: accepted ? '🍪' : '👍',
+      title: accepted ? 'Obrigado!' : 'Tudo bem',
+      desc: accepted ? 'Você pode apagar isso nas configurações.' : 'Só o essencial será usado.',
+    });
+  });
+
+  /* ------------------------------------------------------------------
+     BANNER (AdSense) — exemplo real de unidade responsiva:
+     No index.html, dentro de #ad-banner, cole:
+
+       <ins class="adsbygoogle"
+            style="display:block"
+            data-ad-client="ca-pub-XXXXXXXXXXXXXXXX"
+            data-ad-slot="XXXXXXXXXX"
+            data-ad-format="auto"
+            data-full-width-responsive="true"></ins>
+       <script>(adsbygoogle = window.adsbygoogle || []).push({});</script>
+
+     O placeholder some automaticamente quando existe conteúdo real:
+  ------------------------------------------------------------------ */
+  if (ADS.enabled && banner && banner.querySelector('ins')) {
+    const hint = banner.querySelector('.ad-hint, .ad-label');
+    if (hint) hint.remove();
+  }
+}
+
+/** Chamado ao fim de cada partida pelo main.js (intersticial ocasional). */
+export function onRunEnd() {
+  gamesSinceInterstitial++;
+  if (!ADS.enabled || state.consent !== true) return;
+  if (gamesSinceInterstitial >= ADS.interstitialEvery) {
+    gamesSinceInterstitial = 0;
+    showInterstitial();
+  }
+}
+
+// ---------------------------------------------------------
+//  Intersticial (entre partidas) — placeholder com contagem
+// ---------------------------------------------------------
+export function showInterstitial() {
+  const modal = document.getElementById('ad-interstitial');
+  const btn = document.getElementById('btn-close-ad');
+  const cd = document.getElementById('ad-countdown');
+  if (!modal || !btn) return;
+
+  modal.hidden = false;
+  let secs = 5;
+  btn.disabled = true;
+  cd.textContent = secs;
+  clearInterval(countdownTimer);
+  countdownTimer = setInterval(() => {
+    secs--;
+    cd.textContent = Math.max(0, secs);
+    if (secs <= 0) {
+      clearInterval(countdownTimer);
+      btn.disabled = false;
+      btn.innerHTML = '✕ Fechar';
+    }
+  }, 1000);
+
+  btn.onclick = () => { modal.hidden = true; };
+}
+
+// ---------------------------------------------------------
+//  Rewarded (anúncio recompensado) — placeholder funcional
+// ---------------------------------------------------------
+/** @param {()=>void} onReward chamado quando o jogador "assiste" o anúncio */
+export function showRewarded(onReward) {
+  const modal = document.getElementById('ad-reward');
+  const btn = document.getElementById('btn-claim-reward');
+  const cd = document.getElementById('reward-countdown');
+  const text = document.getElementById('reward-ad-text');
+  if (!modal || !btn) return;
+
+  modal.hidden = false;
+  let secs = 5;
+  btn.disabled = true;
+  cd.textContent = secs;
+  text.innerHTML = 'Anúncio de exemplo rodando…<br>(no modo real, o vídeo do AdSense/AdSterra aparece aqui)';
+  clearInterval(countdownTimer);
+  countdownTimer = setInterval(() => {
+    secs--;
+    cd.textContent = Math.max(0, secs);
+    if (secs <= 0) {
+      clearInterval(countdownTimer);
+      btn.disabled = false;
+      btn.innerHTML = '🎁 Resgatar recompensa';
+    }
+  }, 1000);
+
+  /* ------------------------------------------------------------------
+     REWARDED REAL (rede que suporta web rewarded, ex.: AdSterra):
+       No modal, substitua o conteúdo de .ad-box-big pelo iframe do
+       provedor e só libere o botão quando o SDK disparar o evento
+       'onRewarded'. O fluxo de recompensa abaixo já está pronto.
+  ------------------------------------------------------------------ */
+  btn.onclick = () => {
+    modal.hidden = true;
+    clearInterval(countdownTimer);
+    onReward?.();
+  };
+}

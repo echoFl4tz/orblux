@@ -1,0 +1,125 @@
+# 🕹️ PULSO NEON
+
+Jogo arcade neon para navegador — **colete pulsos, acumule combos (até ×5) e desvie das barras**.
+Partidas de 1 a 3 minutos, grátis, leve (< 300 KB), funciona no celular e no computador.
+100% HTML + CSS + JavaScript puro (sem frameworks, sem dependências).
+
+---
+
+## ▶️ Como rodar localmente
+
+O projeto usa módulos ES e service worker, então precisa de um servidor (não funciona abrindo o arquivo com duplo clique).
+
+**Opção 1 — Node (recomendado, já incluso):**
+
+```bash
+cd pulso-neon
+node dev-server.mjs          # abre em http://localhost:8080
+node dev-server.mjs 3000     # outra porta, se quiser
+```
+
+**Opção 2 — Python:**
+
+```bash
+python -m http.server 8080
+```
+
+**Opção 3 — Extensão "Live Server"** no VS Code (clique direito em `index.html` → *Open with Live Server*).
+
+---
+
+## 🚀 Como publicar de graça
+
+Antes de publicar, troque os placeholders:
+- `EXEMPLO.com` no `index.html` (canonical + Open Graph) e em `js/ui/share.js` (link ao compartilhar)
+- `seu@email.com` no `privacy.html`
+
+### Netlify (mais fácil)
+1. Acesse [netlify.com](https://www.netlify.com) → *Add new site* → *Deploy manually*.
+2. Arraste a **pasta `pulso-neon`** inteira na área de upload. Pronto.
+3. Em *Site settings* → *Change site name* para um nome curto (ex.: `pulsonenon`).
+
+### Vercel
+1. Suba a pasta para um repositório no GitHub.
+2. Em [vercel.com](https://vercel.com) → *Import* → framework: **Other** → *Deploy*. Sem build.
+
+### GitHub Pages
+1. Crie o repositório e suba a pasta.
+2. *Settings* → *Pages* → Source: `main` / pasta `/ (root)`.
+3. Em minutos o jogo estará em `https://SEU-USUARIO.github.io/REPO/`.
+
+> PWA/offline: funciona em qualquer host com HTTPS (os gratuitos já têm).
+
+---
+
+## 💰 Como configurar os anúncios
+
+Tudo está preparado; os placeholders somem quando o anúncio real entra.
+
+### Google AdSense (banner + intersticial)
+1. Crie sua conta em [adsense.google.com](https://adsense.google.com) e cadastre o domínio publicado.
+2. No `index.html`, cole o snippet do AdSense no `<head>` (há um bloco de comentário indicando o lugar), trocando `ca-pub-XXXXXXXXXXXXXXXX` pelo seu ID.
+3. Crie uma unidade de anúncio e cole o `<ins class="adsbygoogle" …>` dentro de `#ad-banner` (tela inicial). O placeholder some sozinho.
+4. Em `js/monetization/ads.js`, ligue:
+   ```js
+   export const ADS = { enabled: true, client: 'ca-pub-XXXXXXXXXXXXXXXX', interstitialEvery: 3 };
+   ```
+5. Intersticial: cole a unidade dentro do `.ad-box-big` de `#ad-interstitial` (o fluxo de abertura/fechamento já existe e respeita o consentimento LGPD).
+
+### Anúncio recompensado ("assistir e reviver")
+- O fluxo completo já funciona com um anúncio de exemplo de 5 segundos (placeholder).
+- Para vídeo real (AdSterra, Playwire, etc.), troque o conteúdo de `.ad-box-big` em `#ad-reward` pelo iframe/SDK do provedor e só chame o `onReward` quando o SDK disparar o evento de recompensa (o comentário no código marca o ponto).
+
+### Consentimento (LGPD)
+O banner de cookies aparece na 1ª visita. Sem aceite, os slots de anúncio ficam ocultos — ative a exibição apenas após consentimento conforme a política do AdSense.
+
+---
+
+## 🌍 Ranking global (opcional)
+
+O ranking local (localStorage) já funciona. Para global, siga o passo a passo SQL dentro de `js/ui/ranking.js` (Supabase grátis) e ligue `GLOBAL_RANKING.enabled = true`. Enviar pontuação: `submitGlobalScore(nome, pontos)`.
+
+---
+
+## 🧪 Testes e ferramentas
+
+```bash
+node tests/smoke.mjs           # simula o jogo inteiro: 42 testes (lógica, colisões, ranking, missões…)
+node tools/validate-refs.mjs   # confere imports, IDs do HTML e assets
+node tools/gen-icons.mjs       # regenera os PNGs de ícone e preview
+```
+
+---
+
+## 📁 Estrutura
+
+```
+pulso-neon/
+├── index.html            # telas, HUD, modais de anúncio, banner LGPD
+├── css/style.css         # tema neon, responsivo, acessível
+├── js/
+│   ├── main.js           # bootstrap + fluxo de fim de partida
+│   ├── core/             # loop, input, áudio (Web Audio), storage, estado, eventos
+│   ├── game/             # game.js (regras), entities, spawner (dificuldade), particles, tutorial
+│   ├── ui/               # screens, hud, toasts, achievements, missions, ranking, share
+│   └── monetization/ads.js
+├── sw.js · manifest.webmanifest · favicon.svg · icons/ (PNGs gerados)
+├── privacy.html          # Política de Privacidade (LGPD)
+├── dev-server.mjs        # servidor local sem dependências
+└── tests/ · tools/
+```
+
+---
+
+## 💡 Ideias para próximas atualizações
+
+1. **Modos de jogo**: Clássico (atual), Turbo (tudo 2× mais rápido) e Espelho (controles invertidos).
+2. **Temas visuais desbloqueáveis** (synthwave, space, candy) comprados com "energia" ganha no jogo.
+3. **Missões semanais** além das diárias, com medalha exclusiva.
+4. **Novos obstáculos**: lasers horizontais, perseguidores e paredes com portais.
+5. **Power-up "ímã"** que puxa pulsos por alguns segundos.
+6. **Modo diário** com semente fixa (todos jogam a mesma partida — ranking diário).
+7. **Conquistas sociais**: "superei o recorde de X" com link direto.
+8. **Board de recordes mundial** com nomes curtos (já com estrutura Supabase pronta).
+9. **Beta PWA completo**: tela de "atualização disponível" e botão de instalar mais visível.
+10. **A/B test** de velocidade inicial para refinar o balanceamento com dados reais.

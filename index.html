@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>Pulso Neon — jogo arcade retrô grátis no navegador</title>
+  <meta name="description" content="Pulso Neon é um jogo arcade neon rápido e viciante: colete pulsos, acumule combos e desvie das barras. Grátis, funciona no celular e no computador.">
+  <meta name="keywords" content="jogo, arcade, neon, retrô, browser game, jogo gratuito, jogar online, pulso neon">
+  <meta name="author" content="Pulso Neon">
+  <meta name="theme-color" content="#05060f">
+  <link rel="canonical" href="https://EXEMPLO.com/">
+
+  <!-- Open Graph (preview ao compartilhar no WhatsApp/Facebook/LinkedIn) -->
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Pulso Neon">
+  <meta property="og:title" content="Pulso Neon — jogo arcade retrô grátis no navegador">
+  <meta property="og:description" content="Colete pulsos, acumule combos e desvie das barras. Partidas de 1 a 3 minutos. Jogue grátis no celular ou computador.">
+  <meta property="og:url" content="https://EXEMPLO.com/">
+  <meta property="og:image" content="https://EXEMPLO.com/icons/og-image.png">
+  <meta property="og:locale" content="pt_BR">
+  <!-- Twitter / X -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Pulso Neon — jogo arcade retrô grátis no navegador">
+  <meta name="twitter:description" content="Colete pulsos, acumule combos e desvie das barras. Partidas de 1 a 3 minutos.">
+  <meta name="twitter:image" content="https://EXEMPLO.com/icons/og-image.png">
+
+  <link rel="icon" href="favicon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="icons/icon-192.png">
+  <link rel="manifest" href="manifest.webmanifest">
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600;800;900&family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="css/style.css">
+
+  <!-- =========================================================
+       GOOGLE ADSENSE — cole abaixo o snippet da sua conta
+       (Painel AdSense > Anúncios > Por unidade de anúncio > Obter código)
+       O slot de banner aparece na tela inicial (#ad-banner).
+  <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-XXXXXXXXXXXXXXXX" crossorigin="anonymous"></script>
+       ========================================================= -->
+</head>
+<body data-screen="menu">
+
+  <canvas id="game-canvas" aria-label="Área do jogo Pulso Neon"></canvas>
+
+  <!-- ================= HUD (durante a partida) ================= -->
+  <div id="hud" class="hud" hidden>
+    <div class="hud-top">
+      <div class="hud-score">
+        <span class="hud-score-label">PONTOS</span>
+        <span id="hud-score" class="hud-score-value">0</span>
+      </div>
+      <button id="btn-pause" class="icon-btn" aria-label="Pausar jogo" data-action="pause">⏸</button>
+    </div>
+    <div class="hud-combo" id="hud-combo-wrap">
+      <div id="combo-fill" class="combo-fill"></div>
+      <span id="hud-combo" class="hud-combo-value">x1</span>
+    </div>
+    <div class="hud-bottom">
+      <div id="hud-level" class="hud-level">NÍVEL 1</div>
+      <div id="hud-lives" class="hud-lives" aria-label="Vidas"></div>
+    </div>
+    <div id="hud-powerups" class="hud-powerups"></div>
+    <div id="hud-toast" class="hud-toast" hidden></div>
+  </div>
+
+  <!-- ================= TUTORIAL ================= -->
+  <div id="tutorial" class="tutorial" hidden>
+    <div id="tutorial-text" class="tutorial-text"></div>
+  </div>
+
+  <!-- ================= TELA: MENU ================= -->
+  <section id="screen-menu" class="screen active" data-screen="menu" aria-label="Menu principal">
+    <div class="panel menu-panel">
+      <h1 class="logo">PULSO<span>NEON</span></h1>
+      <p class="tagline">Colete · Combine · Sobreviva</p>
+      <div class="best-champ">🏆 Recorde: <span id="menu-best">0</span></div>
+
+      <nav class="menu-buttons">
+        <button class="btn btn-primary btn-big" data-action="play">▶&nbsp; JOGAR</button>
+        <div class="menu-row">
+          <button class="btn" data-action="howto">❓ Como jogar</button>
+          <button class="btn" data-action="ranking">🏆 Ranking</button>
+          <button class="btn" data-action="settings">⚙️ Config.</button>
+        </div>
+      </nav>
+
+      <div id="missions-card" class="missions-card">
+        <h3 class="card-title">🎯 Missões do dia <span id="missions-count" class="card-badge"></span></h3>
+        <ul id="missions-list" class="missions-list"></ul>
+      </div>
+
+      <!-- Espaço de anúncio (banner). Sem AdSense configurado, mostra um placeholder.
+           Ao colar o código do AdSense acima, o placeholder some e o anúncio real entra. -->
+      <div id="ad-banner" class="ad-slot" aria-label="Espaço publicitário">
+        <span class="ad-label">PUBLICIDADE</span>
+        <span class="ad-hint">Banner 320×100 — cole aqui o código do AdSense</span>
+      </div>
+
+      <footer class="menu-footer">
+        <a href="privacy.html">Política de Privacidade</a>
+        <span aria-hidden="true">·</span>
+        <button class="link-btn" data-action="install" id="btn-install" hidden>📲 Instalar app</button>
+      </footer>
+    </div>
+  </section>
+
+  <!-- ================= TELA: COMO JOGAR ================= -->
+  <section id="screen-howto" class="screen" data-screen="howto" aria-label="Como jogar">
+    <div class="panel">
+      <h2 class="panel-title">COMO JOGAR</h2>
+      <ul class="howto-list">
+        <li><span class="howto-icon">🛸</span><div><b>Mova a orbe</b><br>📱 Arraste o dedo na tela · 🖥️ Use WASD ou setas</div></li>
+        <li><span class="howto-icon">✨</span><div><b>Colete os pulsos</b><br>Cada coleta aumenta seu <b>combo</b> (até ×5). Sem coletar por 3,5 s, o combo zera.</div></li>
+        <li><span class="howto-icon">🟥</span><div><b>Desvie das barras e drones</b><br>Bater custa 1 vida e zera o combo. Você fica invulnerável por 1,5 s.</div></li>
+        <li><span class="howto-icon">🛡️</span><div><b>Power-ups</b><br>🛡️ escudo absorve 1 batida · ⚡ dobra os pontos por 8 s</div></li>
+        <li><span class="howto-icon">📈</span><div><b>Sobreviva</b><br>A velocidade sobe a cada segundo. A cada 1000 pontos você sobe de nível!</div></li>
+      </ul>
+      <div class="panel-actions">
+        <button class="btn btn-primary" data-action="play">▶&nbsp; JOGAR AGORA</button>
+        <button class="btn" data-action="menu">← Voltar</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= TELA: RANKING + CONQUISTAS ================= -->
+  <section id="screen-ranking" class="screen" data-screen="ranking" aria-label="Ranking e conquistas">
+    <div class="panel panel-wide">
+      <h2 class="panel-title">🏆 RANKING</h2>
+      <ol id="ranking-list" class="ranking-list"></ol>
+      <p id="ranking-empty" class="muted">Nenhuma partida ainda — jogue e entre no ranking!</p>
+
+      <!-- Ranking global: aparece quando GLOBAL_RANKING.enabled = true em js/ui/ranking.js -->
+      <h3 class="card-title" id="ranking-global-title" hidden>🌍 Ranking global</h3>
+      <ol id="ranking-global-list" class="ranking-list"></ol>
+
+      <h3 class="card-title">🎖️ Conquistas <span id="achievements-count" class="card-badge"></span></h3>
+      <div id="achievements-grid" class="achievements-grid"></div>
+
+      <div class="panel-actions">
+        <button class="btn" data-action="share-rank">📤 Compartilhar recorde</button>
+        <button class="btn" data-action="menu">← Voltar</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= TELA: CONFIGURAÇÕES ================= -->
+  <section id="screen-settings" class="screen" data-screen="settings" aria-label="Configurações">
+    <div class="panel">
+      <h2 class="panel-title">⚙️ CONFIGURAÇÕES</h2>
+
+      <label class="setting-row">
+        <span>🔊 Efeitos sonoros</span>
+        <input type="checkbox" id="set-sound" class="switch" checked>
+      </label>
+      <label class="setting-row">
+        <span>🎵 Música</span>
+        <input type="checkbox" id="set-music" class="switch" checked>
+      </label>
+      <label class="setting-row setting-range">
+        <span>🔉 Volume</span>
+        <input type="range" id="set-volume" min="0" max="100" value="70">
+      </label>
+      <label class="setting-row">
+        <span>📳 Vibrar ao acertar</span>
+        <input type="checkbox" id="set-haptics" class="switch" checked>
+      </label>
+      <label class="setting-row">
+        <span>🐢 Reduzir animações</span>
+        <input type="checkbox" id="set-reduce" class="switch">
+      </label>
+      <label class="setting-row">
+        <span>🎓 Repetir tutorial</span>
+        <input type="checkbox" id="set-tutorial" class="switch">
+      </label>
+
+      <div class="panel-actions">
+        <button class="btn btn-danger" data-action="reset">🗑️ Apagar progresso</button>
+        <button class="btn" data-action="menu">← Voltar</button>
+      </div>
+      <p class="muted small">Seu recorde e progresso ficam salvos apenas neste dispositivo (localStorage).</p>
+    </div>
+  </section>
+
+  <!-- ================= TELA: PAUSA ================= -->
+  <section id="screen-pause" class="screen" data-screen="pause" aria-label="Jogo pausado">
+    <div class="panel">
+      <h2 class="panel-title">PAUSADO</h2>
+      <div class="pause-score">Pontos: <span id="pause-score">0</span></div>
+      <div class="panel-actions column">
+        <button class="btn btn-primary" data-action="resume">▶ Continuar</button>
+        <button class="btn" data-action="restart">🔄 Reiniciar</button>
+        <button class="btn" data-action="menu">🏠 Sair para o menu</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= TELA: FIM DE JOGO ================= -->
+  <section id="screen-gameover" class="screen" data-screen="gameover" aria-label="Fim de jogo">
+    <div class="panel">
+      <h2 class="panel-title">FIM DE JOGO</h2>
+      <div id="go-record" class="record-badge" hidden>🏆 NOVO RECORDE!</div>
+      <div class="go-score"><span id="go-score">0</span></div>
+      <div class="go-best">Recorde: <span id="go-best">0</span></div>
+      <div id="go-stats" class="go-stats"></div>
+      <div class="panel-actions column">
+        <button class="btn btn-primary btn-big" data-action="replay">🔄 JOGAR NOVAMENTE</button>
+        <button class="btn btn-reward" id="btn-revive" data-action="revive" hidden>🎬 Assistir anúncio e reviver</button>
+        <button class="btn" data-action="share-score">📤 Compartilhar</button>
+        <button class="btn" data-action="menu">🏠 Menu</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= MODAL: COMPARTILHAR ================= -->
+  <div id="modal-share" class="modal" hidden>
+    <div class="panel modal-panel">
+      <h3 class="panel-title">📤 Compartilhar</h3>
+      <p id="share-text-preview" class="share-preview"></p>
+      <div class="share-buttons">
+        <button class="btn btn-whatsapp" data-share="whatsapp">💬 WhatsApp</button>
+        <button class="btn btn-x" data-share="x">𝕏 (Twitter)</button>
+        <button class="btn" data-share="copy">🔗 Copiar link</button>
+      </div>
+      <div class="panel-actions">
+        <button class="btn" data-action="close-share">Fechar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= ANÚNCIO INTERSTICIAL ================= -->
+  <div id="ad-interstitial" class="modal" hidden>
+    <div class="panel modal-panel ad-modal">
+      <span class="ad-label">PUBLICIDADE</span>
+      <div class="ad-box-big">
+        <span class="ad-hint">Espaço intersticial (300×250 ou tela cheia)<br>Cole aqui o código do AdSense / AdSterra</span>
+      </div>
+      <button id="btn-close-ad" class="btn" disabled>Fechar em <span id="ad-countdown">5</span>s</button>
+    </div>
+  </div>
+
+  <!-- ================= ANÚNCIO REWARDED (reviver) ================= -->
+  <div id="ad-reward" class="modal" hidden>
+    <div class="panel modal-panel ad-modal">
+      <span class="ad-label">ANÚNCIO RECOMPENSADO</span>
+      <div class="ad-box-big">
+        <span class="ad-hint" id="reward-ad-text">Anúncio de exemplo rodando…<br>(no modo real, o vídeo do AdSense aparece aqui)</span>
+      </div>
+      <button id="btn-claim-reward" class="btn btn-primary" disabled>🎁 Resgatar em <span id="reward-countdown">5</span>s</button>
+    </div>
+  </div>
+
+  <!-- ================= AVISO DE COOKIES (LGPD) ================= -->
+  <div id="cookie-banner" class="cookie-banner" hidden>
+    <p>🍪 Usamos cookies e anúncios (Google AdSense) para manter o jogo gratuito. Ao continuar, você concorda com a nossa
+      <a href="privacy.html" target="_blank" rel="noopener">Política de Privacidade</a>.</p>
+    <div class="cookie-actions">
+      <button class="btn btn-primary btn-small" data-consent="accepted">Aceitar</button>
+      <button class="btn btn-small" data-consent="declined">Só o essencial</button>
+    </div>
+  </div>
+
+  <!-- ================= TOASTS (conquistas, missões, recorde) ================= -->
+  <div id="toasts" class="toasts" aria-live="polite"></div>
+
+  <script type="module" src="js/main.js"></script>
+  <noscript><p style="color:#fff;text-align:center;padding:2rem">Este jogo precisa de JavaScript habilitado.</p></noscript>
+</body>
+</html>
