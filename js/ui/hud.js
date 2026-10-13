@@ -5,6 +5,7 @@
    ========================================================= */
 
 import { on } from '../core/events.js';
+import { game } from '../game/game.js';
 
 let el = {};
 let last = { score: -1, lives: -1, level: -1, combo: -1, mult: -1, frac: -1 };
@@ -21,6 +22,7 @@ export function initHud() {
     comboFill: document.getElementById('combo-fill'),
     powerups: document.getElementById('hud-powerups'),
     toast: document.getElementById('hud-toast'),
+    danger: document.getElementById('hud-danger'),
     tutorial: document.getElementById('tutorial'),
     tutorialText: document.getElementById('tutorial-text'),
   };
@@ -80,15 +82,16 @@ export function initHud() {
     el.comboWrap.style.opacity = multiplier > 1 ? '1' : '0.55';
   });
 
-  on('game:powerup', ({ kind }) => {
+  on('game:powerup', ({ kind, duration }) => {
     document.getElementById(`power-${kind}`)?.remove();
     const chip = document.createElement('div');
     chip.className = 'power-chip';
     chip.id = `power-${kind}`;
+    chip.dataset.duration = String(duration || 8);
     chip.innerHTML = `
       <svg class="ic ic-sm" aria-hidden="true"><use href="#${kind === 'shield' ? 'ic-shield' : 'ic-bolt'}"/></svg>
       <span class="chip-label">${kind === 'shield' ? 'ESCUDO' : 'x2'}</span>
-      ${kind === 'x2' ? '<span class="chip-time">8.0s</span>' : ''}
+      ${kind === 'x2' ? `<span class="chip-time">${(duration || 8).toFixed(1)}s</span>` : ''}
       <span class="chip-bar"></span>`;
     el.powerups.appendChild(chip);
   });
@@ -109,6 +112,38 @@ export function initHud() {
   });
   on('tutorial:hide', () => { el.tutorial.hidden = true; });
   on('tutorial:done', () => showHudToast('VAMO LÁ!'));
+}
+
+/**
+ * Chamado a cada frame pelo loop principal (barato: só escreve no DOM
+ * quando o valor muda). Atualiza a contagem regressiva real do x2 e o
+ * aviso de perigo na borda superior quando um obstáculo está por entrar.
+ */
+export function hudTick() {
+  if (!el.hud || el.hud.hidden) return;
+
+  // contagem regressiva do power-up x2 (valor real do jogo)
+  if (game.x2Timer > 0 && game.mode === 'playing') {
+    const chip = document.getElementById('power-x2');
+    if (chip) {
+      const time = chip.querySelector('.chip-time');
+      if (time) time.textContent = `${game.x2Timer.toFixed(1)}s`;
+      const bar = chip.querySelector('.chip-bar');
+      if (bar) {
+        const total = Number(chip.dataset.duration) || 8;
+        bar.style.transform = `scaleX(${Math.max(0, Math.min(1, game.x2Timer / total))})`;
+      }
+    }
+  }
+
+  // aviso sutil de perigo: barra/drone prestes a entrar em cena
+  if (el.danger) {
+    const near = game.mode === 'playing' && game.obstacles.some((o) => {
+      const edge = o.type === 'bar' ? o.y + o.h : o.y + o.r;
+      return edge > -70 && edge < 4;
+    });
+    el.danger.classList.toggle('on', near);
+  }
 }
 
 export function showHudToast(text) {

@@ -70,6 +70,15 @@ export function drawParticles(ctx) {
 }
 
 // ---- Textos flutuantes ("+30", "COMBO x3"...) ----
+// Só desenhamos textos no canvas depois que as fontes carregarem
+// (evita "piscar" com a fonte fallback nos primeiros frames)
+let fontsReady = false;
+if (typeof document !== 'undefined' && document.fonts && document.fonts.ready) {
+  document.fonts.ready.then(() => { fontsReady = true; }).catch(() => { fontsReady = true; });
+} else {
+  fontsReady = true; // sem DOM (testes Node)
+}
+
 const texts = new Array(TEXT_POOL).fill(null).map(() => ({
   active: false, x: 0, y: 0, str: '', color: '#fff', life: 0, maxLife: 0, size: 18,
 }));
@@ -93,6 +102,7 @@ export function updateTexts(dt) {
 }
 
 export function drawTexts(ctx) {
+  if (!fontsReady) return; // aguarda document.fonts.ready
   for (const t of texts) {
     if (!t.active) continue;
     const k = t.life / t.maxLife;

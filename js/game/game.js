@@ -50,7 +50,7 @@ export const game = {
   runStats: { pickups: 0, maxCombo: 1, powerups: 0 },
 
   stars: [], ambient: [], bgOffset: 0,
-  bgGradient: null,
+  bgGradient: null, vignette: null,
   reduceMotion: false,
 };
 
@@ -94,7 +94,9 @@ export function resize() {
 function buildBackdrop() {
   const g = game;
   const area = g.W * g.H;
-  const starCount = Math.max(24, Math.min(70, Math.round(area / 16000)));
+  // menos partículas em telas pequenas ou com movimento reduzido
+  const density = state.settings.reduceMotion ? 0.6 : 1;
+  const starCount = Math.max(20, Math.min(70, Math.round(area / 16000 * density)));
   g.stars = new Array(starCount).fill(0).map(() => ({
     x: Math.random() * g.W,
     y: Math.random() * g.H,
@@ -117,6 +119,13 @@ function buildBackdrop() {
   grad.addColorStop(0.6, '#05060f');
   grad.addColorStop(1, '#0a0620');
   g.bgGradient = grad;
+
+  // vinheta cacheada como Gradiente (CanvasGradient é reutilizável:
+  // evita criar gradiente radial a cada frame)
+  const vg = g.ctx.createRadialGradient(g.W / 2, g.H / 2, Math.min(g.W, g.H) * 0.42, g.W / 2, g.H / 2, Math.max(g.W, g.H) * 0.75);
+  vg.addColorStop(0, 'rgba(0,0,0,0)');
+  vg.addColorStop(1, 'rgba(0,0,0,0.5)');
+  g.vignette = vg;
 }
 
 // ---------------------------------------------------------
@@ -504,6 +513,9 @@ function drawBackdrop(ctx, time) {
     ctx.stroke();
   }
 
+  // fundo mais vivo no menu/gameover: grade em perspectiva (custo baixo)
+  if (g.mode === 'menu' || g.mode === 'gameover') drawMenuGrid(ctx);
+
   // estrelas
   ctx.fillStyle = '#ffffff';
   for (const s of g.stars) {
@@ -517,20 +529,55 @@ function drawBackdrop(ctx, time) {
   for (const a of g.ambient) {
     const pulse = g.reduceMotion ? 1 : 1 + Math.sin(a.t * 2) * 0.2;
     ctx.globalAlpha = alpha;
-    ctx.shadowColor = a.color;
-    ctx.shadowBlur = g.reduceMotion ? 0 : 14;
     ctx.fillStyle = a.color;
     ctx.beginPath();
     ctx.arc(a.x, a.y, a.r * pulse, 0, Math.PI * 2);
     ctx.fill();
+    ctx.globalAlpha = alpha * 0.4;
+    ctx.beginPath();
+    ctx.arc(a.x, a.y, a.r * 2.2 * pulse, 0, Math.PI * 2);
+    ctx.fill();
   }
-  ctx.shadowBlur = 0;
   ctx.globalAlpha = 1;
 
-  // vinheta suave nas bordas
-  const vg = ctx.createRadialGradient(g.W / 2, g.H / 2, Math.min(g.W, g.H) * 0.42, g.W / 2, g.H / 2, Math.max(g.W, g.H) * 0.75);
-  vg.addColorStop(0, 'rgba(0,0,0,0)');
-  vg.addColorStop(1, 'rgba(0,0,0,0.5)');
-  ctx.fillStyle = vg;
-  ctx.fillRect(0, 0, g.W, g.H);
+  // vinheta (gradiente cacheado no resize)
+  if (g.vignette) {
+    ctx.fillStyle = g.vignette;
+    ctx.fillRect(0, 0, g.W, g.H);
+  }
+}
+
+/** Grade em perspectiva (chão neon) para o menu — linhas simples, custo baixo. */
+function drawMenuGrid(ctx) {
+  const g = game;
+  const horizon = g.H * 0.62;
+  ctx.lineWidth = 1;
+
+  // linhas horizontais com perspectiva (deslizam com o fundo)
+  const rows = 9;
+  ctx.strokeStyle = 'rgba(255, 61, 240, 0.10)';
+  for (let i = 0; i < rows; i++) {
+    const t = (i + (g.bgOffset * 0.012) % 1) / rows;
+    const y = horizon + Math.pow(t, 2.1) * (g.H - horizon);
+    ctx.globalAlpha = Math.min(1, t * 2.2) * 0.9;
+    ctx.beginPath();
+    ctx.moveTo(0, y);
+    ctx.lineTo(g.W, y);
+    ctx.stroke();
+  }
+
+  // linhas verticais convergindo para o ponto de fuga
+  const cols = 13;
+  const vpX = g.W / 2;
+  ctx.strokeStyle = 'rgba(34, 230, 255, 0.09)';
+  ctx.globalAlpha = 0.8;
+  for (let i = 0; i <= cols; i++) {
+    const xBottom = (i / cols) * g.W;
+    const xTop = vpX + (xBottom - vpX) * 0.1; // converge ao centro
+    ctx.beginPath();
+    ctx.moveTo(xTop, horizon);
+    ctx.lineTo(xBottom, g.H);
+    ctx.stroke();
+  }
+  ctx.globalAlpha = 1;
 }

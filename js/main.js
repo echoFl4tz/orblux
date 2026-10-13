@@ -9,7 +9,7 @@ import { state, saveStats, addScoreToRanking } from './core/state.js';
 import { initAudio, resumeAudio, sfx } from './core/audio.js';
 import { initInput } from './core/input.js';
 import { initGame, update, render, startGame, forceGameOver, revive, game } from './game/game.js';
-import { initHud } from './ui/hud.js';
+import { initHud, hudTick } from './ui/hud.js';
 import { initToasts, showToast } from './ui/toasts.js';
 import { initScreens, applySettingsToUI, showGameOver, showScreen } from './ui/screens.js';
 import { initAchievements, checkAchievements } from './ui/achievements.js';
@@ -89,7 +89,8 @@ function boot() {
   }
 
   // ---- game loop (60 FPS com delta time) ----
-  startLoop(update, render);
+  // hudTick por frame mantém o HUD em sincronia (contagem do x2, perigo)
+  startLoop((dt) => { update(dt); hudTick(); }, render);
 
   // ---- PWA: registra o service worker (só em http/https) ----
   if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
