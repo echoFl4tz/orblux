@@ -1,0 +1,6 @@
+# segredos locais — nunca commitar
+.env
+
+# artefatos de build/dependências
+node_modules/
+*.log

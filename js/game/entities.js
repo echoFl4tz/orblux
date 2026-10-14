@@ -41,17 +41,17 @@ export function createPlayer(x, y, r) {
   };
 }
 
-export function createObstacle(type, x, y, S, vy) {
+export function createObstacle(type, x, y, S, vy, rand = Math.random) {
   if (type === 'drone') {
-    return { type, x, y, r: 13 * S, vy, swayAmp: 46 * S, swayFreq: 1.6 + Math.random() * 1.2, t: 0, phase: Math.random() * Math.PI * 2, baseX: x };
+    return { type, x, y, r: 13 * S, vy, swayAmp: 46 * S, swayFreq: 1.6 + rand() * 1.2, t: 0, phase: rand() * Math.PI * 2, baseX: x };
   }
   // 'bar' — barra horizontal que cai
-  const w = (70 + Math.random() * 90) * S;
+  const w = (70 + rand() * 90) * S;
   return { type: 'bar', x: x - w / 2, y, w, h: 13 * S, vy, halfW: w / 2 };
 }
 
-export function createPickup(x, y, S) {
-  return { x, y, r: 10 * S, vy: 150 * S, t: Math.random() * Math.PI * 2 };
+export function createPickup(x, y, S, rand = Math.random) {
+  return { x, y, r: 10 * S, vy: 150 * S, t: rand() * Math.PI * 2 };
 }
 
 export function createPowerup(kind, x, y, S) {

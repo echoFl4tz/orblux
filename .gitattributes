@@ -1,0 +1,2 @@
+# vendor: bytes exatos do npm (nunca converter LF/CRLF — é artefato pinado)
+vendor/** -text

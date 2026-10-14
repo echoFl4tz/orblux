@@ -18,7 +18,7 @@ function stubEl(id = '') {
     textContent: '',
     innerHTML: '',
     dataset: {},
-    style: {},
+    style: { setProperty() {}, removeProperty() {} },
     children: [],
     firstChild: null,
     offsetWidth: 0,
@@ -32,6 +32,7 @@ function stubEl(id = '') {
     addEventListener() {},
     removeEventListener() {},
     appendChild() {},
+    append() {},
     removeChild() {},
     remove() {},
     insertAdjacentHTML() {},
@@ -39,6 +40,9 @@ function stubEl(id = '') {
     querySelectorAll() { return []; },
     closest() { return null; },
     setPointerCapture() {},
+    setAttribute() {},
+    getAttribute() { return null; },
+    focus() {},
     getBoundingClientRect() { return { left: 0, top: 0, width: 1280, height: 720 }; },
     select() {},
   };
@@ -86,6 +90,7 @@ globalThis.document = {
     el.getContext = () => fakeCtx;   // canvas offscreen do fundo (prerender)
     return el;
   },
+  createDocumentFragment: () => stubEl('fragment'),
   addEventListener() {},
   querySelector: () => null,
   querySelectorAll: () => [],
