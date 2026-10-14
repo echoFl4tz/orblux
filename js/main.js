@@ -17,7 +17,9 @@ import { initMissions, allMissionsDone } from './ui/missions.js';
 import { initRanking } from './ui/ranking.js';
 import { initShare } from './ui/share.js';
 import { initNickname } from './ui/nickname.js';
+import { initShop } from './ui/skins-shop.js';
 import { initAds, onRunEnd as adsOnRunEnd, showRewarded } from './monetization/ads.js';
+import { initBilling, syncPurchases } from './monetization/billing.js';
 import { burst, ring, shockwave, floatText, comboText, levelBanner } from './game/particles.js';
 
 function boot() {
@@ -37,7 +39,13 @@ function boot() {
   initRanking();
   initShare();
   initNickname();
+  initShop();
   initAds();
+
+  // ---- billing: fonte da verdade na abertura do app ----
+  initBilling()
+    .then(() => syncPurchases())
+    .catch((err) => console.warn('[billing] sync inicial falhou:', err));
 
   // ---- áudio no 1º gesto (política de autoplay dos navegadores) ----
   const firstGesture = () => {
@@ -135,7 +143,7 @@ function boot() {
         const issues = [];
         const vw = window.innerWidth;
         const vh = window.innerHeight;
-        const ids = ['screen-menu', 'screen-howto', 'screen-ranking', 'screen-settings', 'screen-pause', 'screen-gameover'];
+        const ids = ['screen-menu', 'screen-howto', 'screen-ranking', 'screen-skins', 'screen-settings', 'screen-pause', 'screen-gameover'];
         for (const id of ids) {
           const el = document.getElementById(id);
           if (!el) continue;

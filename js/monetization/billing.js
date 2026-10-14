@@ -218,6 +218,13 @@ export async function syncPurchases() {
     return { status: 'offline', owned: Object.keys(state.skins.owned), grace: graceOk };
   }
   const confirmed = new Set(res.items);
+  // pacote "Coleção Completa": concede todas as pagas
+  const bundleOk = confirmed.has(BUNDLE_SKU);
+  if (bundleOk) {
+    for (const s of SKINS) {
+      if (s.tier !== 'free' && !state.skins.owned[s.id]) grantSkin(s.id);
+    }
+  }
   // concede o que o Play confirma
   for (const sku of confirmed) {
     const skin = getSkinBySku(sku);
@@ -226,7 +233,7 @@ export async function syncPurchases() {
   // remove o que o Play NÃO confirma (reembolso/revogação/conta trocada)
   for (const id of Object.keys(state.skins.owned)) {
     const own = SKINS.find((s) => s.id === id);
-    if (own && !confirmed.has(own.sku)) revokeSkin(id);
+    if (own && own.tier !== 'free' && !confirmed.has(own.sku) && !bundleOk) revokeSkin(id);
   }
   return { status: 'ok', owned: [...confirmed], pending: res.pending || [] };
 }

@@ -1283,3 +1283,119 @@ body[data-screen="gameover"] .toasts {
 .nick-error:empty { min-height: 1.2em; }
 .setting-nick { display: inline-flex; align-items: center; gap: var(--s2); }
 .setting-nick b { color: var(--text-1); }
+
+/* ---------------------------------------------------------
+   SKINS — loja (Etapa 4)
+--------------------------------------------------------- */
+.new-badge {
+  position: absolute; top: -7px; right: -7px;
+  padding: 1px 7px; border-radius: var(--r-full);
+  font-size: 0.62rem; font-weight: 800; letter-spacing: 0.6px; text-transform: uppercase;
+  color: #06121a; background: var(--reward);
+  box-shadow: 0 0 8px rgba(255, 228, 94, 0.55);
+  pointer-events: none;
+}
+.menu-grid .btn { position: relative; }
+.chip-warn { color: var(--reward); border-color: rgba(255, 228, 94, 0.4); background: rgba(255, 228, 94, 0.1); }
+.chip-success { color: var(--success); border-color: rgba(77, 255, 158, 0.4); background: rgba(77, 255, 158, 0.1); }
+
+#screen-skins .panel { width: min(96vw, 760px); }
+.shop-status {
+  margin: 0 0 var(--s3); padding: var(--s2) var(--s3);
+  font-size: var(--fs-caption); color: var(--reward);
+  background: rgba(255, 228, 94, 0.08); border: 1px solid rgba(255, 228, 94, 0.25);
+  border-radius: var(--r-sm);
+}
+.shop-filters { display: flex; gap: var(--s2); margin-bottom: var(--s4); flex-wrap: wrap; }
+.chip-btn {
+  padding: 7px 14px; border-radius: var(--r-full);
+  font-family: var(--font-sans); font-size: var(--fs-caption); font-weight: 700;
+  color: var(--text-2); background: var(--surface-2);
+  border: 1px solid var(--line); cursor: pointer;
+  transition: color var(--dur-2), border-color var(--dur-2), background var(--dur-2);
+}
+.chip-btn.active {
+  color: #06121a; background: var(--primary); border-color: var(--primary);
+  box-shadow: var(--glow-1);
+}
+.chip-btn:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+
+.shop-grid {
+  list-style: none; margin: 0; padding: 0;
+  display: grid; grid-template-columns: repeat(2, 1fr); gap: var(--s3);
+}
+@media (min-width: 640px) { .shop-grid { grid-template-columns: repeat(3, 1fr); } }
+@media (min-width: 900px) { .shop-grid { grid-template-columns: repeat(4, 1fr); } }
+
+.shop-item { min-width: 0; }
+.skin-card {
+  position: relative; width: 100%; padding: var(--s3) var(--s2) var(--s3);
+  display: flex; flex-direction: column; align-items: center; gap: 3px;
+  border-radius: var(--r-md);
+  background: var(--surface-2); border: 1px solid var(--line);
+  cursor: pointer; overflow: hidden;
+  transition: border-color var(--dur-2), transform var(--dur-2), box-shadow var(--dur-2);
+}
+.skin-card:hover { transform: translateY(-2px); border-color: rgba(154, 166, 200, 0.4); }
+.skin-card:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+.skin-card.is-eq { border-color: var(--success); box-shadow: 0 0 14px rgba(77, 255, 158, 0.22); }
+.skin-card.is-price .skin-card-state { color: var(--primary); font-weight: 800; }
+.skin-card.is-off { opacity: 0.72; }
+.skin-card.is-off .skin-card-state { color: var(--text-2); font-size: 0.72rem; }
+
+.skin-card-canvas {
+  width: 78%; max-width: 132px; aspect-ratio: 1; height: auto;
+  border-radius: 50%;
+  background: radial-gradient(circle at 50% 42%, rgba(34, 230, 255, 0.06), rgba(5, 6, 15, 0.9) 70%);
+  animation: skin-breathe 3.2s ease-in-out infinite;
+}
+@keyframes skin-breathe {
+  50% { filter: brightness(1.16) saturate(1.12); transform: scale(1.035); }
+}
+.skin-card-name {
+  font-family: var(--font-display); font-size: 0.82rem; letter-spacing: 0.4px;
+  color: var(--text-1); text-align: center;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%;
+}
+.skin-card-tier {
+  font-size: 0.66rem; font-weight: 700; letter-spacing: 0.8px; text-transform: uppercase;
+  color: var(--text-2);
+}
+.skin-card-state {
+  font-size: 0.74rem; font-weight: 700; color: var(--success);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%;
+}
+.shop-item-bundle .skin-card { border-color: rgba(255, 228, 94, 0.35); }
+.shop-item-bundle .skin-card-state { color: var(--reward); }
+.shop-item-bundle .skin-card.is-owned .skin-card-state { color: var(--success); }
+
+/* detalhe */
+.shop-detail { animation: fadeIn var(--dur-3) ease; }
+.shop-back { margin-bottom: var(--s3); }
+.detail-main { display: flex; flex-direction: column; gap: var(--s4); align-items: center; }
+@media (min-width: 700px) { .detail-main { flex-direction: row; align-items: flex-start; } }
+.detail-preview-wrap { flex: 0 0 auto; width: min(300px, 72vw); }
+#shop-preview {
+  width: 100%; aspect-ratio: 1; height: auto; display: block;
+  border-radius: var(--r-md); border: 1px solid var(--line);
+  background: #080b1a;
+  box-shadow: var(--glow-2);
+}
+.detail-info { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: var(--s2); }
+.detail-info .chip { align-self: flex-start; }
+.detail-nome { margin: 0; font-family: var(--font-display); font-size: 1.25rem; color: var(--text-1); }
+.detail-desc { margin: 0; font-size: var(--fs-body); color: var(--text-2); line-height: 1.5; }
+.detail-actions { display: flex; flex-wrap: wrap; gap: var(--s2); margin-top: var(--s2); }
+.detail-actions .btn { flex: 1 1 auto; min-width: 140px; }
+.detail-actions .chip { align-self: center; }
+
+/* modais de compra */
+.buy-nome { margin: 0; font-family: var(--font-display); font-size: 1.05rem; color: var(--text-1); }
+.buy-preco { margin: 4px 0 8px; font-family: var(--font-display); font-size: 1.7rem; color: var(--primary); }
+
+@media (prefers-reduced-motion: reduce) {
+  .skin-card-canvas { animation: none; }
+  .skin-card:hover { transform: none; }
+}
+body.reduce-motion .skin-card-canvas { animation: none; }
+body.reduce-motion .skin-card:hover { transform: none; }

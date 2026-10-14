@@ -75,6 +75,8 @@
       <symbol id="ic-chevron" viewBox="0 0 24 24"><path d="M6 9.5l6 6 6-6" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
       <symbol id="ic-contrast" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="2"/><path d="M12 3a9 9 0 0 1 0 18z" fill="currentColor"/></symbol>
       <symbol id="ic-edit" viewBox="0 0 24 24"><path d="M4 20h4l10-10a2.8 2.8 0 0 0-4-4L4 16z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><path d="M13.5 6.5l4 4" fill="none" stroke="currentColor" stroke-width="2"/></symbol>
+      <symbol id="ic-skin" viewBox="0 0 24 24"><circle cx="12" cy="12" r="6.6" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="12" cy="12" r="2.6" fill="currentColor"/><path d="M12 2.6v2.2M12 19.2v2.2M2.6 12h2.2M19.2 12h2.2M5.3 5.3l1.6 1.6M17.1 17.1l1.6 1.6M18.7 5.3l-1.6 1.6M6.9 17.1l-1.6 1.6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></symbol>
+      <symbol id="ic-check2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="2"/><path d="M7.8 12.4l2.8 2.8 5.6-6" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
       <symbol id="ic-user" viewBox="0 0 24 24"><circle cx="12" cy="8" r="3.6" fill="none" stroke="currentColor" stroke-width="2"/><path d="M5 20a7 7 0 0 1 14 0" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></symbol>
     </defs>
   </svg>
@@ -156,6 +158,10 @@
           </button>
           <button class="btn" data-action="ranking">
             <svg class="ic" aria-hidden="true"><use href="#ic-trophy"/></svg> Ranking
+          </button>
+          <button class="btn" data-action="skins" id="btn-skins">
+            <svg class="ic" aria-hidden="true"><use href="#ic-skin"/></svg> Skins
+            <span id="skins-badge" class="new-badge" hidden>Novo</span>
           </button>
           <button class="btn" data-action="settings">
             <svg class="ic" aria-hidden="true"><use href="#ic-gear"/></svg> Configurações
@@ -329,14 +335,84 @@
           </label>
         </div>
         <div class="settings-group">
+          <h3><svg class="ic" aria-hidden="true"><use href="#ic-skin"/></svg> Compras</h3>
+          <p class="small muted" style="padding:2px 4px">Skins são visuais e ficam ligadas à conta Google da Play Store.</p>
+          <button class="btn" data-shop="restore-settings" style="width:100%">
+            <svg class="ic" aria-hidden="true"><use href="#ic-restart"/></svg> Restaurar compras
+          </button>
+        </div>
+        <div class="settings-group">
           <h3>Dados</h3>
-          <p class="small muted" style="padding:8px 4px">Seu recorde e progresso ficam salvos apenas neste dispositivo (localStorage).</p>
+          <p class="small muted" style="padding:8px 4px">Seu recorde e progresso ficam salvos apenas neste dispositivo (localStorage). Skins compradas são mantidas ao apagar o progresso.</p>
           <button class="btn btn-danger" data-action="reset" style="width:100%">
             <svg class="ic" aria-hidden="true"><use href="#ic-trash"/></svg> Apagar progresso
           </button>
         </div>
       </div>
       <div class="panel-foot">
+        <button class="btn" data-action="menu">Voltar</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= TELA: SKINS (LOJA) ================= -->
+  <section id="screen-skins" class="screen" data-screen="skins" aria-label="Loja de skins" role="dialog" aria-modal="true">
+    <div class="panel panel-wide">
+      <div class="panel-head">
+        <h2 class="panel-title"><svg class="ic" aria-hidden="true"><use href="#ic-skin"/></svg> Skins</h2>
+        <span id="shop-store-chip" class="chip chip-warn" hidden>Loja indisponível</span>
+        <button class="icon-btn" data-action="menu" aria-label="Fechar">
+          <svg class="ic" aria-hidden="true"><use href="#ic-close"/></svg>
+        </button>
+      </div>
+      <div class="panel-body">
+        <p id="shop-status" class="shop-status" role="status" aria-live="polite" hidden></p>
+        <div class="shop-filters" role="group" aria-label="Filtrar skins">
+          <button class="chip-btn active" data-shop="filter" data-val="todas" aria-pressed="true">Todas</button>
+          <button class="chip-btn" data-shop="filter" data-val="minhas" aria-pressed="false">Minhas</button>
+          <button class="chip-btn" data-shop="filter" data-val="venda" aria-pressed="false">À venda</button>
+        </div>
+        <ul id="shop-grid" class="shop-grid"></ul>
+
+        <div id="shop-detail" class="shop-detail" hidden>
+          <button class="btn btn-small shop-back" data-shop="back">
+            <svg class="ic ic-sm" aria-hidden="true" style="transform:rotate(90deg)"><use href="#ic-chevron"/></svg> Voltar
+          </button>
+          <div class="detail-main">
+            <div class="detail-preview-wrap">
+              <canvas id="shop-preview" width="340" height="340" role="img" aria-label="Pré-visualização animada da skin"></canvas>
+            </div>
+            <div class="detail-info">
+              <h3 id="detail-nome" class="detail-nome"></h3>
+              <span id="detail-tier" class="chip"></span>
+              <p id="detail-desc" class="detail-desc"></p>
+              <div id="detail-actions" class="detail-actions"></div>
+              <p id="detail-note" class="small muted" hidden></p>
+            </div>
+          </div>
+
+          <div id="detail-custom" class="detail-custom" hidden>
+            <h4 class="custom-title">Personalizar</h4>
+            <div class="custom-row">
+              <span class="custom-label" id="lbl-paleta">Paleta</span>
+              <div id="custom-paletas" class="swatches" role="group" aria-labelledby="lbl-paleta"></div>
+            </div>
+            <div class="custom-row">
+              <span class="custom-label" id="lbl-rastro">Rastro</span>
+              <div id="custom-rastros" class="chips-row" role="group" aria-labelledby="lbl-rastro"></div>
+            </div>
+            <div class="custom-row">
+              <span class="custom-label" id="lbl-aura">Aura</span>
+              <div id="custom-auras" class="chips-row" role="group" aria-labelledby="lbl-aura"></div>
+            </div>
+            <button class="btn btn-small" data-shop="custom-reset">Restaurar padrão da skin</button>
+          </div>
+        </div>
+      </div>
+      <div class="panel-foot">
+        <button class="btn" data-shop="restore">
+          <svg class="ic" aria-hidden="true"><use href="#ic-restart"/></svg> Restaurar compras
+        </button>
         <button class="btn" data-action="menu">Voltar</button>
       </div>
     </div>
@@ -477,6 +553,37 @@
       <button id="btn-claim-reward" class="btn btn-primary" style="width:100%" disabled aria-live="polite">
         Resgatar em <span id="reward-countdown">5</span>s
       </button>
+    </div>
+  </div>
+
+  <!-- ================= MODAL: CONFIRMAR COMPRA DE SKIN ================= -->
+  <div id="modal-buy" class="modal" hidden role="dialog" aria-modal="true" aria-labelledby="buy-title">
+    <div class="panel modal-panel">
+      <div class="panel-head">
+        <h3 class="panel-title" id="buy-title">Confirmar compra</h3>
+      </div>
+      <div class="panel-body">
+        <p id="buy-nome" class="buy-nome"></p>
+        <p id="buy-preco" class="buy-preco"></p>
+        <p class="small muted">Compra única, não recorrente. Pagamento processado pelo Google Play.</p>
+      </div>
+      <div class="panel-foot">
+        <button class="btn btn-primary" id="buy-confirm" data-shop="buy-confirm">Comprar</button>
+        <button class="btn" data-shop="buy-cancel">Cancelar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= MODAL: RESULTADO DA COMPRA ================= -->
+  <div id="modal-buy-result" class="modal" hidden role="dialog" aria-modal="true" aria-labelledby="buyr-title">
+    <div class="panel modal-panel">
+      <div class="panel-head">
+        <h3 class="panel-title" id="buyr-title"></h3>
+      </div>
+      <div class="panel-body">
+        <p id="buyr-text" class="buy-nome"></p>
+      </div>
+      <div class="panel-foot" id="buyr-actions"></div>
     </div>
   </div>
 

@@ -17,6 +17,7 @@ const SCREEN_IDS = {
   menu: 'screen-menu',
   howto: 'screen-howto',
   ranking: 'screen-ranking',
+  skins: 'screen-skins',
   settings: 'screen-settings',
   pause: 'screen-pause',
   gameover: 'screen-gameover',
@@ -312,6 +313,7 @@ function bindActions() {
         sfx('ui'); startRun(); break;
       case 'howto': sfx('ui'); showScreen('howto'); break;
       case 'ranking': sfx('ui'); emit('screen:ranking'); showScreen('ranking'); break;
+      case 'skins': sfx('ui'); showScreen('skins'); emit('shop:open'); break;
       case 'settings': sfx('ui'); applySettingsToUI(); showScreen('settings'); break;
       case 'menu':
         sfx('ui'); returnToMenu(); break;

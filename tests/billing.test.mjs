@@ -30,7 +30,7 @@ globalThis.location = { search: '', hostname: 'localhost' };
 
 const B = await import('../js/monetization/billing.js');
 const { state, grantSkin, ownsSkin } = await import('../js/core/state.js');
-const { ALL_SKUS, BUNDLE_SKU } = await import('../js/game/skins.js');
+const { ALL_SKUS, BUNDLE_SKU, SKINS } = await import('../js/game/skins.js');
 
 test('initBilling em localhost usa o MockProvider (disponível)', async () => {
   const id = await B.initBilling();
@@ -106,4 +106,28 @@ test('?mock=fail retorna erro genérico (UI oferece tentar de novo)', async () =
   const res = await B.purchase('skin_galaxia');
   assert.equal(res.status, 'error');
   assert.equal(ownsSkin('galaxia'), false);
+});
+
+test('pacote Coleção Completa concede as 20 pagas; revogar o pacote cai com tudo', async () => {
+  globalThis.location = { search: '', hostname: 'localhost' };
+  await B.initBilling();
+  const res = await B.purchase(BUNDLE_SKU);
+  assert.equal(res.status, 'ok');
+  const paid = SKINS.filter((s) => s.tier !== 'free');
+  assert.equal(paid.length, 20);
+  for (const s of paid) assert.equal(ownsSkin(s.id), true, `pacote deve conceder ${s.id}`);
+  // provedor: pacote revogado, mas a compra individual de brasa_neon continua
+  store.api.setItem('pn_mock_purchases', JSON.stringify(['skin_brasa_neon']));
+  const sync = await B.syncPurchases();
+  assert.equal(sync.status, 'ok');
+  assert.equal(ownsSkin('brasa_neon'), true, 'compra individual permanece');
+  assert.equal(ownsSkin('supernova'), false, 'skin só do pacote é revogada');
+});
+
+test('skin grátis (classic) nunca é revogada nem com dado legado no mapa owned', async () => {
+  state.skins.owned.classic = true;   // dado antigo/corrompido
+  const sync = await B.syncPurchases();
+  assert.equal(sync.status, 'ok');
+  assert.ok('classic' in state.skins.owned, 'classic não pode sair do mapa owned');
+  assert.equal(ownsSkin('classic'), true);
 });
