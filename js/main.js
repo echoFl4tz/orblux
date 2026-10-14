@@ -20,6 +20,7 @@ import { initNickname } from './ui/nickname.js';
 import { initShop } from './ui/skins-shop.js';
 import { initAds, onRunEnd as adsOnRunEnd, showRewarded } from './monetization/ads.js';
 import { initBilling, syncPurchases } from './monetization/billing.js';
+import * as wallet from './core/wallet.js';
 import { burst, ring, shockwave, floatText, comboText, levelBanner } from './game/particles.js';
 
 function boot() {
@@ -122,6 +123,9 @@ function boot() {
   const isDebug = ['localhost', '127.0.0.1', '[::1]'].includes(location.hostname)
     || /[?&]debug=1/.test(location.search || '');
   if (isDebug) {
+    // ?debug=1 também libera a carteira de QA (ganhar moedas p/ testar a UI).
+    // Em localhost SEM o flag a API legada continua — só sem addCoins/getCoins.
+    const ecoDebug = /[?&]debug=1/.test(location.search || '');
     window.OX = {
       version: '1.0.0',
       state,
@@ -132,6 +136,10 @@ function boot() {
         for (let i = 0; i < steps; i++) update(1 / 60);
       },
       endRun: () => forceGameOver(),
+      ...(ecoDebug ? {
+        addCoins: (n = 0, reason = 'debug') => wallet.earn(n, reason, 'ox'),
+        getCoins: () => wallet.getCoins(),
+      } : {}),
       // captura/QA: emitir eventos e disparar FX de cena (sem tocar na lógica)
       emit,
       screen: (name = null) => showScreen(name),

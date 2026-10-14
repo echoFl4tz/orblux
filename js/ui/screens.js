@@ -330,13 +330,25 @@ function bindActions() {
       case 'close-share': sfx('ui'); emit('share:close'); break;
       case 'toggle-missions': sfx('ui'); toggleMissions(btn); break;
       // reset com modal de confirmação próprio (sem confirm() nativo)
-      case 'reset': sfx('ui'); openModal('modal-confirm'); break;
-      case 'reset-confirm':
+      case 'reset': {
         sfx('ui');
-        resetAllProgress();
-        closeModal('modal-confirm');
-        showToast({ icon: 'ic-trash', title: 'Progresso apagado', desc: 'Comece do zero!' });
+        const keepBox = document.getElementById('reset-keep-coins');
+        if (keepBox) keepBox.checked = false;       // padrão: apagar moedas e skins com moedas
+        openModal('modal-confirm');
         break;
+      }
+      case 'reset-confirm': {
+        sfx('ui');
+        const keepCoins = !!document.getElementById('reset-keep-coins')?.checked;
+        resetAllProgress({ keepCoins });
+        closeModal('modal-confirm');
+        showToast({
+          icon: 'ic-trash',
+          title: 'Progresso apagado',
+          desc: keepCoins ? 'Suas moedas foram mantidas.' : 'Comece do zero!',
+        });
+        break;
+      }
       case 'reset-cancel': sfx('ui'); closeModal('modal-confirm'); break;
       case 'install':
         sfx('ui');

@@ -11,6 +11,7 @@ import { getItem, setItem, removeItem, clearAll } from './storage.js';
 import { emit } from './events.js';
 import { validateNickname, generateDefaultNickname, NICK_MAX } from './nickname.js';
 import { getSkin, PALETAS, RASTROS, AURAS } from '../game/skins.js';
+import { MAX_COINS } from './economy.js';
 
 const KEY_SETTINGS = 'pn_settings';
 const KEY_STATS = 'pn_stats';
@@ -21,12 +22,14 @@ const KEY_CONSENT = 'pn_consent';
 const KEY_TUTORIAL = 'pn_tutorial_done';
 const KEY_PROFILE = 'pn_profile';
 const KEY_SKINS = 'pn_skins';
+const KEY_WALLET = 'pn_wallet';   // carteira de moedas (formato ver em wallet.js)
 const KEY_VERSION = 'pn_version';
 
 // v1 = legado "Pulso Neon" (ranking sem name, sem perfil)
 // v2 = apelido (profile) + entradas de ranking com { score, date, name }
 // v3 = skins (equipped/owned/custom/seen)
-const STORAGE_VERSION = 3;
+// v4 = carteira de moedas (pn_wallet) + skins.owned com origem { at, source }
+const STORAGE_VERSION = 4;
 
 const DEFAULT_SETTINGS = {
   sound: true,
@@ -78,6 +81,9 @@ function migrateStorage() {
   if (from < 3) {
     setItem(KEY_SKINS, { equipped: 'classic', owned: {}, custom: {}, seen: { classic: true } });
   }
+  // v3 -> v4: carteira de moedas (pn_wallet) — criada por loadWallet() na
+  // primeira leitura; entradas numéricas de skins.owned migram para
+  // { at, source:'play' } dentro de loadSkins() (formato validado ali).
   setItem(KEY_VERSION, STORAGE_VERSION);
 }
 
@@ -91,11 +97,19 @@ function loadSkins() {
   const equipped = (typeof raw.equipped === 'string' && getSkin(raw.equipped).id === raw.equipped)
     ? raw.equipped : 'classic';
 
-  // possuídas: só ids válidos com timestamp numérico (a posse REAL é confirmada pelo billing)
+  // possuídas: só ids válidos com { at: timestamp, source: 'coins'|'play' }.
+  // Entrada NUMÉRICA legada (antiga "só Play") migra para source:'play'.
+  // A posse REAL de compras com dinheiro é confirmada pelo billing.
   const owned = {};
   if (raw.owned && typeof raw.owned === 'object') {
-    for (const [id, ts] of Object.entries(raw.owned)) {
-      if (getSkin(id).id === id && typeof ts === 'number') owned[id] = ts;
+    for (const [id, val] of Object.entries(raw.owned)) {
+      if (getSkin(id).id !== id || id === 'classic') continue;   // clássica nunca entra no mapa
+      if (typeof val === 'number' && isFinite(val)) {
+        owned[id] = { at: Math.max(0, Math.floor(val)), source: 'play' };
+      } else if (val && typeof val === 'object' && typeof val.at === 'number' && isFinite(val.at)
+          && (val.source === 'coins' || val.source === 'play')) {
+        owned[id] = { at: Math.max(0, Math.floor(val.at)), source: val.source };
+      }
     }
   }
 
@@ -129,6 +143,108 @@ function loadProfile() {
   return { nickname: nickname.slice(0, NICK_MAX), createdAt, asked };
 }
 
+/* ---------------------------------------------------------
+   WALLET (pn_wallet) — persistência da carteira de moedas
+
+   Só a CAMADA DE ARMAZNAMENTO mora aqui (formato, validação,
+   checksum e gravação) — o mesmo tratamento de state.skins.
+   Toda MUTAÇÃO de moedas (earn/spend/diária/meta) passa
+   exclusivamente por js/core/wallet.js.
+--------------------------------------------------------- */
+
+/** @returns {{coins:number,lifetimeEarned:number,lifetimeSpent:number,streak:number,lastClaimDate:string,goalSkinId:string|null,ledger:{t:number,delta:number,reason:string,ref:string}[]}} */
+export function defaultWallet() {
+  return {
+    coins: 0,
+    lifetimeEarned: 0,
+    lifetimeSpent: 0,
+    streak: 0,
+    lastClaimDate: '',
+    goalSkinId: null,
+    ledger: [],
+  };
+}
+
+/** Checksum simples (FNV-1a) — proteção básica contra adulteração.
+ *  Não é criptografia: moedas são cosméticas e não valem dinheiro. */
+export function walletChecksum(data) {
+  const s = JSON.stringify(data);
+  let h = 0x811c9dc5;
+  for (let i = 0; i < s.length; i++) {
+    h ^= s.charCodeAt(i);
+    h = Math.imul(h, 0x01000193) >>> 0;
+  }
+  return h.toString(16).padStart(8, '0');
+}
+
+/** Embala a carteira para gravação: { v, c: checksum, d: dados }. */
+export function packWallet(wallet) {
+  const d = {
+    coins: wallet.coins,
+    lifetimeEarned: wallet.lifetimeEarned,
+    lifetimeSpent: wallet.lifetimeSpent,
+    streak: wallet.streak,
+    lastClaimDate: wallet.lastClaimDate,
+    goalSkinId: wallet.goalSkinId,
+    ledger: Array.isArray(wallet.ledger) ? wallet.ledger : [],
+  };
+  return { v: STORAGE_VERSION, c: walletChecksum(d), d };
+}
+
+function intOr(v, fallback = 0) {
+  return (Number.isInteger(v) && v >= 0 && v <= 1e12) ? v : fallback;
+}
+
+/** Valida o formato ao carregar: números inteiros >= 0; lixo é descartado. */
+function sanitizeWallet(raw) {
+  const w = defaultWallet();
+  if (!raw || typeof raw !== 'object') return w;
+  w.coins = Math.min(MAX_COINS, intOr(raw.coins));
+  w.lifetimeEarned = intOr(raw.lifetimeEarned);
+  w.lifetimeSpent = intOr(raw.lifetimeSpent);
+  w.streak = Math.min(100000, intOr(raw.streak));
+  w.lastClaimDate = (typeof raw.lastClaimDate === 'string'
+    && /^\d{4}-\d{2}-\d{2}$/.test(raw.lastClaimDate)) ? raw.lastClaimDate : '';
+  if (typeof raw.goalSkinId === 'string') {
+    const s = getSkin(raw.goalSkinId);
+    w.goalSkinId = (s.id === raw.goalSkinId && s.tier !== 'free') ? s.id : null;
+  }
+  if (Array.isArray(raw.ledger)) {
+    for (const item of raw.ledger.slice(-50)) {      // só as últimas 50 transações
+      if (!item || typeof item !== 'object') continue;
+      if (!Number.isInteger(item.t) || !Number.isInteger(item.delta) || item.delta === 0) continue;
+      w.ledger.push({
+        t: item.t,
+        delta: item.delta,
+        reason: typeof item.reason === 'string' ? item.reason.slice(0, 40) : '',
+        ref: typeof item.ref === 'string' ? item.ref.slice(0, 60) : '',
+      });
+    }
+  }
+  return w;
+}
+
+/** Lê e valida a carteira. Checksum inválido => zera (aviso discreto, sem travar). */
+export function loadWallet() {
+  const payload = getItem(KEY_WALLET);
+  if (!payload || typeof payload !== 'object' || !payload.d) return defaultWallet();
+  if (payload.c !== walletChecksum(payload.d)) {
+    console.warn('[wallet] checksum inválido — carteira zerada (dado adulterado/corrompido)');
+    return defaultWallet();
+  }
+  return sanitizeWallet(payload.d);
+}
+
+/** Grava a carteira e confirma a leitura. Retorna false se não persistir
+ *  (modo privado/quota) — o chamador decide o rollback. */
+export function saveWallet() {
+  const payload = packWallet(state.wallet);
+  setItem(KEY_WALLET, payload);
+  const back = getItem(KEY_WALLET);
+  if (!back || back.c !== payload.c || walletChecksum(back.d) !== payload.c) return false;
+  return true;
+}
+
 /** @type {{
  *  settings: typeof DEFAULT_SETTINGS,
  *  stats: typeof DEFAULT_STATS,
@@ -138,7 +254,8 @@ function loadProfile() {
  *  consent: boolean|null,
  *  tutorialDone: boolean,
  *  profile: {nickname:string, createdAt:string, asked:boolean},
- *  skins: {equipped:string, owned:Record<string,number>, custom:Record<string,object>, seen:Record<string,boolean>},
+ *  skins: {equipped:string, owned:Record<string,{at:number,source:'coins'|'play'}>, custom:Record<string,object>, seen:Record<string,boolean>},
+ *  wallet: ReturnType<typeof defaultWallet>,
  * }} */
 migrateStorage();
 export const state = {
@@ -151,6 +268,7 @@ export const state = {
   tutorialDone: !!getItem(KEY_TUTORIAL),
   profile: loadProfile(),
   skins: loadSkins(),
+  wallet: loadWallet(),                   // carteira de moedas (mutação só em wallet.js)
 };
 
 /** Descarta entradas corrompidas do ranking (não quebra o jogo). */
@@ -203,19 +321,39 @@ export function resetTutorialFlag() {
    SKINS — posse, equipar, personalização
    A posse REAL vem do Google Play (billing.js → listPurchases);
    aqui só mantemos o cache e a interface.
+   owned[id] = { at, source } — source: 'play' (dinheiro) | 'coins' (moedas)
 --------------------------------------------------------- */
-export const saveSkins = () => setItem(KEY_SKINS, state.skins);
+export const saveSkins = () => {
+  setItem(KEY_SKINS, state.skins);
+  const back = getItem(KEY_SKINS);           // confirmação de leitura (mesmo critério da carteira)
+  return !!back && JSON.stringify(back) === JSON.stringify(state.skins);
+};
 
 /** A skin é do jogador? (clássica sempre; demais só se compradas/confirmadas). */
 export function ownsSkin(id) { return id === 'classic' || !!state.skins.owned[id]; }
 
-/** Concede uma skin (chamado quando o billing confirma a compra). */
-export function grantSkin(id) {
+/** Origem da posse: 'coins' | 'play' | null (não possui). */
+export function skinSource(id) {
+  const own = state.skins.owned[id];
+  return own && own.source ? own.source : null;
+}
+
+/**
+ * Concede uma skin (billing → 'play'; compra com moedas → 'coins').
+ * Se a gravação falhar, desfaz e retorna false (gasto atômico com wallet).
+ * @param {string} id @param {'play'|'coins'} [source]
+ */
+export function grantSkin(id, source = 'play') {
   const s = getSkin(id);
-  if (!s || s.tier === 'free') return false;
-  state.skins.owned[id] = Date.now();
-  saveSkins();
-  emit('skins:changed', { owned: true, id });
+  if (!s || s.tier === 'free' || state.skins.owned[id]) return false;
+  const src = source === 'coins' ? 'coins' : 'play';
+  state.skins.owned[id] = { at: Date.now(), source: src };
+  if (!saveSkins()) {
+    delete state.skins.owned[id];
+    console.warn('[skins] falha ao gravar a posse — concessão desfeita');
+    return false;
+  }
+  emit('skins:changed', { owned: true, id, source: src });
   return true;
 }
 
@@ -269,10 +407,26 @@ export function markSkinSeen(id) {
   saveSkins();
 }
 
-/** Apaga TODO o progresso — MAS mantém as skins COMPRADAS (dinheiro do jogador). */
-export function resetAllProgress() {
-  // skins compradas são dinheiro real: preservamos o mapa owned
+/**
+ * Apaga TODO o progresso.
+ * - Skins compradas com DINHEIRO (Google Play) são mantidas sempre:
+ *   o Play as restaura e é dinheiro do jogador.
+ * - Moedas e skins compradas com moedas são apagadas POR PADRÃO;
+ *   `opts.keepCoins = true` (opção no modal) mantém moedas e as
+ *   skins compradas com moedas também.
+ * - Personalização e skin equipada voltam ao padrão sempre.
+ * @param {{keepCoins?: boolean}} [opts]
+ */
+export function resetAllProgress(opts = {}) {
+  const keepCoins = !!opts.keepCoins;
+  // skins de DINHEIRO: preservadas; moedas (source 'coins') seguem a opção
   const prevOwned = { ...(state.skins?.owned || {}) };
+  const prevWallet = state.wallet;      // capturado antes do clearAll (keepCoins)
+  const keptOwned = {};
+  for (const [id, ent] of Object.entries(prevOwned)) {
+    const src = ent && typeof ent === 'object' ? ent.source : 'play';   // legado = dinheiro
+    if (src === 'play' || keepCoins) keptOwned[id] = ent;
+  }
   clearAll('pn_');
   state.settings = { ...DEFAULT_SETTINGS };
   state.stats = { ...DEFAULT_STATS };
@@ -283,18 +437,22 @@ export function resetAllProgress() {
   state.tutorialDone = false;
   // perfil apagado: novo apelido padrão e volta a perguntar na próxima abertura
   state.profile = { nickname: generateDefaultNickname(), createdAt: new Date().toISOString(), asked: false };
-  // skins: mantém as compradas; zera personalização e skin equipada (voltam ao padrão)
+  // carteira: zerada por padrão; keepCoins preserva saldo/sequência/metas
+  state.wallet = keepCoins ? prevWallet : defaultWallet();
+  // skins: mantém as de dinheiro; zera personalização e skin equipada
   state.skins = {
     equipped: 'classic',
-    owned: prevOwned,
+    owned: keptOwned,
     custom: {},
-    seen: { classic: true, ...Object.fromEntries(Object.keys(prevOwned).map((id) => [id, true])) },
+    seen: { classic: true, ...Object.fromEntries(Object.keys(keptOwned).map((id) => [id, true])) },
   };
   saveSettings(); saveStats(); saveRanking(); saveAchievements(); saveMissions();
   setItem(KEY_PROFILE, state.profile);
   setItem(KEY_SKINS, state.skins);
+  saveWallet();
   setItem(KEY_VERSION, STORAGE_VERSION);
   emit('state:reset');
+  emit('wallet:changed', { coins: state.wallet.coins, delta: 0, reason: 'reset', ref: '' });
 }
 
 /** Registra uma partida no ranking local (top 20), com o apelido do momento. */

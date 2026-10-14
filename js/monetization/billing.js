@@ -230,10 +230,14 @@ export async function syncPurchases() {
     const skin = getSkinBySku(sku);
     if (skin && skin.tier !== 'free' && !state.skins.owned[skin.id]) grantSkin(skin.id);
   }
-  // remove o que o Play NÃO confirma (reembolso/revogação/conta trocada)
+  // remove o que o Play NÃO confirma (reembolso/revogação/conta trocada).
+  // Skins compradas com MOEDAS (source 'coins') não são da Play Store:
+  // o Play nada sabe sobre elas, então NUNCA são revogadas aqui.
   for (const id of Object.keys(state.skins.owned)) {
     const own = SKINS.find((s) => s.id === id);
-    if (own && own.tier !== 'free' && !confirmed.has(own.sku) && !bundleOk) revokeSkin(id);
+    const ent = state.skins.owned[id];
+    const boughtWithCoins = !!ent && typeof ent === 'object' && ent.source === 'coins';
+    if (own && own.tier !== 'free' && !boughtWithCoins && !confirmed.has(own.sku) && !bundleOk) revokeSkin(id);
   }
   return { status: 'ok', owned: [...confirmed], pending: res.pending || [] };
 }

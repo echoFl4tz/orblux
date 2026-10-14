@@ -158,3 +158,41 @@ licença adicionado, app instalado via teste interno.
 6. Apagar o progresso (Configurações) → confirma o texto de que skins
    compradas **não** são apagadas; conferir na loja que continuam lá.
 7. Modo avião → abrir a loja → cache offline (7 dias) sem apagar posse.
+
+---
+
+## 9. Moedas virtuais (sistema de moedas GRATUITAS)
+
+**Consulta à documentação oficial:** 14/10/2026 — a única fonte que rege este
+sistema é a **Política de Pagamentos** do Google Play (abaixo, verificada em
+14/10/2026): moedas virtuais só podem circular **dentro** do app e todo
+conteúdo pago passa pelo billing da própria Play. No ORBLUX as moedas nem são
+vendidas — só se ganham jogando.
+
+| Fonte | O que confirma (verificado na página) | Data |
+|-------|----------------------------------------|------|
+| https://support.google.com/googleplay/android-developer/answer/9858738?hl=pt-BR (Política de Pagamentos) | Compras dentro do app (incluindo **moedas virtuais**) só pelo sistema de faturamento do Google Play; proibido direcionar o usuário a outros meios de pagamento; moedas virtuais no app só podem ser usadas **dentro** do próprio app/jogo | 14/10/2026 |
+
+Como o ORBLUX **nunca vende moedas** (elas só se ganham jogando) e todos os itens
+de dinheiro real passam pelo Play Billing, o app cumpre esta política por
+construção: não há nenhuma transação de dinheiro real fora da Play.
+
+### Regras inegociáveis do ORBLUX
+
+1. **Moedas NUNCA se compram com dinheiro real**, nem se vendem, trocam ou
+   transferem. Não existe (e não será criado) nenhum produto in-app de moedas.
+   Elas só se ganham **jogando** (partida, missões, conquistas, recompensa diária).
+2. **Moedas são 100% virtuais, sem valor monetário** — texto exibido em
+   Configurações → Moedas, nos Termos da loja e em `privacy.html`.
+3. **Dois caminhos independentes por skin**: moedas (grátis, jogando) OU
+   Google Play Billing (dinheiro real). Quem paga com dinheiro só **pula a
+   espera**: nenhuma vantagem de jogo (skins são 100% estéticas; a skin
+   equipada não altera ganhos — teste em `tests/economy.test.mjs`).
+4. **Sem dark patterns**: sem contagem regressiva falsa, sem ofertas inventadas,
+   sem pop-up de venda durante a partida e sem botão empurrando para pagar
+   quando faltam moedas — mostra-se quanto falta e o jogador decide.
+5. Dados da carteira são **100% locais** (`localStorage`, chave `pn_wallet`
+   com checksum simples); nada sai do dispositivo.
+6. `resetAllProgress` apaga moedas e skins compradas com moedas **por padrão**
+   (texto explícito no modal) e **mantém sempre** as skins compradas com
+   dinheiro (a Play as restaura).

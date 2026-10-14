@@ -343,7 +343,7 @@
         </div>
         <div class="settings-group">
           <h3>Dados</h3>
-          <p class="small muted" style="padding:8px 4px">Seu recorde e progresso ficam salvos apenas neste dispositivo (localStorage). Skins compradas são mantidas ao apagar o progresso.</p>
+          <p class="small muted" style="padding:8px 4px">Seu recorde e progresso ficam salvos apenas neste dispositivo (localStorage). Ao apagar o progresso, as skins compradas com dinheiro na Play Store são mantidas; moedas e skins compradas com moedas são apagadas (você escolhe no aviso).</p>
           <button class="btn btn-danger" data-action="reset" style="width:100%">
             <svg class="ic" aria-hidden="true"><use href="#ic-trash"/></svg> Apagar progresso
           </button>
@@ -424,7 +424,11 @@
       <div class="panel-head">
         <h3 class="panel-title" id="confirm-title">Apagar progresso?</h3>
       </div>
-      <p>Seu apelido, recorde, ranking, conquistas e missões serão apagados deste dispositivo. <b>Suas skins compradas serão mantidas</b>, mas a personalização e a skin equipada voltam ao padrão. <b>Isso não pode ser desfeito.</b></p>
+      <p>Seu apelido, recorde, ranking, conquistas e missões serão apagados deste dispositivo. <b>Por padrão, suas moedas e as skins compradas com moedas também serão apagadas</b>; as skins compradas com dinheiro na Play Store serão mantidas. A personalização e a skin equipada voltam ao padrão. <b>Isso não pode ser desfeito.</b></p>
+      <label class="setting-row" for="reset-keep-coins">
+        <span class="label">Também manter minhas moedas e as skins compradas com moedas</span>
+        <input type="checkbox" id="reset-keep-coins" class="switch">
+      </label>
       <div class="panel-foot">
         <button class="btn btn-danger" data-action="reset-confirm">
           <svg class="ic" aria-hidden="true"><use href="#ic-trash"/></svg> Apagar tudo
