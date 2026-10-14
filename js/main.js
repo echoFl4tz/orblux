@@ -16,6 +16,7 @@ import { initAchievements, checkAchievements } from './ui/achievements.js';
 import { initMissions, allMissionsDone } from './ui/missions.js';
 import { initRanking } from './ui/ranking.js';
 import { initShare } from './ui/share.js';
+import { initNickname } from './ui/nickname.js';
 import { initAds, onRunEnd as adsOnRunEnd, showRewarded } from './monetization/ads.js';
 import { burst, ring, shockwave, floatText, comboText, levelBanner } from './game/particles.js';
 
@@ -35,6 +36,7 @@ function boot() {
   initMissions();
   initRanking();
   initShare();
+  initNickname();
   initAds();
 
   // ---- áudio no 1º gesto (política de autoplay dos navegadores) ----
@@ -67,7 +69,8 @@ function boot() {
 
     if (isRecord) {
       sfx('record');
-      showToast({ icon: 'ic-trophy', title: 'Novo recorde!', desc: `${run.score.toLocaleString('pt-BR')} pontos` });
+      const nick = state.profile?.nickname || 'Jogador';
+      showToast({ icon: 'ic-trophy', title: `Novo recorde, ${nick}!`, desc: `${run.score.toLocaleString('pt-BR')} pontos` });
     }
 
     showGameOver({ ...run, best: state.stats.best, isRecord, position });

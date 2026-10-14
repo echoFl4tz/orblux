@@ -53,17 +53,25 @@ export function renderRanking() {
   }
   if (empty) empty.hidden = true;
 
+  const me = state.profile?.nickname || 'Jogador';
+  const nameOf = (r) => (typeof r.name === 'string' && r.name ? r.name : 'Jogador');
+
   // pódio: top 3 (ordem visual: prata, ouro, bronze)
   const hasPodium = rows.length >= 3;
   if (podium) {
     podium.hidden = !hasPodium;
     if (hasPodium) {
-      podium.innerHTML = [1, 0, 2].map((i) => `
-        <div class="podium-slot podium-${i + 1}">
+      podium.innerHTML = [1, 0, 2].map((i) => {
+        const nm = nameOf(rows[i]);
+        const mine = nm === me ? ' mine' : '';
+        return `
+        <div class="podium-slot podium-${i + 1}${mine}">
           <svg class="ic" aria-hidden="true"><use href="#ic-trophy"/></svg>
           <span class="pos">${i + 1}º</span>
+          <span class="podium-name">${escapeHtml(nm)}</span>
           <span class="pts">${rows[i].score.toLocaleString('pt-BR')}</span>
-        </div>`).join('');
+        </div>`;
+      }).join('');
     } else podium.innerHTML = '';
   }
 
@@ -73,8 +81,10 @@ export function renderRanking() {
   list.innerHTML = rest.map((r, i) => {
     const d = new Date(r.date);
     const date = `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}`;
-    return `<li>
-      <span><span class="rank-pos">${i + 1 + offset}º</span> <b>${r.score.toLocaleString('pt-BR')}</b></span>
+    const nm = nameOf(r);
+    const mine = nm === me ? ' class="mine"' : '';
+    return `<li${mine}>
+      <span><span class="rank-pos">${i + 1 + offset}º</span> <b>${r.score.toLocaleString('pt-BR')}</b> <span class="rank-name">${escapeHtml(nm)}</span></span>
       <span class="rank-date">${date}</span>
     </li>`;
   }).join('');

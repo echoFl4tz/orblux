@@ -9,9 +9,10 @@ import { showToast } from './toasts.js';
 const SITE_URL = 'https://EXEMPLO.com/'; // <-- troque pelo endereço do seu jogo
 
 let shareLastFocused = null;
+let shareState = { mode: 'score', score: 0 };
 
 export function initShare() {
-  on('share:open', (mode) => openShare(mode));
+  on('share:open', (payload) => openShare(payload));
   on('share:close', () => closeShare());
 
   document.querySelectorAll('[data-share]').forEach((btn) => {
@@ -19,18 +20,24 @@ export function initShare() {
   });
 }
 
-function buildText(mode) {
+function buildText(mode, score) {
+  const nick = (state.profile && state.profile.nickname) || 'Jogador';
   const best = state.stats.best || 0;
-  if (mode === 'rank' || best > 0) {
-    return `🔥 Marquei ${best.toLocaleString('pt-BR')} pontos no ORBLUX! Consegue me superar? 🏆\nJogue grátis aqui: ${SITE_URL}`;
-  }
-  return `Acabei de jogar ORBLUX 🕹️ jogo neon viciante, partidas de 1 minuto!\nJogue grátis: ${SITE_URL}`;
+  // modo 'rank' usa o recorde; modo 'score' usa a pontuação da partida
+  const pts = mode === 'rank' ? best : (typeof score === 'number' ? score : best);
+  const head = pts > 0
+    ? `${nick} marcou ${pts.toLocaleString('pt-BR')} pontos no ORBLUX! Consegue me superar?`
+    : `${nick} acabou de jogar ORBLUX!`;
+  return `${head}\nJogue grátis aqui: ${SITE_URL}`;
 }
 
-function openShare(mode) {
+function openShare(payload) {
+  const mode = typeof payload === 'string' ? payload : (payload?.mode || 'score');
+  const score = typeof payload === 'object' && payload ? (payload.score || 0) : 0;
+  shareState = { mode, score };
   const modal = document.getElementById('modal-share');
   const preview = document.getElementById('share-text-preview');
-  preview.textContent = buildText(mode).replace(/\n/g, ' ');
+  preview.textContent = buildText(mode, score).replace(/\n/g, ' ');
   modal.dataset.mode = mode;
   shareLastFocused = document.activeElement;
   modal.hidden = false;
@@ -51,8 +58,7 @@ function closeShare() {
 }
 
 function doShare(network) {
-  const mode = document.getElementById('modal-share').dataset.mode || 'score';
-  const text = buildText(mode);
+  const text = buildText(shareState.mode, shareState.score);
   const url = SITE_URL;
 
   if (network === 'whatsapp') {

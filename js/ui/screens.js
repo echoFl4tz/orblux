@@ -158,6 +158,13 @@ export function showGameOver({ score, best, isRecord, position, elapsed, pickups
   const scoreEl = document.getElementById('go-score');
   document.getElementById('go-best').textContent = (best || 0).toLocaleString('pt-BR');
   document.getElementById('go-record').hidden = !isRecord;
+  // apelido junto ao placar
+  const goNick = document.getElementById('go-nick');
+  if (goNick) {
+    const nick = state.profile?.nickname || 'Jogador';
+    goNick.textContent = `${nick} — ${score.toLocaleString('pt-BR')} pts`;
+    goNick.hidden = false;
+  }
 
   const stats = document.getElementById('go-stats');
   const mins = Math.floor(elapsed / 60);
@@ -311,7 +318,13 @@ function bindActions() {
       case 'pause': sfx('ui'); pauseGame(); showScreen('pause'); break;
       case 'resume': sfx('ui'); resumeGame(); showScreen(null); break;
       case 'revive': sfx('ui'); emit('ads:rewarded-revive'); break;
-      case 'share-score': case 'share-rank': sfx('ui'); emit('share:open', action === 'share-score' ? 'score' : 'rank'); break;
+      case 'share-score': case 'share-rank': {
+        sfx('ui');
+        const mode = action === 'share-score' ? 'score' : 'rank';
+        const score = mode === 'score' ? Math.floor(game.score) : (state.stats.best || 0);
+        emit('share:open', { mode, score });
+        break;
+      }
       case 'close-share': sfx('ui'); emit('share:close'); break;
       case 'toggle-missions': sfx('ui'); toggleMissions(btn); break;
       // reset com modal de confirmação próprio (sem confirm() nativo)

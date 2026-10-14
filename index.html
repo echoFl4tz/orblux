@@ -74,6 +74,8 @@
       <symbol id="ic-x" viewBox="0 0 24 24"><path d="M4 4l7.2 9.3L4.4 20h2.4l5.5-5.6L16.8 20H20l-7.5-9.7L18.9 4h-2.4l-4.9 5.1L8 4z" fill="currentColor"/></symbol>
       <symbol id="ic-chevron" viewBox="0 0 24 24"><path d="M6 9.5l6 6 6-6" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
       <symbol id="ic-contrast" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="2"/><path d="M12 3a9 9 0 0 1 0 18z" fill="currentColor"/></symbol>
+      <symbol id="ic-edit" viewBox="0 0 24 24"><path d="M4 20h4l10-10a2.8 2.8 0 0 0-4-4L4 16z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><path d="M13.5 6.5l4 4" fill="none" stroke="currentColor" stroke-width="2"/></symbol>
+      <symbol id="ic-user" viewBox="0 0 24 24"><circle cx="12" cy="8" r="3.6" fill="none" stroke="currentColor" stroke-width="2"/><path d="M5 20a7 7 0 0 1 14 0" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></symbol>
     </defs>
   </svg>
 
@@ -133,6 +135,11 @@
       </header>
 
       <div class="menu-main">
+        <button class="nick-chip" data-action="edit-nickname" aria-label="Alterar apelido">
+          <svg class="ic ic-sm" aria-hidden="true"><use href="#ic-user"/></svg>
+          <span>Olá, <b id="menu-nickname">Jogador</b></span>
+          <svg class="ic ic-sm nick-chip-pencil" aria-hidden="true"><use href="#ic-edit"/></svg>
+        </button>
         <div class="record-card">
           <svg class="ic" aria-hidden="true"><use href="#ic-trophy"/></svg>
           <div>
@@ -275,6 +282,16 @@
       </div>
       <div class="panel-body">
         <div class="settings-group">
+          <h3><svg class="ic" aria-hidden="true"><use href="#ic-user"/></svg> Perfil</h3>
+          <div class="setting-row">
+            <span class="label">Apelido</span>
+            <span class="setting-nick"><b id="set-nickname">Jogador</b>
+              <button class="btn btn-small" data-action="edit-nickname">Alterar</button>
+            </span>
+          </div>
+          <p class="small muted" style="padding:2px 4px">Salvo apenas neste dispositivo. Aparece no ranking e ao compartilhar.</p>
+        </div>
+        <div class="settings-group">
           <h3>Áudio</h3>
           <label class="setting-row">
             <span class="label"><svg class="ic" aria-hidden="true"><use href="#ic-volume"/></svg> Efeitos sonoros</span>
@@ -368,6 +385,7 @@
       <div id="go-record" class="record-badge" hidden>
         <svg class="ic" aria-hidden="true"><use href="#ic-trophy"/></svg> NOVO RECORDE
       </div>
+      <div class="go-nick" id="go-nick" hidden></div>
       <div class="go-score"><span id="go-score">0</span></div>
       <div class="go-best">Recorde: <span id="go-best">0</span></div>
       <div id="go-stats" class="go-stats"></div>
@@ -387,6 +405,30 @@
       </div>
     </div>
   </section>
+
+  <!-- ================= MODAL: APELIDO (onboarding + edição) ================= -->
+  <div id="modal-nickname" class="modal" hidden role="dialog" aria-modal="true" aria-labelledby="nick-title">
+    <div class="panel modal-panel">
+      <div class="panel-head">
+        <h3 class="panel-title" id="nick-title">Escolha seu apelido</h3>
+      </div>
+      <p class="small muted" id="nick-hint">Seu apelido aparece no ranking e quando você compartilha. <b>Não use seu nome real nem dados pessoais.</b></p>
+      <label class="nick-field" for="nick-input">
+        <span class="nick-label">Apelido</span>
+        <span class="nick-inputwrap">
+          <input type="text" id="nick-input" class="nick-input" placeholder="Ex.: NeoPilot"
+                 maxlength="12" autocomplete="off" autocapitalize="off" autocorrect="off"
+                 spellcheck="false" enterkeyhint="done" aria-describedby="nick-error">
+          <span id="nick-counter" class="nick-counter" aria-hidden="true">0/12</span>
+        </span>
+      </label>
+      <p id="nick-error" class="nick-error" role="status" aria-live="polite"></p>
+      <div class="panel-foot column">
+        <button class="btn btn-primary" id="nick-save" data-action="nick-save">Salvar e jogar</button>
+        <button class="btn btn-ghost" id="nick-skip" data-action="nick-skip">Pular por agora</button>
+      </div>
+    </div>
+  </div>
 
   <!-- ================= MODAL: COMPARTILHAR ================= -->
   <div id="modal-share" class="modal" hidden role="dialog" aria-modal="true" aria-labelledby="share-title">
