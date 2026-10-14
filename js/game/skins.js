@@ -239,6 +239,7 @@ export function resolveLook(skinId, custom) {
   const s = getSkin(skinId);
   const c = custom || {};
   return {
+    id: s.id,
     paleta: PALETAS[c.paleta] || PALETAS[s.paleta],
     rastro: RASTROS[c.rastro] || RASTROS[s.rastro],
     aura: AURAS[c.aura] || AURAS[s.aura],

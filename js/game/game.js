@@ -12,6 +12,7 @@ import {
   circleRectHit, circlesHit, COLORS,
 } from './entities.js';
 import { difficultyParams, spawnObstacles, spawnPickupWave, spawnPowerup, resetSpawner } from './spawner.js';
+import { equippedLook, skinCollectFx } from './skinrender.js';
 import {
   burst, ring, shockwave, floatText, comboText, levelBanner,
   updateParticles, drawParticles,
@@ -483,9 +484,8 @@ function collectPulse(pk) {
   g.runStats.maxCombo = Math.max(g.runStats.maxCombo, g.multiplier);
 
   sfx('pickup', { combo: g.combo });
-  // coleta: explosão mais densa e brilhante (pool fixo; menos com mov. reduzido)
-  burst(pk.x, pk.y, COLORS.cyan, g.reduceMotion ? 6 : 14, 190, 2.6);
-  if (!g.reduceMotion) burst(pk.x, pk.y, COLORS.white, 5, 120, 1.8);
+  // coleta: efeito da skin equipada (pool fixo de partículas; menos com mov. reduzido)
+  skinCollectFx(pk.x, pk.y, equippedLook(), g.reduceMotion);
   floatText(pk.x, pk.y - 14 * S, `+${points}`, g.x2Timer > 0 ? COLORS.yellow : COLORS.cyan, 15 + g.multiplier);
 
   if (g.multiplier > prevMult) {
@@ -538,7 +538,7 @@ export function render(time) {
     const contrast = state.settings.highContrast;
     for (const o of g.obstacles) drawObstacle(ctx, o, { contrast });
     if (g.mode !== 'gameover') drawDangerChevrons(ctx);
-    drawPlayer(ctx, g.player, time, g.reduceMotion);
+    drawPlayer(ctx, g.player, time, g.reduceMotion, equippedLook());
     drawParticles(ctx);
     drawTexts(ctx);
   } else {
@@ -560,7 +560,7 @@ function drawMenuDecor(ctx, time) {
   const cx = wide ? g.W * 0.62 : g.W / 2;
   const cy = wide ? g.H * 0.9 : g.H * 0.46;
   const R = Math.min(g.W, g.H) * (wide ? 0.0625 : 0.13);
-  drawOrbDecor(ctx, cx, cy, R, time, g.reduceMotion);
+  drawOrbDecor(ctx, cx, cy, R, time, g.reduceMotion, equippedLook());
 
   const orbitR = R * 2.3;
   const n = 5;

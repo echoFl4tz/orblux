@@ -1,3 +1,5 @@
+import { equippedLook, drawSkinTrail, drawSkinAura, getBodySprite } from './skinrender.js';
+
 /* =========================================================
    Entidades — criação e desenho das coisas do jogo
    (tamanhos em "unidades lógicas" multiplicados pela escala S)
@@ -117,21 +119,8 @@ function getSprite(key, paint) {
   return c;
 }
 
-/** Corpo da orbe: núcleo branco brilhante → ciano → magenta. */
+/** Corpo da orbe: caixa do sprite em função do raio (mesmo valor de SEMPRE). */
 const ORB_CIRCLE = 0.49; // raio do círculo dentro da caixa do sprite (n)
-function getOrbSprite() {
-  return getSprite('orb', (g, n) => {
-    const grad = g.createRadialGradient(n * 0.4, n * 0.38, n * 0.05, n / 2, n / 2, n * 0.5);
-    grad.addColorStop(0, '#ffffff');
-    grad.addColorStop(0.38, '#bdf8ff');
-    grad.addColorStop(0.6, COLORS.cyan);
-    grad.addColorStop(1, COLORS.magenta);
-    g.fillStyle = grad;
-    g.beginPath();
-    g.arc(n / 2, n / 2, n * ORB_CIRCLE, 0, Math.PI * 2);
-    g.fill();
-  });
-}
 
 /** Losango do pulso (coletável): gradiente ciano + centro claro. */
 const PICK_CIRCLE = 0.44; // meia-largura do losango dentro da caixa (n)
@@ -166,20 +155,18 @@ function getPickupSprite() {
 // ---------------------------------------------------------
 const ORB_SCALE = 1.25; // visual +25% (a hitbox/colisão continua p.r)
 
-export function drawPlayer(ctx, p, time, reduceMotion) {
-  const R = p.r * ORB_SCALE;
+/**
+ * Orbe do jogador com a skin equipada.
+ * A HITBOX NÃO MUDA: todo o raio visual deriva de p.r (raio base),
+ * para QUALQUER skin — ver tests/skin-hitbox.test.mjs.
+ * @param {object} [look]  look resolvido da skin (fallback: a equipada)
+ */
+export function drawPlayer(ctx, p, time, reduceMotion, look) {
+  const L = look || equippedLook();
+  const R = p.r * ORB_SCALE;   // visual = raio base * 1.25 (igual em todas as skins)
 
-  // Rastro: mais longo e com fade suave (curva quadrada)
-  for (let i = 0; i < p.trail.length; i++) {
-    const tp = p.trail[i];
-    const k = (i + 1) / p.trail.length;
-    ctx.globalAlpha = k * k * 0.34;
-    ctx.fillStyle = COLORS.cyan;
-    ctx.beginPath();
-    ctx.arc(tp.x, tp.y, p.r * (0.35 + k * 0.8), 0, Math.PI * 2);
-    ctx.fill();
-  }
-  ctx.globalAlpha = 1;
+  // Rastro no estilo da skin (só primitivas de caminho — sem alocação)
+  drawSkinTrail(ctx, p, L, time, reduceMotion);
 
   // Invulnerabilidade: pisca por opacidade — nunca some por completo (piso 0.35)
   let alpha = 1;
@@ -188,10 +175,13 @@ export function drawPlayer(ctx, p, time, reduceMotion) {
     if (alpha < 0.35) alpha = 0.35;
   }
 
-  // Halo ciano constante (sprite offscreen, sem pulso grande)
-  drawGlow(ctx, p.x, p.y, R * 2.1, COLORS.cyan, 0.72 * alpha);
+  // Halo na cor da paleta da skin (sprite offscreen, sem pulso grande)
+  drawGlow(ctx, p.x, p.y, R * 2.1, L.paleta.brilho, 0.72 * alpha);
 
-  // Corpo pré-renderizado (sem gradiente radial por frame)
+  // Aura atrás do corpo (anel/pulsante/órbitas)
+  drawSkinAura(ctx, p.x, p.y, R, L, time, reduceMotion, alpha);
+
+  // Corpo pré-renderizado da skin (mesma caixa de SEMPRE — só muda a arte)
   // Squash & stretch: estica na direção do movimento (direção = rastro)
   const box = R / ORB_CIRCLE;
   let ang = 0, stretch = 0;
@@ -209,16 +199,16 @@ export function drawPlayer(ctx, p, time, reduceMotion) {
     ctx.translate(p.x, p.y);
     ctx.rotate(ang);
     ctx.scale(1 + 0.16 * stretch, 1 / (1 + 0.10 * stretch));
-    ctx.drawImage(getOrbSprite(), -box / 2, -box / 2, box, box);
+    ctx.drawImage(getBodySprite(L), -box / 2, -box / 2, box, box);
     ctx.restore();
   } else {
-    ctx.drawImage(getOrbSprite(), p.x - box / 2, p.y - box / 2, box, box);
+    ctx.drawImage(getBodySprite(L), p.x - box / 2, p.y - box / 2, box, box);
   }
   ctx.globalAlpha = 1;
 
-  // Anel externo sutil
+  // Anel externo sutil na cor da paleta
   ctx.globalAlpha = 0.5 * alpha;
-  ctx.strokeStyle = 'rgba(190,248,255,0.9)';
+  ctx.strokeStyle = L.paleta.brilho;
   ctx.lineWidth = 2;
   ctx.beginPath();
   ctx.arc(p.x, p.y, R + 2.5, 0, Math.PI * 2);
@@ -451,23 +441,25 @@ function drawBoltGlyph(ctx, cx, cy, r) {
 // ---------------------------------------------------------
 //  Decoração do menu (atrás do DOM do menu, nunca sobre o jogo)
 // ---------------------------------------------------------
-/** Orbe decorativa grande com respiração + anel magenta girando. */
-export function drawOrbDecor(ctx, x, y, r, time, reduceMotion) {
+/** Decoração do menu: orbe com a SKIN EQUIPADA (respiração + anel). */
+export function drawOrbDecor(ctx, x, y, r, time, reduceMotion, look) {
+  const L = look || equippedLook();
   const breathe = reduceMotion ? 1 : 1 + Math.sin(time * 1.4) * 0.045;
   const R = r * breathe;
 
-  drawGlow(ctx, x, y, R * 2.2, COLORS.cyan, 0.55);
+  drawGlow(ctx, x, y, R * 2.2, L.paleta.brilho, 0.55);
+  drawSkinAura(ctx, x, y, R, L, time, reduceMotion, 1);
   const box = R / ORB_CIRCLE;
-  ctx.drawImage(getOrbSprite(), x - box / 2, y - box / 2, box, box);
+  ctx.drawImage(getBodySprite(L), x - box / 2, y - box / 2, box, box);
 
-  ctx.strokeStyle = 'rgba(190,248,255,0.55)';
+  ctx.strokeStyle = 'rgba(255,255,255,0.55)';
   ctx.lineWidth = 2;
   ctx.beginPath();
   ctx.arc(x, y, R + 3, 0, Math.PI * 2);
   ctx.stroke();
 
-  if (!reduceMotion) {
-    // dois arcos magenta girando ao redor
+  // arcos magenta de sempre — exceto se a skin já tem aura de órbitas (evita duplicar)
+  if (!reduceMotion && L.aura.tipo !== 'orbitas') {
     const a = time * 0.8;
     ctx.strokeStyle = COLORS.magenta;
     ctx.lineWidth = 2.5;
