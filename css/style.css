@@ -584,6 +584,8 @@ a:hover { text-decoration: underline; }
 }
 .podium-slot.mine { outline: 2px solid var(--primary); outline-offset: 2px; }
 .podium-slot.mine .podium-name { color: var(--primary); }
+.ranking-list .rank-report { display: inline-block; margin-left: 8px; font-size: 0.72rem; color: var(--text-2); text-decoration: underline; }
+.ranking-list .rank-report:hover { color: var(--danger); }
 
 .empty-state { text-align: center; color: var(--text-2); padding: var(--s5) 0; }
 .empty-state .ic { width: 48px; height: 48px; opacity: 0.5; margin-bottom: var(--s2); color: var(--primary); }

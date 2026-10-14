@@ -5,30 +5,47 @@
 
 import { state } from '../core/state.js';
 import { on } from '../core/events.js';
+import { validateNickname, escapeHtml } from '../core/nickname.js';
 
 /* ------------------------------------------------------------------
-   RANKING GLOBAL (opcional) — Supabase
+   RANKING GLOBAL (opcional) — Supabase — DESLIGADO por padrão
    ------------------------------------------------------------------
    1) Crie um projeto grátis em https://supabase.com
-   2) rode no SQL editor:
+   2) rode no SQL editor (com validação NO SERVIDOR — o cliente não é
+      confiável: qualquer pessoa pode enviar qualquer pontuação):
 
       create table scores (
         id bigserial primary key,
         name text not null,
         score integer not null,
-        created_at timestamp with time zone default now()
+        created_at timestamp with time zone default now(),
+        -- nome: 3..12 chars, sem links/e-mails
+        constraint name_len check (char_length(name) between 3 and 12),
+        constraint name_no_url check (name !~ 'https?://|www\.|@'),
+        -- pontuação plausível (ajuste ao seu balanceamento)
+        constraint score_range check (score between 0 and 200000)
       );
       alter table scores enable row security;
       create policy "leitura publica" on scores for select using (true);
       create policy "insert publico" on scores for insert with check (true);
 
-   3) Preencha abaixo e ligue GLOBAL_RANKING.
+   3) Aplique rate limit por IP/dispositivo no proxy/Edge Function do
+      Supabase (ex.: máx. 10 inserções/min por IP). O score do cliente
+      NÃO é confiável — trate a tabela como "diversão", não oficial.
+
+   4) MODERAÇÃO (exigida pela Google Play para conteúdo gerado por
+      usuários exibido a outros): cada linha do ranking global mostra um
+      link "Denunciar" que abre e-mail com o ID da entrada. Configure
+      MODERATION_EMAIL abaixo e apague linhas denunciadas no painel.
+
+   5) Preencha url/key abaixo e ligue GLOBAL_RANKING.enabled = true.
 ------------------------------------------------------------------ */
 export const GLOBAL_RANKING = {
   enabled: false,
   url: 'https://SEU-PROJETO.supabase.co/rest/v1/scores',
   key: 'SUA-CHAVE-ANON-PUBLICA', // chave "anon public" (segura p/ cliente)
   limit: 10,
+  moderationEmail: 'moderacao@SEU-DOMINIO.com',
 };
 
 export function initRanking() {
@@ -97,15 +114,22 @@ async function fetchGlobal() {
   const list = document.getElementById('ranking-global-list');
   if (!list || !GLOBAL_RANKING.enabled) return;
   try {
-    const res = await fetch(`${GLOBAL_RANKING.url}?select=name,score&order=score.desc&limit=${GLOBAL_RANKING.limit}`, {
+    const res = await fetch(`${GLOBAL_RANKING.url}?select=id,name,score&order=score.desc&limit=${GLOBAL_RANKING.limit}`, {
       headers: { apikey: GLOBAL_RANKING.key, Authorization: `Bearer ${GLOBAL_RANKING.key}` },
     });
     if (!res.ok) throw new Error(res.status);
     const rows = await res.json();
     if (list) {
-      list.innerHTML = rows.map((r, i) =>
-        `<li><span><span class="rank-pos">${i + 1}º</span> ${escapeHtml(r.name)}</span><b>${r.score.toLocaleString('pt-BR')}</b></li>`
-      ).join('');
+      // renderização segura: escapeHtml em todo dado vindo da rede; score é número
+      list.innerHTML = rows.map((r, i) => {
+        const nm = escapeHtml(String(r.name ?? '').slice(0, 12));
+        const sc = Number(r.score) || 0;
+        const id = escapeHtml(String(r.id ?? ''));
+        const report = GLOBAL_RANKING.moderationEmail
+          ? ` <a class="rank-report" href="mailto:${escapeHtml(GLOBAL_RANKING.moderationEmail)}?subject=${encodeURIComponent('Denúncia de ranking #')}${id}&body=${encodeURIComponent('Denuncio a entrada #' + id + ' do ranking global do ORBLUX.')}" aria-label="Denunciar esta entrada">Denunciar</a>`
+          : '';
+        return `<li><span><span class="rank-pos">${i + 1}º</span> <b>${nm}</b></span><span class="rank-date">${sc.toLocaleString('pt-BR')}${report}</span></li>`;
+      }).join('');
     }
     const title = document.getElementById('ranking-global-title');
     if (title) title.hidden = false;
@@ -114,9 +138,13 @@ async function fetchGlobal() {
   }
 }
 
-/** Envia uma pontuação para o ranking global (chame após configurar). */
+/** Envia uma pontuação ao ranking global (valida e sanitiza antes; desligado por padrão). */
 export async function submitGlobalScore(name, score) {
   if (!GLOBAL_RANKING.enabled) return false;
+  // nunca confie no cliente: valida nome e limita a pontuação antes de enviar
+  const v = validateNickname(name);
+  if (!v.ok) return false;
+  const sc = Math.max(0, Math.min(200000, Math.floor(Number(score) || 0)));
   try {
     await fetch(GLOBAL_RANKING.url, {
       method: 'POST',
@@ -125,14 +153,10 @@ export async function submitGlobalScore(name, score) {
         Authorization: `Bearer ${GLOBAL_RANKING.key}`,
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({ name, score }),
+      body: JSON.stringify({ name: v.value, score: sc }),
     });
     return true;
   } catch {
     return false;
   }
-}
-
-function escapeHtml(s) {
-  return String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 }
