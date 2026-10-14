@@ -27,11 +27,11 @@
   /* Tipografia */
   --font-display: 'Orblux Display', 'Orbitron', ui-sans-serif, system-ui, sans-serif;
   --font-sans: 'Orblux Sans', 'Inter', ui-sans-serif, system-ui, sans-serif;
-  --fs-logo: clamp(2.1rem, 9vw, 3.4rem);
+  --fs-logo: clamp(2.6rem, 11.5vw, 4.6rem);
   --fs-h2: clamp(1.25rem, 4.6vw, 1.6rem);
   --fs-body: clamp(0.95rem, 3.6vw, 1rem);
   --fs-caption: 0.8rem;
-  --fs-score: clamp(2.6rem, 11vw, 3.8rem);
+  --fs-score: clamp(3rem, 14vw, 4.6rem);
 
   /* Espaçamento (escala de 4px) */
   --s1: 4px; --s2: 8px; --s3: 12px; --s4: 16px; --s5: 20px; --s6: 24px; --s8: 32px;
@@ -316,12 +316,18 @@ a:hover { text-decoration: underline; }
   white-space: nowrap;
 }
 .logo-orb {
-  width: 0.92em;
-  height: 0.92em;
+  width: 1.26em;                        /* orbe do "O" ~1.4x — protagonista da marca */
+  height: 1.26em;
   flex: 0 0 auto;
   filter: drop-shadow(0 0 10px rgba(34, 230, 255, 0.55));
-  animation: orbPulse 3.4s ease-in-out infinite;
+  animation: orbPulse 3.4s ease-in-out infinite;   /* respiração */
 }
+.logo-orb .orb-ring {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: orbSpin 9s linear infinite;           /* anel girando */
+}
+@keyframes orbSpin { to { transform: rotate(360deg); } }
 .logo-a { color: var(--primary); text-shadow: var(--glow-1); }
 .logo-b { color: var(--secondary); text-shadow: var(--glow-pink-1); }
 @keyframes orbPulse {
@@ -383,11 +389,27 @@ a:hover { text-decoration: underline; }
 .menu-grid {
   width: 100%;
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
+  grid-template-columns: repeat(3, 1fr);   /* 3 botões iguais em linha — sem órfão */
   gap: var(--s2);
 }
-.menu-grid .btn { width: 100%; font-size: 0.85rem; padding: 0 var(--s3); }
-.btn-play { max-width: 420px; animation: playPulse 2.6s ease-in-out infinite; }
+.menu-grid .btn {
+  width: 100%;
+  min-height: 68px;
+  flex-direction: column;                  /* ícone em cima, rótulo embaixo */
+  gap: 4px;
+  font-size: 0.74rem;
+  padding: 8px 4px;
+  white-space: nowrap;
+}
+.menu-grid .btn .ic { width: 20px; height: 20px; }
+.btn-play {
+  width: min(100%, 420px);
+  max-width: 420px;
+  min-height: 64px;                        /* JOGAR enorme */
+  font-size: 1.3rem;
+  letter-spacing: 0.06em;
+  animation: playPulse 2.6s ease-in-out infinite;
+}
 @keyframes playPulse {
   0%, 100% { box-shadow: var(--glow-1), var(--glow-2); }
   50% { box-shadow: 0 0 20px rgba(34, 230, 255, 0.65), 0 0 44px rgba(255, 61, 240, 0.3); }
@@ -512,6 +534,7 @@ a:hover { text-decoration: underline; }
 .howto-list li:nth-child(4) .howto-ic { background: rgba(77, 255, 158, 0.12); color: var(--success); border-color: rgba(77, 255, 158, 0.3); }
 .howto-list li:nth-child(5) .howto-ic { background: rgba(255, 228, 94, 0.12); color: var(--reward); border-color: rgba(255, 228, 94, 0.3); }
 .howto-list b { display: block; margin-bottom: 2px; }
+.howto-ic .mini { width: 30px; height: 30px; flex: 0 0 auto; }
 
 /* ---------------------------------------------------------
    8. RANKING + CONQUISTAS
@@ -661,6 +684,7 @@ a:hover { text-decoration: underline; }
    10. FIM DE JOGO / PAUSA
 --------------------------------------------------------- */
 .record-badge {
+  position: relative;
   align-self: center;
   display: inline-flex;
   align-items: center;
@@ -674,6 +698,29 @@ a:hover { text-decoration: underline; }
   font-weight: 800;
   letter-spacing: 1px;
   animation: recordGlow 1.4s ease-in-out infinite;
+}
+/* Confetes do NOVO RECORDE (spawns no screens.js; cortados com mov. reduzido) */
+.confetti {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 0;
+  height: 0;
+  pointer-events: none;
+}
+.confetti i {
+  position: absolute;
+  left: -4px;
+  top: -5px;
+  width: 8px;
+  height: 11px;
+  border-radius: 2px;
+  opacity: 0;
+  animation: confettiFall 1.5s ease-out both;
+}
+@keyframes confettiFall {
+  0% { transform: translate(0, 0) rotate(0deg); opacity: 1; }
+  100% { transform: translate(var(--cx, 0px), var(--cy, 120px)) rotate(var(--cr, 360deg)); opacity: 0; }
 }
 @keyframes recordGlow {
   0%, 100% { box-shadow: 0 0 10px rgba(255, 228, 94, 0.3); }
@@ -691,6 +738,18 @@ a:hover { text-decoration: underline; }
   text-shadow: var(--glow-pink-1), var(--glow-pink-2);
 }
 .go-best { text-align: center; color: var(--text-2); font-size: 0.9rem; }
+/* "reviveu" vive DENTRO do stat de tempo (nunca item órfão na grade) */
+.go-revived {
+  display: inline-block;
+  margin-left: 6px;
+  padding: 1px 7px;
+  border-radius: var(--r-full);
+  background: rgba(77, 255, 158, 0.14);
+  border: 1px solid rgba(77, 255, 158, 0.5);
+  color: var(--success);
+  font-size: 0.68rem;
+  font-weight: 700;
+}
 
 .go-stats {
   display: grid;
@@ -720,6 +779,23 @@ a:hover { text-decoration: underline; }
 
 .pause-score { text-align: center; color: var(--text-2); }
 .pause-score b { color: var(--text-1); font-variant-numeric: tabular-nums; }
+
+/* Pausa com blur no fundo (o jogo fica visível, mas \"desfocado\") */
+#screen-pause {
+  background: rgba(2, 3, 10, 0.55);
+  backdrop-filter: blur(7px) saturate(120%);
+  -webkit-backdrop-filter: blur(7px) saturate(120%);
+}
+
+/* Toasts no fim de jogo: descem para nunca cobrir o painel */
+body[data-screen="gameover"] .toasts {
+  top: auto;
+  bottom: max(var(--s3), env(safe-area-inset-bottom));
+}
+/* e o painel abre espaço para a faixa de toasts embaixo */
+#screen-gameover {
+  padding-bottom: calc(max(var(--s3), env(safe-area-inset-bottom)) + 60px);
+}
 
 /* ---------------------------------------------------------
    11. MODAIS / ANÚNCIOS / COOKIES

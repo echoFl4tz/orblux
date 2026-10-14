@@ -15,6 +15,8 @@ export function initToasts() {
  */
 export function showToast({ icon = 'ic-medal', title, desc = '' }) {
   if (!container) return;
+  // fim de jogo: no máximo 1 toast por vez (nunca cobrir o painel)
+  if (document.body?.dataset?.screen === 'gameover' && container.children.length >= 1) return;
   const div = document.createElement('div');
   div.className = 'toast';
   div.innerHTML = `
@@ -33,4 +35,14 @@ export function showToast({ icon = 'ic-medal', title, desc = '' }) {
     div.classList.add('leaving');
     setTimeout(() => div.remove(), 400);
   }, 3200);
+}
+
+/**
+ * Limita a pilha de toasts (mantém os mais recentes).
+ * Usado ao abrir telas sensíveis: no fim de jogo, no máximo 1.
+ * @param {number} max
+ */
+export function trimToasts(max = 1) {
+  if (!container) return;
+  while (container.children.length > max) container.removeChild(container.firstChild);
 }

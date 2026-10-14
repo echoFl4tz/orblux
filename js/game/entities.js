@@ -448,6 +448,36 @@ function drawBoltGlyph(ctx, cx, cy, r) {
   ctx.fill();
 }
 
+// ---------------------------------------------------------
+//  Decoração do menu (atrás do DOM do menu, nunca sobre o jogo)
+// ---------------------------------------------------------
+/** Orbe decorativa grande com respiração + anel magenta girando. */
+export function drawOrbDecor(ctx, x, y, r, time, reduceMotion) {
+  const breathe = reduceMotion ? 1 : 1 + Math.sin(time * 1.4) * 0.045;
+  const R = r * breathe;
+
+  drawGlow(ctx, x, y, R * 2.2, COLORS.cyan, 0.55);
+  const box = R / ORB_CIRCLE;
+  ctx.drawImage(getOrbSprite(), x - box / 2, y - box / 2, box, box);
+
+  ctx.strokeStyle = 'rgba(190,248,255,0.55)';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.arc(x, y, R + 3, 0, Math.PI * 2);
+  ctx.stroke();
+
+  if (!reduceMotion) {
+    // dois arcos magenta girando ao redor
+    const a = time * 0.8;
+    ctx.strokeStyle = COLORS.magenta;
+    ctx.lineWidth = 2.5;
+    ctx.globalAlpha = 0.6;
+    ctx.beginPath(); ctx.arc(x, y, R + 13, a, a + 1.25); ctx.stroke();
+    ctx.beginPath(); ctx.arc(x, y, R + 13, a + Math.PI, a + Math.PI + 1.25); ctx.stroke();
+    ctx.globalAlpha = 1;
+  }
+}
+
 function roundRect(ctx, x, y, w, h, r) {
   ctx.moveTo(x + r, y);
   ctx.arcTo(x + w, y, x + w, y + h, r);

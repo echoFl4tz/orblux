@@ -8,7 +8,7 @@ import { getAxis, getPointer, resetInput } from '../core/input.js';
 import { sfx, getMusicPulse } from '../core/audio.js';
 import { state } from '../core/state.js';
 import {
-  createPlayer, drawPlayer, drawObstacle, drawPickup, drawPowerup,
+  createPlayer, drawPlayer, drawObstacle, drawPickup, drawPowerup, drawOrbDecor,
   circleRectHit, circlesHit, COLORS,
 } from './entities.js';
 import { difficultyParams, spawnObstacles, spawnPickupWave, spawnPowerup, resetSpawner } from './spawner.js';
@@ -527,11 +527,38 @@ export function render(time) {
     drawParticles(ctx);
     drawTexts(ctx);
   } else {
-    // menu: partículas decorativas continuam vivas
+    // menu: orbe decorativa grande + pulsos orbitando (atrás do DOM),
+    // partículas decorativas continuam vivas
+    if (g.mode === 'menu') drawMenuDecor(ctx, time);
     drawParticles(ctx);
+    drawTexts(ctx);
   }
 
   ctx.setTransform(1, 0, 0, 1, 0, 0);
+}
+
+/** Decoração do menu: orbe respirando com anel girando e pulsos em órbita. */
+function drawMenuDecor(ctx, time) {
+  const g = game;
+  const wide = g.W > g.H;
+  // no paisagem, a orbe ocupa a faixa vazia de baixo (longe da logo e dos botões)
+  const cx = wide ? g.W * 0.62 : g.W / 2;
+  const cy = wide ? g.H * 0.9 : g.H * 0.46;
+  const R = Math.min(g.W, g.H) * (wide ? 0.0625 : 0.13);
+  drawOrbDecor(ctx, cx, cy, R, time, g.reduceMotion);
+
+  const orbitR = R * 2.3;
+  const n = 5;
+  for (let i = 0; i < n; i++) {
+    const a = (Math.PI * 2 * i) / n + (g.reduceMotion ? 0 : time * 0.55);
+    const pk = {
+      x: cx + Math.cos(a) * orbitR,
+      y: cy + Math.sin(a) * orbitR * 0.62,     // órbita achatada p/ retrato
+      r: Math.max(7, R * 0.14),
+      t: a * 3,
+    };
+    drawPickup(ctx, pk, time, g.reduceMotion);
+  }
 }
 
 /**

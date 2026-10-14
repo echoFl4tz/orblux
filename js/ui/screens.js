@@ -8,7 +8,7 @@ import { on, emit } from '../core/events.js';
 import { state, saveSettings, saveMissions, resetAllProgress, resetTutorialFlag, markTutorialDone } from '../core/state.js';
 import { startGame, pauseGame, resumeGame, quitToMenu, game, setReduceMotion } from '../game/game.js';
 import { sfx, initAudio, applyVolume, setMusicEnabled, resumeAudio } from '../core/audio.js';
-import { showToast } from './toasts.js';
+import { showToast, trimToasts } from './toasts.js';
 import { updateHudMenuBest } from './hud.js';
 
 const SCREEN_IDS = {
@@ -82,6 +82,8 @@ export function showScreen(name) {
     if (el) el.classList.toggle('active', key === name);
   }
   document.body.dataset.screen = name || 'playing';
+  // fim de jogo: no máximo 1 toast visível (os outros já disparados somem)
+  if (name === 'gameover') trimToasts(1);
 
   // foco no painel aberto (a11y): painel recebe tabindex=-1 dinamicamente.
   // Focar o painel (não um botão) evita duplo-disparo de Enter com o jogo.
@@ -107,11 +109,10 @@ export function showGameOver({ score, best, isRecord, position, elapsed, pickups
   const secs = Math.floor(elapsed % 60);
   const icon = (id) => `<svg class="ic" aria-hidden="true"><use href="#${id}"/></svg>`;
   stats.innerHTML = `
-    <div class="go-stat">${icon('ic-clock')}<b>${mins}:${String(secs).padStart(2, '0')}</b></div>
+    <div class="go-stat">${icon('ic-clock')}<b>${mins}:${String(secs).padStart(2, '0')}</b>${revived ? '<span class="go-revived">reviveu</span>' : ''}</div>
     <div class="go-stat">${icon('ic-pulse')}<b>${pickups}</b> pulsos</div>
     <div class="go-stat">${icon('ic-flame')}máx <b>x${maxCombo}</b></div>
     <div class="go-stat">${icon('ic-bolt')}<b>Nv ${level}</b></div>
-    ${revived ? `<div class="go-stat">${icon('ic-video')}reviveu</div>` : ''}
     ${position && position <= 5 ? `<div class="go-stat go-rank">${icon('ic-trophy')}<b>${position}º</b> lugar</div>` : ''}`;
 
   // botão de reviver: só na primeira derrota da sessão
@@ -121,8 +122,34 @@ export function showGameOver({ score, best, isRecord, position, elapsed, pickups
 
   showScreen('gameover');
 
+  // selo de recorde: solta confetes (desligado com movimento reduzido)
+  if (isRecord && !state.settings.reduceMotion) spawnConfetti();
+
   // animação de contagem do placar
   animateScore(scoreEl, score);
+}
+
+/** Confetes dourados em volta do selo NOVO RECORDE (poucos elementos, uma vez). */
+function spawnConfetti() {
+  const badge = document.getElementById('go-record');
+  if (!badge) return;
+  badge.querySelectorAll('.confetti').forEach((n) => n.remove());
+  const holder = document.createElement('span');
+  holder.className = 'confetti';
+  holder.setAttribute('aria-hidden', 'true');
+  const colors = ['#ffe45e', '#22e6ff', '#ff3df0', '#4dff9e', '#ff8a4d'];
+  for (let i = 0; i < 14; i++) {
+    const bit = document.createElement('i');
+    const ang = (Math.PI * 2 * i) / 14 + Math.random() * 0.5;
+    const dist = 70 + Math.random() * 90;
+    bit.style.setProperty('--cx', `${Math.cos(ang) * dist}px`);
+    bit.style.setProperty('--cy', `${Math.abs(Math.sin(ang)) * dist * 0.9 + 40}px`);
+    bit.style.setProperty('--cr', `${Math.round(Math.random() * 720 - 360)}deg`);
+    bit.style.background = colors[i % colors.length];
+    bit.style.animationDelay = `${(Math.random() * 0.35).toFixed(2)}s`;
+    holder.appendChild(bit);
+  }
+  badge.appendChild(holder);
 }
 
 function animateScore(elScore, target) {
