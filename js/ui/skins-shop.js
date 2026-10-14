@@ -12,10 +12,10 @@ import { on } from '../core/events.js';
 import { sfx, initAudio, resumeAudio } from '../core/audio.js';
 import { showToast } from './toasts.js';
 import {
-  state, ownsSkin, equipSkin, markSkinSeen,
+  state, ownsSkin, equipSkin, markSkinSeen, setSkinCustom, resetSkinCustom,
 } from '../core/state.js';
 import {
-  SKINS, BUNDLE_SKU, getSkin, getSkinBySku, resolveLook,
+  SKINS, BUNDLE_SKU, PALETAS, RASTROS, AURAS, getSkin, getSkinBySku, resolveLook,
 } from '../game/skins.js';
 import { drawPlayer } from '../game/entities.js';
 import {
@@ -218,6 +218,7 @@ function openDetail(id, { keepTrial = false } = {}) {
   const pv = $('shop-preview');
   if (pv) pv.setAttribute('aria-label', `Pré-visualização da skin ${s.nome}`);
   renderDetailActions();
+  renderCustom();
   startPreview(previewLook);
 }
 
@@ -269,6 +270,69 @@ function renderDetailActions() {
     note.textContent = isStoreAvailable()
       ? 'Preço indisponível no momento. Toque em Restaurar compras ou tente mais tarde.'
       : 'Compras disponíveis apenas na Play Store (esta é uma demonstração).';
+  }
+}
+
+// ---------------------------------------------------------
+//  Personalização (Etapa 2) — vocabulário curado por skin
+// ---------------------------------------------------------
+function renderCustom() {
+  const cust = $('detail-custom');
+  if (!cust) return;
+  if (!detailId || !ownsSkin(detailId)) { cust.hidden = true; return; }
+  cust.hidden = false;
+  const s = getSkin(detailId);
+  const cur = state.skins.custom[detailId] || {};
+  const sel = {
+    paleta: cur.paleta || s.paleta,
+    rastro: cur.rastro || s.rastro,
+    aura: cur.aura || s.aura,
+  };
+
+  // paletas: amostra circular com as 4 cores da paleta
+  const pw = $('custom-paletas');
+  pw.innerHTML = '';
+  for (const pid of s.personalizacao.paletasPermitidas) {
+    const p = PALETAS[pid];
+    const b = document.createElement('button');
+    b.className = `swatch${sel.paleta === pid ? ' active' : ''}`;
+    b.dataset.shop = 'custom';
+    b.dataset.kind = 'paleta';
+    b.dataset.val = pid;
+    b.setAttribute('aria-pressed', String(sel.paleta === pid));
+    b.setAttribute('aria-label', `Paleta ${p.nome}`);
+    const dot = document.createElement('span');
+    dot.className = 'swatch-dot';
+    dot.style.background = `conic-gradient(${p.nucleo} 0 25%, ${p.meio} 0 50%, ${p.borda} 0 75%, ${p.brilho} 0)`;
+    const nm = document.createElement('span');
+    nm.className = 'swatch-name';
+    nm.textContent = p.nome;
+    b.appendChild(dot);
+    b.appendChild(nm);
+    pw.appendChild(b);
+  }
+
+  renderChips($('custom-rastros'),
+    s.personalizacao.rastros.map((k) => [k, RASTROS[k].nome]), sel.rastro, 'rastro');
+  renderChips($('custom-auras'),
+    s.personalizacao.auras.map((k) => [k, AURAS[k].nome]), sel.aura, 'aura');
+
+  // "Restaurar padrão da skin" só aparece quando há algo customizado
+  const rb = cust.querySelector('[data-shop="custom-reset"]');
+  if (rb) rb.hidden = !state.skins.custom[detailId];
+}
+
+function renderChips(box, options, selected, kind) {
+  box.innerHTML = '';
+  for (const [val, nome] of options) {
+    const b = document.createElement('button');
+    b.className = 'chip-btn';
+    b.dataset.shop = 'custom';
+    b.dataset.kind = kind;
+    b.dataset.val = val;
+    b.setAttribute('aria-pressed', String(selected === val));
+    b.textContent = nome;
+    box.appendChild(b);
   }
 }
 
@@ -451,13 +515,13 @@ async function runPurchase() {
     });
     prices = await fetchPrices().catch(() => prices);
     renderShopStatus();
-    if (isBundle) { renderGrid(); if (detailId) renderDetailActions(); }
+    if (isBundle) { renderGrid(); if (detailId) refreshDetail(); }
     else openResult({
       title: 'Skin liberada',
       text: 'Equipar agora?',
       actions: [
         { label: 'Equipar agora', primary: true, act: () => { equipSkin(getSkinBySku(sku).id); afterEquip(); } },
-        { label: 'Agora não', act: () => { renderGrid(); if (detailId) renderDetailActions(); } },
+        { label: 'Agora não', act: () => { renderGrid(); if (detailId) refreshDetail(); } },
       ],
     });
   } else if (res.status === 'cancelled') {
@@ -492,12 +556,19 @@ async function runPurchase() {
   }
 }
 
+/** Re-renderiza ações + personalização do detalhe aberto. */
+function refreshDetail() {
+  if (!detailId) return;
+  renderDetailActions();
+  renderCustom();
+}
+
 function afterEquip() {
   sfx('ui');
   renderGrid();
   if (detailId) {
     previewLook = resolveLook(detailId, state.skins.custom[detailId]);
-    renderDetailActions();
+    refreshDetail();
   }
 }
 
@@ -517,7 +588,10 @@ async function doRestore() {
     prices = await fetchPrices().catch(() => prices);
     renderShopStatus();
     renderGrid();
-    if (detailId) { previewLook = ownsSkin(detailId) ? resolveLook(detailId, state.skins.custom[detailId]) : previewLook; renderDetailActions(); }
+    if (detailId) {
+      if (ownsSkin(detailId)) previewLook = resolveLook(detailId, state.skins.custom[detailId]);
+      refreshDetail();
+    }
   } else {
     showToast({ icon: 'ic-skin', title: 'Nenhuma compra encontrada', desc: 'Use a mesma conta da Play Store.' });
   }
@@ -558,10 +632,26 @@ function onShopClick(e) {
     }
     case 'buy': sfx('ui'); openBuyModal(getSkin(detailId).sku); break;
     case 'bundle': sfx('ui'); openBuyModal(BUNDLE_SKU); break;
+    case 'custom': {
+      sfx('ui');
+      if (!setSkinCustom(detailId, { [el.dataset.kind]: val })) break;
+      previewLook = resolveLook(detailId, state.skins.custom[detailId]);
+      startPreview(previewLook);   // pré-visualização ao vivo reage na hora
+      renderCustom();
+      break;
+    }
+    case 'custom-reset': {
+      sfx('ui');
+      resetSkinCustom(detailId);
+      previewLook = resolveLook(detailId);
+      startPreview(previewLook);
+      renderCustom();
+      break;
+    }
     case 'buy-confirm': sfx('ui'); runPurchase(); break;
     case 'buy-cancel': sfx('ui'); closeModal('modal-buy'); break;  // cancelar: silencioso
     case 'restore': case 'restore-settings': sfx('ui'); doRestore(); break;
-    case 'custom-reset': case 'noop': break;
+    case 'noop': break;
     default: break;
   }
 }
