@@ -88,6 +88,10 @@ O ranking local (localStorage) já funciona. Para global, siga o passo a passo S
 
 ```bash
 node tests/smoke.mjs           # simula o jogo inteiro: 42 testes (lógica, colisões, ranking, missões…)
+node --test tests/*.test.mjs   # testes unitários (skins, billing, estado, personalização…)
+node tests/skins-shop-ui.cjs   # loja de skins no navegador: compra, cancelar, restaurar, vitrine
+node tests/menu-regression.cjs # regressão do menu/navegação de telas
+node tests/nickname-ui.cjs     # interface do apelido (modal, persistência, LGPD)
 node tools/validate-refs.mjs   # confere imports, IDs do HTML e assets
 node tools/audit-ui.mjs        # QA: sem emojis na interface, aria, tokens, peso < 150 KB
 node tools/gen-icons.mjs       # regenera os PNGs de ícone, maskable, apple-touch e og-image

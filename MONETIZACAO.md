@@ -116,3 +116,45 @@ contra o Play). Ative só se o volume justificar.
 - Sem botão de compra no meio da partida; no máximo **1 convite discreto por sessão**.
 - Preço sempre o do Play (não fixo em reais no código).
 - Textos não prometem vantagem nem raridade enganosa.
+
+---
+
+## 8. Teste manual guiado da loja (Etapa 8)
+
+Automatizado: `node tests/skins-shop-ui.cjs` (27 asserções) +
+`node --test tests/*.test.mjs` (unit). O roteiro abaixo é para o
+**aparelho real com a Play Store** (conta de teste).
+
+### 8.1 Demonstração sem loja (navegador)
+
+1. Abra o app num navegador comum → menu → **Skins**.
+2. Confira: selo "Novo" antes da 1ª visita; grade com 21 skins + pacote;
+   preços "Indisponível" e compra desabilitada (chip "Loja indisponível").
+3. Detalhe de uma skin: pré-visualização animada + "Experimentar"
+   (não dá vantagem; nada muda na partida).
+
+### 8.2 Mock de desenvolvimento (localhost)
+
+1. `http://localhost:8080/?debug=1` → Skins → comprar Supernova.
+2. Confira: modal "Compra única, não recorrente" com preço; resultado
+   "Skin liberada → Equipar agora?"; toast "Skin comprada!".
+3. `?debug=1&mock=cancel` → cancelar fecha em silêncio (sem erro).
+4. `?debug=1&mock=fail` → erro genérico com "Tentar de novo".
+5. Personalizar a skin comprada (paleta/rastro/aura) e conferir que o
+   preview reage na hora; "Restaurar padrão da skin" volta ao padrão.
+6. Recarregar a página → posse, skin equipada e custom continuam.
+7. Configurações → Compras → "Restaurar compras" (mostra o que o mock tem).
+
+### 8.3 Aparelho com Play Store (teste interno)
+
+Pré-requisitos: `SKINS_PLAY_CONSOLE.md` (produtos criados), testador de
+licença adicionado, app instalado via teste interno.
+
+1. Loja → comprar Brasa Neon (Bronze) → fluxo do Google Play abre.
+2. Pagar com cartão de teste → ao voltar, skin liberada e equipável.
+3. "Restaurar compras" noutro aparelho da mesma conta → skin volta.
+4. Comprar o pacote "Coleção Completa" → as 20 skins ficam com você.
+5. Cancelar no meio do pagamento do Play → fecha sem erro, sem skin.
+6. Apagar o progresso (Configurações) → confirma o texto de que skins
+   compradas **não** são apagadas; conferir na loja que continuam lá.
+7. Modo avião → abrir a loja → cache offline (7 dias) sem apagar posse.
