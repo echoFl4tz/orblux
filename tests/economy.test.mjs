@@ -97,3 +97,31 @@ test('a skin equipada NUNCA altera quantas moedas se ganham', () => {
   assert.equal(E.COINS_AD_DOUBLE, false);    // sem "dobrar com anúncio"
   assert.equal(E.MAX_COINS, 999999);         // teto da carteira
 });
+
+/* ---------------------------------------------------------
+   Preços em moedas (SKIN_PRICES + catálogo)
+--------------------------------------------------------- */
+test('preços em moedas: faixas A/B/C, lendária e grátis sem preço', async () => {
+  const { SKINS } = await import('../js/game/skins.js');
+  assert.deepEqual(E.SKIN_PRICES, { A: 600, B: 1500, C: 3500, L: 6000 });
+
+  const classic = SKINS.find((s) => s.id === 'classic');
+  assert.equal(classic.coinPrice, null);                    // grátis nunca tem preço
+
+  const pagas = SKINS.filter((s) => s.tier !== 'free');
+  assert.equal(pagas.length, 20);
+  for (const s of pagas) {                                  // toda paga tem preço inteiro > 0
+    assert.ok(Number.isInteger(s.coinPrice) && s.coinPrice > 0, `${s.id}: coinPrice inválido`);
+  }
+  const lend = pagas.filter((s) => s.coinPrice === 6000);
+  assert.equal(lend.length, 1);                             // só a Lendária Orblux
+  assert.equal(lend[0].id, 'orblux_lendaria');
+  // faixas: A=8, B=8, C=3 (sem contar a lendária)
+  assert.equal(pagas.filter((s) => s.tier === 'A' && s.coinPrice === 600).length, 8);
+  assert.equal(pagas.filter((s) => s.tier === 'B' && s.coinPrice === 1500).length, 8);
+  assert.equal(pagas.filter((s) => s.tier === 'C' && s.coinPrice === 3500).length, 3);
+  // nenhum preço vaza campo de gameplay (regra das skins)
+  for (const k of Object.keys(pagas[0])) {
+    assert.ok(!['r', 'hitbox', 'speed', 'score', 'dificuldade'].includes(k.toLowerCase()));
+  }
+});

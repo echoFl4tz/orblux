@@ -6,13 +6,17 @@
      hitbox, raio, velocidade, spawn, pontuação ou dificuldade.
      (A hitbox da orbe é sempre o raio base — ver teste em
      tests/skins.test.mjs e o desenho em entities.js, que usa p.r.)
-   - Preços NÃO moram aqui: sempre exibimos o preço devolvido pelo
-     Google Play (localizedPrice). Os "tier" indicam só a faixa a
-     configurar no Play Console (ver MONETIZACAO.md).
+   - Preço em DINHEIRO NUNCA mora aqui: sempre exibimos o preço
+     devolvido pelo Google Play (localizedPrice). Os "tier" indicam só
+     a faixa a configurar no Play Console (ver MONETIZACAO.md).
+   - `coinPrice` = preço em MOEDAS virtuais (só ganhas jogando);
+     números vêm de economy.js (SKIN_PRICES) — ver ECONOMIA.md.
 
    Vocabulários curados (paletas/rastros/auras) tornam a personalização
    (Etapa 2)Manageável e sempre legível — sem seletor de cor livre.
    ========================================================= */
+
+import { SKIN_PRICES } from '../core/economy.js';
 
 /** Faixas de preço (sugestão p/ Play Console — a UI mostra o preço do Play). */
 export const TIERS = {
@@ -113,6 +117,8 @@ function skin(o) {
     descricao: o.descricao,
     tier: o.tier,
     raridade: o.raridade,
+    // preço em MOEDAS virtuais (null na grátis; números em economy.js)
+    coinPrice: o.tier === 'free' ? null : (o.lendaria ? SKIN_PRICES.L : SKIN_PRICES[o.tier]),
     paleta: o.paleta,
     rastro: o.rastro,
     aura: o.aura,
@@ -213,7 +219,7 @@ export const SKINS = [
     descricao: 'Forma de escamas com rastro de fogo estelar.',
     paleta: 'dragao', rastro: 'fogo', aura: 'quente', particulas: 'fogo', coletaFx: 'fogo', formaOrbe: 'escamas',
     personalizacao: { paletasPermitidas: ['dragao', 'lava', 'samurai'], rastros: ['fogo', 'derretido'], auras: ['quente', 'grande', 'nenhuma'] } }),
-  skin({ id: 'orblux_lendaria', nome: 'Lendária Orblux', tier: 'C', raridade: 'Ouro',
+  skin({ id: 'orblux_lendaria', nome: 'Lendária Orblux', tier: 'C', raridade: 'Ouro', lendaria: true,
     descricao: 'Todas as cores da marca, anel orbital duplo e coleta com onda de choque.',
     paleta: 'orblux', rastro: 'orbitas', aura: 'orbitas', particulas: 'neon', coletaFx: 'onda', formaOrbe: 'circulo',
     personalizacao: { paletasPermitidas: ['orblux', 'cyber', 'arcoiris'], rastros: ['orbitas', 'gradiente'], auras: ['orbitas', 'grande', 'nenhuma'] } }),

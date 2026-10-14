@@ -8,6 +8,7 @@
      (3) partida começa com pontuação 0 (fim do bônus de missão)
      (4) OX.economy publicado em ?debug=1
      (5) 390x844 e 1280x720 sem overflow; zero erros de console
+     (6) preços em moedas do catálogo ao vivo (600/1500/3500/6000)
    Pré-requisito: dev server em http://localhost:8080 (sobe se preciso).
    Uso: node tests/economy-ui.cjs
    ========================================================= */
@@ -120,6 +121,25 @@ async function newPage(browser, size, query) {
   ok(toasts.includes('Missão concluída') && toasts.includes('moedas'), 'toast diz "Missão concluída! ... N moedas"');
   const stored = await mp.evaluate(() => JSON.parse(localStorage.getItem('pn_wallet')).d.coins);
   ok(stored === after, 'saldo persistido no pn_wallet');
+
+  // (6) preços em moedas do catálogo vivem na página (nunca em dinheiro)
+  const precos = await mp.evaluate(async () => {
+    const m = await import('/js/game/skins.js');
+    const pagas = m.SKINS.filter((s) => s.tier !== 'free');
+    return {
+      total: pagas.length,
+      A: pagas.filter((s) => s.coinPrice === 600).length,
+      B: pagas.filter((s) => s.coinPrice === 1500).length,
+      C: pagas.filter((s) => s.coinPrice === 3500).length,
+      L: pagas.filter((s) => s.coinPrice === 6000).length,
+      classic: m.SKINS.find((s) => s.id === 'classic').coinPrice,
+      inteiros: pagas.every((s) => Number.isInteger(s.coinPrice) && s.coinPrice > 0),
+    };
+  });
+  ok(precos && precos.total === 20 && precos.A === 8 && precos.B === 8
+    && precos.C === 3 && precos.L === 1 && precos.inteiros,
+    'catálogo vivo: 20 pagas — 8×600, 8×1.500, 3×3.500, 1×6.000');
+  ok(precos.classic === null, 'Clássica sem preço de moedas (grátis)');
 
   ok(await mp.evaluate(() => document.documentElement.scrollWidth <= 391), 'menu sem overflow em 390px');
   await mp.waitForTimeout(300);

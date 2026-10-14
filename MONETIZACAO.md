@@ -196,3 +196,8 @@ construção: não há nenhuma transação de dinheiro real fora da Play.
 6. `resetAllProgress` apaga moedas e skins compradas com moedas **por padrão**
    (texto explícito no modal) e **mantém sempre** as skins compradas com
    dinheiro (a Play as restaura).
+
+**Números da economia:** fórmula por partida, preços em moedas (A 600 /
+B 1.500 / C 3.500 / Lendária 6.000), tempos estimados e simulador — tudo em
+`ECONOMIA.md`; código-fonte único dos valores: `js/core/economy.js`
+(reexecutar `node tools/sim-economy.mjs` ao mudar qualquer número).

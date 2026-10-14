@@ -16,6 +16,14 @@
 /** Teto da carteira (evita número absurdo por adulteração/estouro). */
 export const MAX_COINS = 999999;
 
+/**
+ * Preços das skins em MOEDAS por faixa (L = Lendária).
+ * Moedas só se ganham jogando — jamais há conversão para dinheiro.
+ * (Preço em REAIS não mora em lugar nenhum do código: a UI sempre
+ * mostra o valor devolvido pelo Google Play — ver skins.js.)
+ */
+export const SKIN_PRICES = { A: 600, B: 1500, C: 3500, L: 6000 };
+
 /** Recompensa diária por dia de sequência (dia 7 repete). */
 export const DAILY_REWARDS = [20, 25, 30, 35, 40, 50, 100];
 
