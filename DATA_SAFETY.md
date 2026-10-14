@@ -18,6 +18,14 @@ Baseado no comportamento real do app (ver `js/core/state.js`, `js/ui/ranking.js`
 | **Apelido + pontuação** (ranking global — **desligado por padrão**) | Sim, **se ativado** | Sim, **se ativado** (exibido publicamente no ranking) | Funcionalidade do app (ranking online) | Não (só se o ranking global estiver ligado) | Remoção via e-mail de contato (`privacy.html`) ou apagando o progresso |
 | **Recorde, ranking local, conquistas, missões, configurações** | **Não** | **Não** | — (armazenamento local do dispositivo) | — | *Configurações → Apagar progresso* |
 | **Dados de anúncios** (cookies de terceiros, ex.: Google AdSense) | Sim, **apenas com consentimento** | Sim (parceiros de anúncio) | Anúncios personalizados | Não (recusável no aviso de cookies) | "Só o essencial" no aviso; revogável limpando dados do site |
+| **Dados de compra** (skins na Play Store) | **Não** (processados pela Google Play) | **Não** | — o app só recebe da Play Store a *lista de posse* das skins | — | Reembolso/revogação via conta Google; o app remove a skin na próxima sincronização |
+
+> Nota sobre compras: o ORBLUX usa a **Google Play Billing** (via Digital Goods
+> API em TWA). Dados de pagamento (cartão, conta Google) são tratados
+> **inteiramente pela Google** — o app não recebe nem armazena nenhum deles.
+> Por isso **não** se declara "Informações de compra" como coletada pelo app no
+> formulário do Play Console. As skins são itens estéticos, sem loot box e sem
+> assinatura (ver `SKINS_PLAY_CONSOLE.md`).
 
 ---
 
