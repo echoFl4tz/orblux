@@ -41,7 +41,11 @@ const RAF_TRACK = `
   const oRaf = window.requestAnimationFrame.bind(window);
   window.requestAnimationFrame = (cb) => { window.__rafPending++; return oRaf((t) => { window.__rafPending--; return cb(t); }); };
 `;
-const SEED = `try { localStorage.setItem('pn_consent','true'); localStorage.setItem('pn_tutorial_done','true'); } catch(e){}`;
+const SEED = `try {
+  localStorage.setItem('pn_consent','true');
+  localStorage.setItem('pn_tutorial_done','true');
+  localStorage.setItem('pn_profile', JSON.stringify({ nickname:'NeoPilot', createdAt:'2026-01-01T00:00:00.000Z', asked:true }));
+} catch(e){}`;
 
 async function ensureServer() {
   try { const r = await fetch(URL); if (r.ok) return null; } catch { /* sobe */ }
