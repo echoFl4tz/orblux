@@ -44,7 +44,7 @@ export const game = {
   lastSpawnX: null,
   spawnTimer: 0, pickupTimer: 0, powerTimer: 0,
 
-  score: 0, bonus: 0,
+  score: 0,
   combo: 0, comboTimer: 0, multiplier: 1,
   lives: LIVES_START, level: 1,
   elapsed: 0, sinceHit: 0,
@@ -172,7 +172,7 @@ function buildBackdrop() {
 // ---------------------------------------------------------
 //  Fluxo de partida
 // ---------------------------------------------------------
-/** @param {{tutorial?:boolean, bonus?:number}} opts */
+/** @param {{tutorial?:boolean}} opts */
 export function startGame(opts = {}) {
   const g = game;
   const r = 15 * g.S;
@@ -181,8 +181,7 @@ export function startGame(opts = {}) {
   g.obstacles.length = 0;
   g.pickups.length = 0;
   g.powerups.length = 0;
-  g.score = opts.bonus || 0;
-  g.bonus = opts.bonus || 0;
+  g.score = 0;                       // pontuação SEMPRE do zero (sem bônus de missão)
   g.combo = 0; g.comboTimer = 0; g.multiplier = 1;
   g.lives = LIVES_START;
   g.level = Math.floor(g.score / POINTS_PER_LEVEL) + 1;
@@ -194,7 +193,6 @@ export function startGame(opts = {}) {
   resetInput();
   g.mode = 'playing';
 
-  if (opts.bonus) floatText(g.W / 2, g.H * 0.5, `BÔNUS +${opts.bonus}`, COLORS.green, 22);
   if (opts.tutorial) startTutorial();
 
   emit('game:start', { tutorial: !!opts.tutorial });

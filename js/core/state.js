@@ -83,7 +83,8 @@ function migrateStorage() {
   }
   // v3 -> v4: carteira de moedas (pn_wallet) — criada por loadWallet() na
   // primeira leitura; entradas numéricas de skins.owned migram para
-  // { at, source:'play' } dentro de loadSkins() (formato validado ali).
+  // { at, source:'play' } dentro de loadSkins() (formato validado ali);
+  // o bônus de missão legado vira moedas em missions.js (migrateLegacyBonus).
   setItem(KEY_VERSION, STORAGE_VERSION);
 }
 
@@ -250,7 +251,7 @@ export function saveWallet() {
  *  stats: typeof DEFAULT_STATS,
  *  ranking: {score:number,date:string,name:string}[],
  *  achievements: Record<string, number>,
- *  missions: {date:string, list:any[], bonus:number},
+ *  missions: {date:string, list:any[]},
  *  consent: boolean|null,
  *  tutorialDone: boolean,
  *  profile: {nickname:string, createdAt:string, asked:boolean},
@@ -263,7 +264,7 @@ export const state = {
   stats: { ...DEFAULT_STATS, ...(getItem(KEY_STATS) || {}) },
   ranking: sanitizeRanking(getItem(KEY_RANKING)),
   achievements: getItem(KEY_ACHIEVEMENTS) || {},
-  missions: getItem(KEY_MISSIONS) || { date: '', list: [], bonus: 0 },
+  missions: getItem(KEY_MISSIONS) || { date: '', list: [] },
   consent: getItem(KEY_CONSENT),          // true = aceitou anúncios/cookies
   tutorialDone: !!getItem(KEY_TUTORIAL),
   profile: loadProfile(),
@@ -432,7 +433,7 @@ export function resetAllProgress(opts = {}) {
   state.stats = { ...DEFAULT_STATS };
   state.ranking = [];
   state.achievements = {};
-  state.missions = { date: '', list: [], bonus: 0 };
+  state.missions = { date: '', list: [] };
   state.consent = null;
   state.tutorialDone = false;
   // perfil apagado: novo apelido padrão e volta a perguntar na próxima abertura

@@ -1,24 +1,25 @@
 /* =========================================================
-   Missões diárias — 3 objetivos por dia + recompensa em bônus
+   Missões diárias — 3 objetivos por dia + recompensa em MOEDAS
    Ícones = ids do sprite SVG (sem emojis na interface)
    ========================================================= */
 
 import { state, saveMissions, todayKey } from '../core/state.js';
 import { on, emit } from '../core/events.js';
 import { sfx } from '../core/audio.js';
+import { missionCoins } from '../core/economy.js';
+import * as wallet from '../core/wallet.js';
 import { showToast } from './toasts.js';
 
-const BONUS_PER_MISSION = 100; // pontos de bônus na próxima partida
-
+// recompensa por dificuldade mora em economy.js (MISSION_COINS)
 const TEMPLATES = [
-  { id: 'collect20', icon: 'ic-pulse', text: 'Colete 20 pulsos', target: 20, field: 'pickups', mode: 'sum' },
-  { id: 'collect45', icon: 'ic-pulse', text: 'Colete 45 pulsos', target: 45, field: 'pickups', mode: 'sum' },
-  { id: 'score1500', icon: 'ic-bolt', text: 'Faça 1500 pontos numa partida', target: 1500, field: 'score', mode: 'max' },
-  { id: 'score3000', icon: 'ic-bolt', text: 'Faça 3000 pontos numa partida', target: 3000, field: 'score', mode: 'max' },
-  { id: 'combo4', icon: 'ic-flame', text: 'Alcance o combo x4', target: 4, field: 'maxCombo', mode: 'max' },
-  { id: 'survive45', icon: 'ic-clock', text: 'Sobreviva 45 segundos', target: 45, field: 'elapsed', mode: 'max' },
-  { id: 'play3', icon: 'ic-play', text: 'Jogue 3 partidas', target: 3, field: 'runs', mode: 'sum' },
-  { id: 'powerups2', icon: 'ic-shield', text: 'Pegue 2 power-ups', target: 2, field: 'powerups', mode: 'sum' },
+  { id: 'collect20', icon: 'ic-pulse', text: 'Colete 20 pulsos', target: 20, field: 'pickups', mode: 'sum', d: 'facil' },
+  { id: 'collect45', icon: 'ic-pulse', text: 'Colete 45 pulsos', target: 45, field: 'pickups', mode: 'sum', d: 'medio' },
+  { id: 'score1500', icon: 'ic-bolt', text: 'Faça 1500 pontos numa partida', target: 1500, field: 'score', mode: 'max', d: 'medio' },
+  { id: 'score3000', icon: 'ic-bolt', text: 'Faça 3000 pontos numa partida', target: 3000, field: 'score', mode: 'max', d: 'dificil' },
+  { id: 'combo4', icon: 'ic-flame', text: 'Alcance o combo x4', target: 4, field: 'maxCombo', mode: 'max', d: 'dificil' },
+  { id: 'survive45', icon: 'ic-clock', text: 'Sobreviva 45 segundos', target: 45, field: 'elapsed', mode: 'max', d: 'facil' },
+  { id: 'play3', icon: 'ic-play', text: 'Jogue 3 partidas', target: 3, field: 'runs', mode: 'sum', d: 'facil' },
+  { id: 'powerups2', icon: 'ic-shield', text: 'Pegue 2 power-ups', target: 2, field: 'powerups', mode: 'sum', d: 'medio' },
 ];
 
 /** Pick determinístico por dia (sem aleatoriedade entre recargas). */
@@ -32,12 +33,13 @@ function pickDaily() {
     seed = (seed * 1103515245 + 12345) >>> 0;
     const idx = seed % pool.length;
     const t = pool.splice(idx, 1)[0];
-    list.push({ id: t.id, icon: t.icon, text: t.text, target: t.target, field: t.field, mode: t.mode, progress: 0, done: false });
+    list.push({ id: t.id, icon: t.icon, text: t.text, target: t.target, field: t.field, mode: t.mode, d: t.d, progress: 0, done: false });
   }
   return list;
 }
 
 export function initMissions() {
+  migrateLegacyBonus();
   ensureToday();
   renderMissions();
 
@@ -54,10 +56,30 @@ export function initMissions() {
   on('screen:ranking', renderMissions);
 }
 
+/**
+ * Migração v3->v4: bônus PENDENTE de pontuação (sistema antigo)
+ * vira moedas — 1 ponto = 0,25 moeda (arredondado para baixo).
+ * Idempotente: roda uma vez e apaga o campo legado.
+ */
+function migrateLegacyBonus() {
+  const legacy = state.missions?.bonus;
+  if (typeof legacy !== 'number' || !(legacy > 0)) {
+    if (state.missions && 'bonus' in state.missions) {
+      delete state.missions.bonus;
+      saveMissions();
+    }
+    return;
+  }
+  const coins = Math.floor(legacy * 0.25);
+  if (coins > 0 && !wallet.earn(coins, 'missao', 'bonus-legado').ok) return; // storage instável: tenta no boot seguinte
+  delete state.missions.bonus;
+  saveMissions();
+}
+
 function ensureToday() {
   const today = todayKey();
   if (state.missions.date !== today) {
-    state.missions = { date: today, list: pickDaily(), bonus: state.missions.bonus || 0 };
+    state.missions = { date: today, list: pickDaily() };
     saveMissions();
   }
   if (!Array.isArray(state.missions.list) || state.missions.list.length === 0) {
@@ -91,10 +113,13 @@ function reportRun(run) {
 
 function complete(m) {
   if (m.done) return;
+  const coins = missionCoins(m.d);
+  // paga ANTES de marcar: se a gravação falhar, a missão fica pendente
+  // e é conferida de novo na próxima partida (nada se perde)
+  if (!wallet.earn(coins, 'missao', m.id).ok) return;
   m.done = true;
-  state.missions.bonus = (state.missions.bonus || 0) + BONUS_PER_MISSION;
   sfx('mission');
-  showToast({ icon: 'ic-mission', title: 'Missão concluída!', desc: `${m.text} — bônus +${BONUS_PER_MISSION} na próxima partida` });
+  showToast({ icon: 'ic-mission', title: 'Missão concluída!', desc: `${m.text} — ${coins} moedas` });
   emit('missions:completed');
 }
 
@@ -119,7 +144,7 @@ export function renderMissions() {
         <div>${m.text} <span class="muted">(${Math.floor(m.progress)}/${m.target})</span></div>
         <div class="mission-bar"><span style="width:${pct}%"></span></div>
       </div>
-      <span class="chip ${m.done ? 'chip-success' : 'chip-reward'} mission-reward">+${BONUS_PER_MISSION}</span>
+      <span class="chip ${m.done ? 'chip-success' : 'chip-reward'} mission-reward">+${missionCoins(m.d)}</span>
     </li>`;
   }).join('');
 }

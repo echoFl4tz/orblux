@@ -5,7 +5,7 @@
    ========================================================= */
 
 import { on, emit } from '../core/events.js';
-import { state, saveSettings, saveMissions, resetAllProgress, resetTutorialFlag, markTutorialDone } from '../core/state.js';
+import { state, saveSettings, resetAllProgress, resetTutorialFlag, markTutorialDone } from '../core/state.js';
 import { startGame, pauseGame, resumeGame, quitToMenu, game, setReduceMotion } from '../game/game.js';
 import { sfx, initAudio, applyVolume, setMusicEnabled, resumeAudio } from '../core/audio.js';
 import { showToast, trimToasts, clearToasts } from './toasts.js';
@@ -70,13 +70,11 @@ export function initScreens() {
   on('state:reset', () => { updateBestDisplay(); applySettingsToUI(); });
 }
 
-/** Inicia uma nova partida (com bônus de missão pendente e tutorial se 1ª vez). */
+/** Inicia uma nova partida (tutorial se for a primeira vez). */
 export function startRun() {
   initAudio();
   resumeAudio();
-  const bonus = state.missions.bonus || 0;
-  if (bonus) { state.missions.bonus = 0; saveMissions(); }
-  startGame({ tutorial: !state.tutorialDone, bonus });
+  startGame({ tutorial: !state.tutorialDone });
   showScreen(null);
 }
 

@@ -21,6 +21,7 @@ import { initShop } from './ui/skins-shop.js';
 import { initAds, onRunEnd as adsOnRunEnd, showRewarded } from './monetization/ads.js';
 import { initBilling, syncPurchases } from './monetization/billing.js';
 import * as wallet from './core/wallet.js';
+import * as economy from './core/economy.js';
 import { burst, ring, shockwave, floatText, comboText, levelBanner } from './game/particles.js';
 
 function boot() {
@@ -139,6 +140,7 @@ function boot() {
       ...(ecoDebug ? {
         addCoins: (n = 0, reason = 'debug') => wallet.earn(n, reason, 'ox'),
         getCoins: () => wallet.getCoins(),
+        economy,   // constantes/funções puras p/ testes de navegador (só ?debug=1)
       } : {}),
       // captura/QA: emitir eventos e disparar FX de cena (sem tocar na lógica)
       emit,
