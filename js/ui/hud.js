@@ -167,3 +167,29 @@ export function updateHudMenuBest(best) {
   const e = document.getElementById('menu-best');
   if (e) e.textContent = (best || 0).toLocaleString('pt-BR');
 }
+
+/**
+ * Zera todo o HUD e os estilos residuais deixados pela partida
+ * (barra de combo, chips de power-up, dica de tutorial, flash de dano).
+ * Chamado ao voltar ao menu para o HUD nunca reaparecer "sujo".
+ */
+export function resetHud() {
+  if (!el || !el.hud) return;
+  el.hud.hidden = true;
+  el.tutorial.hidden = true;
+  el.toast.hidden = true;
+  clearTimeout(toastTimer);
+  clearTimeout(damageTimer);
+  el.damage?.classList.remove('on');
+  el.powerups.innerHTML = '';
+  // barra de combo e chips de volta ao estado neutro
+  el.comboFill.style.transform = 'scaleX(1)';
+  el.comboWrap.style.opacity = '1';
+  el.comboWrap.classList.remove('hot');
+  el.combo.textContent = 'x1';
+  el.score.textContent = '0';
+  el.level.textContent = 'NÍVEL 1';
+  el.lives.innerHTML = '';
+  // zera o cache de "último valor" para o próximo jogo redesenhar do zero
+  last = { score: -1, lives: -1, level: -1, combo: -1, mult: -1, frac: -1 };
+}

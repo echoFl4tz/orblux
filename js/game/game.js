@@ -216,11 +216,26 @@ export function resumeGame() {
   emit('game:resumed');
 }
 
+/**
+ * Sai da partida e volta ao estado de menu, zerando TUDO o que pertence à
+ * partida (entidades, efeitos, shake, combo, spawner e input). Chamado por
+ * returnToMenu() (screens.js) em qualquer caminho que leve ao menu — inclusive
+ * a partir de 'gameover', onde antes o estado ficava congelado e o canvas
+ * continuava desenhando a partida atrás do menu.
+ */
 export function quitToMenu() {
-  game.mode = 'menu';
-  game.obstacles.length = 0;
-  game.pickups.length = 0;
-  game.powerups.length = 0;
+  const g = game;
+  g.mode = 'menu';
+  g.obstacles.length = 0;
+  g.pickups.length = 0;
+  g.powerups.length = 0;
+  g.player = null;                 // garante que render() nunca redesenhe a partida no menu
+  g.combo = 0; g.comboTimer = 0; g.multiplier = 1;
+  g.x2Timer = 0;
+  g.reviveUsed = false;
+  g.bgFlash = 0;
+  resetSpawner(g);                 // zera timers/spawn da última partida
+  resetFX();                       // remove partículas, textos, ondas e shake da morte
   resetInput();
   emit('game:quit');
 }

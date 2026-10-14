@@ -46,3 +46,9 @@ export function trimToasts(max = 1) {
   if (!container) return;
   while (container.children.length > max) container.removeChild(container.firstChild);
 }
+
+/** Remove TODOS os toasts na hora (usado ao voltar ao menu). */
+export function clearToasts() {
+  if (!container) return;
+  container.innerHTML = '';
+}

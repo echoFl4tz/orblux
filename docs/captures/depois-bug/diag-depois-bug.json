@@ -1,0 +1,275 @@
+[
+  {
+    "flow": "baseline (primeira abertura)",
+    "d": {
+      "mode": "menu",
+      "bodyScreen": "menu",
+      "bodyClass": "",
+      "activeScreens": [
+        "screen-menu"
+      ],
+      "visibleLeak": [],
+      "toasts": 0,
+      "rafPending": 1,
+      "runningAnims": 7,
+      "stuckAnims": [
+        "orbPulse@0.67",
+        "orbSpin@0.25",
+        "playPulse@0.88",
+        "btnShine@0.71",
+        "btnShine@0.71",
+        "btnShine@0.71"
+      ],
+      "inline": {
+        "comboFillTransform": "",
+        "comboWrapOpacity": "",
+        "goScore": "0"
+      },
+      "btnRevive": {
+        "hidden": true,
+        "disabled": false
+      },
+      "entities": {
+        "obs": 0,
+        "pick": 0,
+        "pow": 0,
+        "player": false
+      }
+    },
+    "errors": []
+  },
+  {
+    "flow": "flow a: jogar → morrer → Menu",
+    "d": {
+      "mode": "menu",
+      "bodyScreen": "menu",
+      "bodyClass": "",
+      "activeScreens": [
+        "screen-menu"
+      ],
+      "visibleLeak": [],
+      "toasts": 0,
+      "rafPending": 1,
+      "runningAnims": 7,
+      "stuckAnims": [
+        "orbPulse@0.47",
+        "orbSpin@0.55",
+        "playPulse@0.92",
+        "btnShine@0.56",
+        "btnShine@0.56",
+        "btnShine@0.56"
+      ],
+      "inline": {
+        "comboFillTransform": "scaleX(1)",
+        "comboWrapOpacity": "1",
+        "goScore": "0"
+      },
+      "btnRevive": {
+        "hidden": true,
+        "disabled": false
+      },
+      "entities": {
+        "obs": 0,
+        "pick": 0,
+        "pow": 0,
+        "player": false
+      }
+    },
+    "errors": []
+  },
+  {
+    "flow": "flow b: jogar → morrer → Jogar de novo → morrer → Menu",
+    "d": {
+      "mode": "menu",
+      "bodyScreen": "menu",
+      "bodyClass": "",
+      "activeScreens": [
+        "screen-menu"
+      ],
+      "visibleLeak": [],
+      "toasts": 0,
+      "rafPending": 1,
+      "runningAnims": 7,
+      "stuckAnims": [
+        "orbPulse@0.84",
+        "orbSpin@0.70",
+        "playPulse@0.41",
+        "btnShine@0.96",
+        "btnShine@0.96",
+        "btnShine@0.96"
+      ],
+      "inline": {
+        "comboFillTransform": "scaleX(1)",
+        "comboWrapOpacity": "1",
+        "goScore": "0"
+      },
+      "btnRevive": {
+        "hidden": true,
+        "disabled": false
+      },
+      "entities": {
+        "obs": 0,
+        "pick": 0,
+        "pow": 0,
+        "player": false
+      }
+    },
+    "errors": []
+  },
+  {
+    "flow": "flow c: morrer → reviver (anúncio) → morrer → Menu",
+    "d": {
+      "mode": "menu",
+      "bodyScreen": "menu",
+      "bodyClass": "",
+      "activeScreens": [
+        "screen-menu"
+      ],
+      "visibleLeak": [],
+      "toasts": 0,
+      "rafPending": 1,
+      "runningAnims": 7,
+      "stuckAnims": [
+        "orbPulse@0.58",
+        "orbSpin@0.35",
+        "playPulse@0.68",
+        "btnShine@0.80",
+        "btnShine@0.80",
+        "btnShine@0.80"
+      ],
+      "inline": {
+        "comboFillTransform": "scaleX(1)",
+        "comboWrapOpacity": "1",
+        "goScore": "0"
+      },
+      "btnRevive": {
+        "hidden": true,
+        "disabled": false
+      },
+      "entities": {
+        "obs": 0,
+        "pick": 0,
+        "pow": 0,
+        "player": false
+      }
+    },
+    "errors": []
+  },
+  {
+    "flow": "flow d: jogar → pausar → Sair para o menu",
+    "d": {
+      "mode": "menu",
+      "bodyScreen": "menu",
+      "bodyClass": "",
+      "activeScreens": [
+        "screen-menu"
+      ],
+      "visibleLeak": [],
+      "toasts": 0,
+      "rafPending": 1,
+      "runningAnims": 7,
+      "stuckAnims": [
+        "orbPulse@0.21",
+        "orbSpin@0.46",
+        "playPulse@0.58",
+        "btnShine@0.29",
+        "btnShine@0.29",
+        "btnShine@0.29"
+      ],
+      "inline": {
+        "comboFillTransform": "scaleX(1)",
+        "comboWrapOpacity": "1",
+        "goScore": "0"
+      },
+      "btnRevive": {
+        "hidden": true,
+        "disabled": false
+      },
+      "entities": {
+        "obs": 0,
+        "pick": 0,
+        "pow": 0,
+        "player": false
+      }
+    },
+    "errors": []
+  },
+  {
+    "flow": "flow e: morrer → Compartilhar → fechar → Menu",
+    "d": {
+      "mode": "menu",
+      "bodyScreen": "menu",
+      "bodyClass": "",
+      "activeScreens": [
+        "screen-menu"
+      ],
+      "visibleLeak": [],
+      "toasts": 0,
+      "rafPending": 1,
+      "runningAnims": 7,
+      "stuckAnims": [
+        "orbPulse@0.75",
+        "orbSpin@0.66",
+        "playPulse@0.29",
+        "btnShine@0.86",
+        "btnShine@0.86",
+        "btnShine@0.86"
+      ],
+      "inline": {
+        "comboFillTransform": "scaleX(1)",
+        "comboWrapOpacity": "1",
+        "goScore": "0"
+      },
+      "btnRevive": {
+        "hidden": true,
+        "disabled": false
+      },
+      "entities": {
+        "obs": 0,
+        "pick": 0,
+        "pow": 0,
+        "player": false
+      }
+    },
+    "errors": []
+  },
+  {
+    "flow": "flow f: morrer → Como jogar → Voltar ao menu",
+    "d": {
+      "mode": "menu",
+      "bodyScreen": "menu",
+      "bodyClass": "",
+      "activeScreens": [
+        "screen-menu"
+      ],
+      "visibleLeak": [],
+      "toasts": 0,
+      "rafPending": 1,
+      "runningAnims": 7,
+      "stuckAnims": [
+        "orbPulse@0.70",
+        "orbSpin@0.64",
+        "playPulse@0.22",
+        "btnShine@0.81",
+        "btnShine@0.81",
+        "btnShine@0.81"
+      ],
+      "inline": {
+        "comboFillTransform": "scaleX(1)",
+        "comboWrapOpacity": "1",
+        "goScore": "0"
+      },
+      "btnRevive": {
+        "hidden": true,
+        "disabled": false
+      },
+      "entities": {
+        "obs": 0,
+        "pick": 0,
+        "pow": 0,
+        "player": false
+      }
+    },
+    "errors": []
+  }
+]

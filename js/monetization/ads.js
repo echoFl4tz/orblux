@@ -23,6 +23,29 @@ export const ADS = {
 let gamesSinceInterstitial = 0;
 let countdownTimer = null;
 
+// HTML original dos botões de anúncio (restaurados ao fechar/zerar)
+const AD_CLOSE_HTML = 'Fechar em <span id="ad-countdown">5</span>s';
+const AD_CLAIM_HTML = 'Resgatar em <span id="reward-countdown">5</span>s';
+
+/**
+ * Fecha qualquer modal de anúncio e para o timer de contagem.
+ * Chamado ao voltar ao menu (returnToMenu) para nunca deixar um intersticial/
+ * rewarded aberto ou com contagem rodando sobre o menu.
+ */
+export function closeAllAds() {
+  clearInterval(countdownTimer);
+  countdownTimer = null;
+  const inter = document.getElementById('ad-interstitial');
+  const reward = document.getElementById('ad-reward');
+  if (inter) inter.hidden = true;
+  if (reward) reward.hidden = true;
+  // restaura o texto/estado inicial dos botões (innerHTML foi trocado ao fim da contagem)
+  const btnAd = document.getElementById('btn-close-ad');
+  if (btnAd) { btnAd.disabled = true; btnAd.innerHTML = AD_CLOSE_HTML; }
+  const btnClaim = document.getElementById('btn-claim-reward');
+  if (btnClaim) { btnClaim.disabled = true; btnClaim.innerHTML = AD_CLAIM_HTML; }
+}
+
 export function initAds() {
   const banner = document.getElementById('ad-banner');
 

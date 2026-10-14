@@ -8,8 +8,10 @@ import { on, emit } from '../core/events.js';
 import { state, saveSettings, saveMissions, resetAllProgress, resetTutorialFlag, markTutorialDone } from '../core/state.js';
 import { startGame, pauseGame, resumeGame, quitToMenu, game, setReduceMotion } from '../game/game.js';
 import { sfx, initAudio, applyVolume, setMusicEnabled, resumeAudio } from '../core/audio.js';
-import { showToast, trimToasts } from './toasts.js';
-import { updateHudMenuBest } from './hud.js';
+import { showToast, trimToasts, clearToasts } from './toasts.js';
+import { updateHudMenuBest, resetHud } from './hud.js';
+import { closeAllAds } from '../monetization/ads.js';
+import { renderMissions } from './missions.js';
 
 const SCREEN_IDS = {
   menu: 'screen-menu',
@@ -23,6 +25,8 @@ const SCREEN_IDS = {
 let current = 'menu';
 let deferredInstallPrompt = null;
 let lastFocused = null; // elemento que tinha o foco antes de abrir um modal
+let screenGen = 0;      // "geração de tela": invalida callbacks de animações antigas
+let scoreRafId = 0;     // id do RAF da contagem do placar (cancelado ao trocar de tela)
 
 export function initScreens() {
   bindActions();
@@ -98,6 +102,57 @@ export function showScreen(name) {
 
 export function getCurrentScreen() { return current; }
 
+/**
+ * Caminho ÚNICO de volta ao menu (fim de jogo, pausa e "Voltar" das telas).
+ * Faz a limpeza completa e determinística para o menu nunca herdar nada da
+ * partida: HUD, toasts, modais, anúncios, efeitos, input e entidades.
+ * Ordem importa — ver comentários numerados.
+ */
+export function returnToMenu() {
+  // nova geração de tela: ignora qualquer callback de animação pendente
+  screenGen++;
+
+  // 1) cancela a contagem animada do placar (requestAnimationFrame)
+  if (scoreRafId) { cancelAnimationFrame(scoreRafId); scoreRafId = 0; }
+
+  // 2) fecha todos os modais e para os timers de anúncio/compartilhar
+  closeAllAds();
+  emit('share:close');
+  closeModal('modal-confirm');
+
+  // 3) remove todos os toasts da tela
+  clearToasts();
+
+  // 4-5) zera a partida: entidades, efeitos, shake, combo, spawner, input e mode='menu'
+  quitToMenu();
+
+  // 6) esconde HUD/tutorial/hud-toast e limpa chips de power-up e barra de combo
+  resetHud();
+
+  // 7) restaura o botão de reviver e o placar/painel de fim de jogo
+  const btnRevive = document.getElementById('btn-revive');
+  if (btnRevive) { btnRevive.hidden = true; btnRevive.disabled = false; }
+  const goScore = document.getElementById('go-score');
+  if (goScore) goScore.textContent = '0';
+  const goRecord = document.getElementById('go-record');
+  if (goRecord) goRecord.hidden = true;
+  const goStats = document.getElementById('go-stats');
+  if (goStats) goStats.innerHTML = '';
+  const pauseScore = document.getElementById('pause-score');
+  if (pauseScore) pauseScore.textContent = '0';
+
+  // 8) mostra o menu (o canvas já redesenha só a cena ambiente do menu)
+  showScreen('menu');
+
+  // 9) re-renderiza recorde e missões do menu
+  updateBestDisplay();
+  renderMissions();
+
+  // 10) o cache offscreen do fundo só depende de W/H/dpr (válidos); se a janela
+  //     mudou (ex.: barra de endereço mobile), resize() já o reconstruiu.
+  emit('game:quit-menu');
+}
+
 /** Tela de fim de jogo com contagem animada do placar. */
 export function showGameOver({ score, best, isRecord, position, elapsed, pickups, maxCombo, level, revived }) {
   const scoreEl = document.getElementById('go-score');
@@ -156,13 +211,17 @@ function animateScore(elScore, target) {
   if (state.settings.reduceMotion) { elScore.textContent = target.toLocaleString('pt-BR'); return; }
   const dur = 700;
   const t0 = performance.now();
+  const gen = screenGen;                       // captura a geração da tela atual
+  if (scoreRafId) cancelAnimationFrame(scoreRafId); // cancela contagem anterior (replay rápido)
   const tick = (now) => {
+    if (gen !== screenGen) { scoreRafId = 0; return; } // a tela mudou: ignora este callback
     const k = Math.min(1, (now - t0) / dur);
     const eased = 1 - Math.pow(1 - k, 3);
     elScore.textContent = Math.floor(target * eased).toLocaleString('pt-BR');
-    if (k < 1) requestAnimationFrame(tick);
+    if (k < 1) scoreRafId = requestAnimationFrame(tick);
+    else scoreRafId = 0;
   };
-  requestAnimationFrame(tick);
+  scoreRafId = requestAnimationFrame(tick);
 }
 
 function updateBestDisplay() {
@@ -248,10 +307,7 @@ function bindActions() {
       case 'ranking': sfx('ui'); emit('screen:ranking'); showScreen('ranking'); break;
       case 'settings': sfx('ui'); applySettingsToUI(); showScreen('settings'); break;
       case 'menu':
-        sfx('ui');
-        if (game.mode === 'playing' || game.mode === 'paused') quitToMenu();
-        showScreen('menu');
-        break;
+        sfx('ui'); returnToMenu(); break;
       case 'pause': sfx('ui'); pauseGame(); showScreen('pause'); break;
       case 'resume': sfx('ui'); resumeGame(); showScreen(null); break;
       case 'revive': sfx('ui'); emit('ads:rewarded-revive'); break;
