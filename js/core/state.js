@@ -10,6 +10,7 @@
 import { getItem, setItem, removeItem, clearAll } from './storage.js';
 import { emit } from './events.js';
 import { validateNickname, generateDefaultNickname, NICK_MAX } from './nickname.js';
+import { getSkin, PALETAS, RASTROS, AURAS } from '../game/skins.js';
 
 const KEY_SETTINGS = 'pn_settings';
 const KEY_STATS = 'pn_stats';
@@ -19,11 +20,13 @@ const KEY_MISSIONS = 'pn_missions';
 const KEY_CONSENT = 'pn_consent';
 const KEY_TUTORIAL = 'pn_tutorial_done';
 const KEY_PROFILE = 'pn_profile';
+const KEY_SKINS = 'pn_skins';
 const KEY_VERSION = 'pn_version';
 
 // v1 = legado "Pulso Neon" (ranking sem name, sem perfil)
 // v2 = apelido (profile) + entradas de ranking com { score, date, name }
-const STORAGE_VERSION = 2;
+// v3 = skins (equipped/owned/custom/seen)
+const STORAGE_VERSION = 3;
 
 const DEFAULT_SETTINGS = {
   sound: true,
@@ -71,7 +74,48 @@ function migrateStorage() {
   if (!profile || typeof profile.nickname !== 'string') {
     setItem(KEY_PROFILE, { nickname: generateDefaultNickname(), createdAt: new Date().toISOString(), asked: false });
   }
+  // v2 -> v3: inicializa estado de skins
+  if (from < 3) {
+    setItem(KEY_SKINS, { equipped: 'classic', owned: {}, custom: {}, seen: { classic: true } });
+  }
   setItem(KEY_VERSION, STORAGE_VERSION);
+}
+
+/** Lê e valida o estado de skins; descarta ids desconhecidos/corrompidos. */
+function loadSkins() {
+  const raw = getItem(KEY_SKINS);
+  const def = { equipped: 'classic', owned: {}, custom: {}, seen: { classic: true } };
+  if (!raw || typeof raw !== 'object') return def;
+
+  // equipada: precisa ser um id de skin existente
+  const equipped = (typeof raw.equipped === 'string' && getSkin(raw.equipped).id === raw.equipped)
+    ? raw.equipped : 'classic';
+
+  // possuídas: só ids válidos com timestamp numérico (a posse REAL é confirmada pelo billing)
+  const owned = {};
+  if (raw.owned && typeof raw.owned === 'object') {
+    for (const [id, ts] of Object.entries(raw.owned)) {
+      if (getSkin(id).id === id && typeof ts === 'number') owned[id] = ts;
+    }
+  }
+
+  // personalização: só vocabulário permitido pela própria skin
+  const custom = {};
+  if (raw.custom && typeof raw.custom === 'object') {
+    for (const [id, c] of Object.entries(raw.custom)) {
+      if (getSkin(id).id !== id || !c || typeof c !== 'object') continue;
+      custom[id] = {};
+      if (c.paleta && PALETAS[c.paleta]) custom[id].paleta = c.paleta;
+      if (c.rastro && RASTROS[c.rastro]) custom[id].rastro = c.rastro;
+      if (c.aura && AURAS[c.aura]) custom[id].aura = c.aura;
+    }
+  }
+
+  const seen = { classic: true };
+  if (raw.seen && typeof raw.seen === 'object') {
+    for (const id of Object.keys(raw.seen)) if (getSkin(id).id === id) seen[id] = true;
+  }
+  return { equipped, owned, custom, seen };
 }
 
 /** Lê e valida o perfil; corrige apelido inválido/corrompido sem quebrar. */
@@ -94,6 +138,7 @@ function loadProfile() {
  *  consent: boolean|null,
  *  tutorialDone: boolean,
  *  profile: {nickname:string, createdAt:string, asked:boolean},
+ *  skins: {equipped:string, owned:Record<string,number>, custom:Record<string,object>, seen:Record<string,boolean>},
  * }} */
 migrateStorage();
 export const state = {
@@ -105,6 +150,7 @@ export const state = {
   consent: getItem(KEY_CONSENT),          // true = aceitou anúncios/cookies
   tutorialDone: !!getItem(KEY_TUTORIAL),
   profile: loadProfile(),
+  skins: loadSkins(),
 };
 
 /** Descarta entradas corrompidas do ranking (não quebra o jogo). */
@@ -153,8 +199,80 @@ export function resetTutorialFlag() {
   removeItem(KEY_TUTORIAL);
 }
 
-/** Apaga TODO o progresso (inclui o perfil/apelido) e restaura padrões. */
+/* ---------------------------------------------------------
+   SKINS — posse, equipar, personalização
+   A posse REAL vem do Google Play (billing.js → listPurchases);
+   aqui só mantemos o cache e a interface.
+--------------------------------------------------------- */
+export const saveSkins = () => setItem(KEY_SKINS, state.skins);
+
+/** A skin é do jogador? (clássica sempre; demais só se compradas/confirmadas). */
+export function ownsSkin(id) { return id === 'classic' || !!state.skins.owned[id]; }
+
+/** Concede uma skin (chamado quando o billing confirma a compra). */
+export function grantSkin(id) {
+  const s = getSkin(id);
+  if (!s || s.tier === 'free') return false;
+  state.skins.owned[id] = Date.now();
+  saveSkins();
+  emit('skins:changed', { owned: true, id });
+  return true;
+}
+
+/** Remove uma skin (ex.: compra reembolsada/revogada pelo Play). */
+export function revokeSkin(id) {
+  if (!state.skins.owned[id]) return;
+  delete state.skins.owned[id];
+  if (state.skins.equipped === id) state.skins.equipped = 'classic';
+  saveSkins();
+  emit('skins:changed', { owned: false, id });
+}
+
+/** Equipa uma skin (só se possuída). */
+export function equipSkin(id) {
+  const s = getSkin(id);
+  if (!s || !ownsSkin(s.id)) return false;
+  state.skins.equipped = s.id;
+  saveSkins();
+  emit('skins:changed', { equipped: s.id });
+  return true;
+}
+
+/** Aplica personalização (só vocabulário permitido pela skin). */
+export function setSkinCustom(id, c) {
+  const skin = getSkin(id);
+  if (!skin || !ownsSkin(skin.id)) return false;
+  const cur = state.skins.custom[skin.id] || {};
+  const next = { ...cur };
+  if (c && c.paleta && PALETAS[c.paleta] && skin.personalizacao.paletasPermitidas.includes(c.paleta)) next.paleta = c.paleta;
+  if (c && c.rastro && RASTROS[c.rastro] && skin.personalizacao.rastros.includes(c.rastro)) next.rastro = c.rastro;
+  if (c && c.aura && AURAS[c.aura] && skin.personalizacao.auras.includes(c.aura)) next.aura = c.aura;
+  for (const k of Object.keys(next)) if (next[k] == null) delete next[k];
+  state.skins.custom[skin.id] = next;
+  saveSkins();
+  emit('skins:changed', { custom: skin.id });
+  return true;
+}
+
+/** Restaura a personalização padrão da skin. */
+export function resetSkinCustom(id) {
+  if (!state.skins.custom[id]) return;
+  delete state.skins.custom[id];
+  saveSkins();
+  emit('skins:changed', { custom: id });
+}
+
+/** Marca a skin como já vista (remove o selo "novo"). */
+export function markSkinSeen(id) {
+  if (getSkin(id).id !== id || state.skins.seen[id]) return;
+  state.skins.seen[id] = true;
+  saveSkins();
+}
+
+/** Apaga TODO o progresso — MAS mantém as skins COMPRADAS (dinheiro do jogador). */
 export function resetAllProgress() {
+  // skins compradas são dinheiro real: preservamos o mapa owned
+  const prevOwned = { ...(state.skins?.owned || {}) };
   clearAll('pn_');
   state.settings = { ...DEFAULT_SETTINGS };
   state.stats = { ...DEFAULT_STATS };
@@ -165,8 +283,16 @@ export function resetAllProgress() {
   state.tutorialDone = false;
   // perfil apagado: novo apelido padrão e volta a perguntar na próxima abertura
   state.profile = { nickname: generateDefaultNickname(), createdAt: new Date().toISOString(), asked: false };
+  // skins: mantém as compradas; zera personalização e skin equipada (voltam ao padrão)
+  state.skins = {
+    equipped: 'classic',
+    owned: prevOwned,
+    custom: {},
+    seen: { classic: true, ...Object.fromEntries(Object.keys(prevOwned).map((id) => [id, true])) },
+  };
   saveSettings(); saveStats(); saveRanking(); saveAchievements(); saveMissions();
   setItem(KEY_PROFILE, state.profile);
+  setItem(KEY_SKINS, state.skins);
   setItem(KEY_VERSION, STORAGE_VERSION);
   emit('state:reset');
 }
