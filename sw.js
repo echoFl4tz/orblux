@@ -1,10 +1,14 @@
 /* =========================================================
    Service Worker — funciona offline após o 1º carregamento
-   Estratégia: cache primeiro, atualiza em segundo plano.
-   Atualize CACHE_VERSION a cada deploy.
+   Estratégia:
+   • navegação (index.html): REDE primeiro, cache só como
+     fallback offline — assim atualizações chegam sempre;
+   • estáticos: cache primeiro com revalidação CONFIÁVEL
+     em segundo plano (waitUntil).
+   Atualize CACHE_VERSION quando a lista PRECACHE mudar.
    ========================================================= */
 
-const CACHE_VERSION = 'orblux-v2';
+const CACHE_VERSION = 'orblux-v3';
 
 const PRECACHE = [
   './',
@@ -58,37 +62,44 @@ self.addEventListener('activate', (event) => {
 self.addEventListener('fetch', (event) => {
   const req = event.request;
   if (req.method !== 'GET') return;
+  const mesmoOrigem = new URL(req.url).origin === self.location.origin;
 
-  // navegação: cache primeiro, rede como fallback, cache atualizado em paralelo
+  // navegação: rede primeiro (atualização chega sempre); cache só offline
   if (req.mode === 'navigate') {
-    event.respondWith(
-      caches.match('./index.html').then((cached) => {
-        const network = fetch(req)
-          .then((res) => {
-            if (res && res.ok) {
-              caches.open(CACHE_VERSION).then((c) => c.put('./index.html', res.clone()));
-            }
-            return res;
-          })
-          .catch(() => cached);
-        return cached || network;
-      })
-    );
+    event.respondWith((async () => {
+      try {
+        const res = await fetch(req);
+        if (res && res.ok) {
+          const copia = res.clone();
+          await caches.open(CACHE_VERSION).then((c) => c.put('./index.html', copia));
+        }
+        return res;
+      } catch (e) {
+        const cached = await caches.match('./index.html');
+        if (cached) return cached;
+        throw e;
+      }
+    })());
     return;
   }
 
-  // estáticos: cache primeiro (stale-while-revalidate)
-  event.respondWith(
-    caches.match(req).then((cached) => {
-      const network = fetch(req)
-        .then((res) => {
-          if (res && res.ok && new URL(req.url).origin === location.origin) {
-            caches.open(CACHE_VERSION).then((c) => c.put(req, res.clone()));
-          }
-          return res;
-        })
-        .catch(() => cached);
-      return cached || network;
-    })
-  );
+  // estáticos: cache primeiro com revalidação em segundo plano (waitUntil
+  // para a atualização não ser morta junto com o worker ocioso)
+  event.respondWith((async () => {
+    const cached = await caches.match(req);
+    if (cached) {
+      event.waitUntil(fetch(req).then((res) => {
+        if (res && res.ok && mesmoOrigem) {
+          return caches.open(CACHE_VERSION).then((c) => c.put(req, res.clone()));
+        }
+        return undefined;
+      }).catch(() => undefined));
+      return cached;
+    }
+    const res = await fetch(req);
+    if (res && res.ok && mesmoOrigem) {
+      await caches.open(CACHE_VERSION).then((c) => c.put(req, res.clone()));
+    }
+    return res;
+  })());
 });
