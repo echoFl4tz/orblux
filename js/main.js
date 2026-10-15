@@ -14,7 +14,7 @@ import { initToasts, showToast } from './ui/toasts.js';
 import { initScreens, applySettingsToUI, showGameOver, showScreen } from './ui/screens.js';
 import { initAchievements, checkAchievements } from './ui/achievements.js';
 import { initMissions, allMissionsDone } from './ui/missions.js';
-import { initRanking } from './ui/ranking.js';
+import { initRanking, submitRunGlobal } from './ui/ranking.js';
 import { initShare } from './ui/share.js';
 import { initNickname } from './ui/nickname.js';
 import { initShop } from './ui/skins-shop.js';
@@ -90,6 +90,10 @@ function boot() {
 
     showGameOver({ ...run, best: state.stats.best, isRecord, position });
     adsOnRunEnd();
+
+    // ranking global (camada social): fire-and-forget — flag desligada,
+    // sem perfil ou sem rede = silencioso; nunca atrasa nem falha a UI
+    submitRunGlobal(run);
   });
 
   // ---- reviver via anúncio recompensado ----

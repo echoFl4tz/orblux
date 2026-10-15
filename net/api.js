@@ -22,7 +22,7 @@ import { isMockProvider } from './flags.js';
 import { supabaseSettings, SUPABASE_UMD_PATH } from './config.js';
 import { seededRng, randInt, pick } from './rng.js';
 import {
-  CHAT, CLAN, validateChatMessage, validateClanName, validateClanTag,
+  CHAT, CLAN, validateChatMessage, validateClanName, validateClanTag, validateRun,
   normalizeChat, validateNickname, AGE_BANDS, QUICK_PHRASES, QUICK_EMOJIS,
 } from './rules.js';
 
@@ -767,10 +767,10 @@ class MockProvider {
       submitRun: async (run = {}) => {
         await self._net();
         self._requireProfile();
-        const score = Math.max(0, Math.floor(Number(run.score) || 0));
-        const seconds = Math.max(0, Number(run.seconds) || 0);
-        if (score > 200000) fail('implausible', 'Pontuação fora do intervalo possível.');
-        if (seconds < 10) fail('too-short', 'Partida curta demais para pontuar.');
+        // mesma régua do servidor (net/rules.js): plausibilidade no mock fiel
+        const v = validateRun(run);
+        if (!v.ok) fail(v.code, v.error);
+        const { score, seconds } = v.value;
         const row = {
           id: self._id('run_'), userId: self.state.user.id,
           score, seconds, seed: run.seed || null, version: String(run.version || '0.0.0'),

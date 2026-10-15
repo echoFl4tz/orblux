@@ -1,6 +1,6 @@
 # ORBLUX — Camada SOCIAL ONLINE (Supabase)
 
-> **Documento vivo.** Fases 0 e 1 concluídas em 14/10/2026. Este documento manda sobre
+> **Documento vivo.** Fases 0, 1 e 2 concluídas em 14/10/2026. Este documento manda sobre
 > qualquer instrução avulsa em caso de conflito. Cada fase só começa com a
 > aprovação da anterior. Links consultados com data na seção 9.
 
@@ -29,7 +29,7 @@
 |------|---------|
 | **0 (esta)** | `SOCIAL.md`, `net/` (flags, rng, rules, config, api), spawner com rng injetável, testes de determinismo + contrato do mock |
 | **1 (concluída)** | Conta social: 1ª entrada social, faixa de idade, termos de Uso da Comunidade, apelido/skin/país, código de recuperação, **exclusão de conta** (ver §10) |
-| 2 | Ranking global + `submit_run` anti-trapaça (validação plausibilidade no servidor); mantém ranking local como fallback |
+| **2 (concluída)** | Ranking global + `submit_run` anti-trapaça (validação plausibilidade no servidor); mantém ranking local como fallback (ver §10) |
 | 3 | Chat global (salas/shards, realtime, denúncia, bloqueio, moderação) |
 | 4 | Clãs (criar com moedas, entrada, cargos, elenco de emblema) |
 | 5 | Torneios de clãs + **Corrida do Dia** com semente única (`net/rng.js` + `setSpawnerRng`) |
@@ -210,3 +210,28 @@ a camada `net/` está pronta e testada; a interface vem nas fases 1..5).
 - Teste: `tests/social-entry-ui.cjs` (Playwright: flag oculta/visível, fluxo
   completo, recuperar por código, apagar conta, 390x844 e 1280x720, zero erros
   de console).
+
+### Fase 2 — Ranking global + submit_run (14/10/2026)
+
+- `js/ui/ranking.js`: removido o fetch direto legado (`GLOBAL_RANKING` +
+  `submitGlobalScore` — nunca tinham sido ligados); o ranking global agora
+  passa pela UMA interface `net/api.js` e só aparece com a flag
+  `GLOBAL_RANKING_ENABLED` (seletor Local/Global no topo da tela de ranking).
+  Listas do servidor renderizadas com `textContent` (nunca `innerHTML`);
+  sem perfil social: CTA "Entre na comunidade" (abre a tela da Fase 1);
+  erro de rede: status + "Tentar de novo", ranking local intacto; paginação
+  "Carregar mais" e linha "Sua posição: Nº de T".
+- `net/rules.js`: `RUN` (MAX_SCORE 200 000, MIN_SECONDS 10, MAX_SECONDS
+  7200) + `validateRun()` — espelho da régua do servidor (`submit_run`). O
+  MockProvider passou a usá-la (códigos `implausible`/`too-short` iguais) e
+  `submitRunGlobal` nem envia o impossível.
+- `js/main.js`: `game:over` chama `submitRunGlobal(run)` fire-and-forget
+  (flag desligada, sem perfil ou sem rede = silêncio; nunca atrasa nem quebra
+  a UI). Submeter partida **não credita moedas locais** (sem double-dip;
+  recompensas de temporada ficam para a Fase 5 — decisão §8.2).
+- Docs: `README.md` e `DATA_SAFETY.md` apontam para as flags/`SOCIAL.md`
+  (referências ao `GLOBAL_RANKING` legado removidas).
+- Teste: `tests/ranking-global-ui.cjs` (28 checagens Playwright, incluindo
+  partida curta que NÃO vai ao servidor) + `validateRun` unitário.
+  Denúncia/bloqueio de linhas do ranking global: Fase 3 (bloqueio) e
+  Fase 7 (conformidade).

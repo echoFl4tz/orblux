@@ -34,7 +34,8 @@ Baseado no comportamento real do app (ver `js/core/state.js`, `js/ui/ranking.js`
 **Você coleta ou compartilha algum dado dos usuários?**
 - **Não**, na configuração padrão (sem anúncios ativos e sem ranking global).
 - **Sim**, apenas se você:
-  1. Ativar o **ranking global** (`GLOBAL_RANKING.enabled = true` em `js/ui/ranking.js`) →
+  1. Ativar o **ranking global** (flag `GLOBAL_RANKING_ENABLED` em `net/flags.js` —
+     ver `SOCIAL.md`) →
      declara: *Apelido e pontuação — coletados e compartilhados — finalidade: funcionalidade do app.*
   2. Ativar os **anúncios** e o jogador **aceitar** o aviso de cookies →
      declara: *Dados de anúncios (cookies) — coletados e compartilhados — finalidade: anúncios.*
@@ -45,8 +46,9 @@ Baseado no comportamento real do app (ver `js/core/state.js`, `js/ui/ranking.js`
   finalidade **funcionalidade do app**, com contato para remoção em `privacy.html`.
 
 **Contato para remoção de dados (obrigatório se coletar):**
-- Preencha um e-mail válido em `privacy.html` (seção Contato) e em
-  `GLOBAL_RANKING.moderationEmail` (`js/ui/ranking.js`).
+- Preencha um e-mail válido em `privacy.html` (seção Contato). O caminho de
+  exclusão de conta da comunidade está em *Configurações → Comunidade*
+  (exigência da Play, `SOCIAL.md` §10).
 
 ---
 

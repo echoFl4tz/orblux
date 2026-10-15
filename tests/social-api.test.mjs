@@ -10,7 +10,7 @@ import assert from 'node:assert/strict';
 import {
   normalizeChat, containsOffense, containsContact, softenCaps,
   validateChatMessage, validateClanName, validateClanTag,
-  CHAT, CLAN, QUICK_PHRASES,
+  validateRun, RUN, CHAT, CLAN, QUICK_PHRASES,
 } from '../net/rules.js';
 import { createApi, resetApi, TERMS_VERSION } from '../net/api.js';
 import { FLAG_DEFAULTS, flag, isMockProvider, setFlags, resetFlags } from '../net/flags.js';
@@ -336,6 +336,19 @@ test('ranking: envio valida plausibilidade e o top mistura minhas partidas', asy
   assert.ok(top.myRank >= 1);
   const weekly = await api.ranking.top({ scope: 'weekly', limit: 50 });
   assert.ok(weekly.rows.some((r) => r.isMe));
+});
+
+test('rules: validateRun espelha a plausibilidade do servidor', () => {
+  assert.equal(validateRun({ score: 5000, seconds: 30 }).ok, true);
+  assert.equal(validateRun({ score: 0, seconds: RUN.MIN_SECONDS }).ok, true);
+  assert.equal(validateRun({ score: 999999, seconds: 30 }).code, 'implausible');
+  assert.equal(validateRun({ score: 100, seconds: 5 }).code, 'too-short');
+  assert.equal(validateRun({ score: 100, seconds: 99999 }).code, 'too-long');
+  const v = validateRun({ score: '1500.9', seconds: '42.4' });
+  assert.equal(v.ok, true);
+  assert.equal(v.value.score, 1500);                  // score sempre inteiro
+  assert.equal(v.value.seconds, 42.4);
+  assert.equal(validateRun({ score: -10, seconds: 30 }).value.score, 0);  // nunca negativo
 });
 
 /* ---------------- resiliência ---------------- */

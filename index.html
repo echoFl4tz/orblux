@@ -266,18 +266,38 @@
         </button>
       </div>
       <div class="panel-body">
-        <div id="ranking-podium" class="podium" hidden></div>
-        <ol id="ranking-list" class="ranking-list"></ol>
-        <div id="ranking-empty" class="empty-state" hidden>
-          <svg class="ic" aria-hidden="true"><use href="#ic-trophy"/></svg>
-          <p>Nenhuma partida ainda.<br>Jogue e conquiste o primeiro lugar!</p>
+        <div class="shop-filters" id="ranking-scopes" role="group" aria-label="Escopo do ranking" hidden>
+          <button class="chip-btn active" data-rank-scope="local" aria-pressed="true">Local</button>
+          <button class="chip-btn" data-rank-scope="global" aria-pressed="false">Global</button>
         </div>
 
-        <!-- Ranking global: aparece quando GLOBAL_RANKING.enabled = true em js/ui/ranking.js -->
-        <h3 class="card-title" id="ranking-global-title" hidden>
-          <svg class="ic" aria-hidden="true"><use href="#ic-mission"/></svg> Ranking global
-        </h3>
-        <ol id="ranking-global-list" class="ranking-list"></ol>
+        <div id="ranking-local">
+          <div id="ranking-podium" class="podium" hidden></div>
+          <ol id="ranking-list" class="ranking-list"></ol>
+          <div id="ranking-empty" class="empty-state" hidden>
+            <svg class="ic" aria-hidden="true"><use href="#ic-trophy"/></svg>
+            <p>Nenhuma partida ainda.<br>Jogue e conquiste o primeiro lugar!</p>
+          </div>
+        </div>
+
+        <!-- Ranking global (camada social): só com GLOBAL_RANKING_ENABLED -->
+        <div id="ranking-global" hidden>
+          <h3 class="card-title">
+            <svg class="ic" aria-hidden="true"><use href="#ic-globe"/></svg> Ranking global
+          </h3>
+          <p id="ranking-global-status" class="shop-status" role="status" aria-live="polite" hidden></p>
+          <ol id="ranking-global-list" class="ranking-list"></ol>
+          <p id="ranking-global-my" class="small muted" hidden></p>
+          <div id="ranking-global-cta" class="empty-state" hidden>
+            <svg class="ic" aria-hidden="true"><use href="#ic-globe"/></svg>
+            <p>Entre na comunidade para disputar o ranking global.</p>
+            <button class="btn btn-small" data-action="social">Comunidade</button>
+          </div>
+          <div class="panel-foot column" id="ranking-global-foot" hidden>
+            <button class="btn btn-small" id="ranking-global-more" hidden>Carregar mais</button>
+            <button class="btn btn-primary" id="ranking-global-retry" hidden>Tentar de novo</button>
+          </div>
+        </div>
 
         <h3 class="card-title" style="margin-top:16px">
           <svg class="ic" aria-hidden="true"><use href="#ic-medal"/></svg> Conquistas

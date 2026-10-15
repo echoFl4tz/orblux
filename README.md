@@ -80,7 +80,7 @@ O banner de cookies aparece na 1ª visita. Sem aceite, os slots de anúncio fica
 
 ## 🌍 Ranking global (opcional)
 
-O ranking local (localStorage) já funciona. Para global, siga o passo a passo SQL dentro de `js/ui/ranking.js` (Supabase grátis) e ligue `GLOBAL_RANKING.enabled = true`. Enviar pontuação: `submitGlobalScore(nome, pontos)`.
+O ranking local (localStorage) já funciona. O ranking global faz parte da camada social (`SOCIAL.md`): ligue a flag `GLOBAL_RANKING_ENABLED` em `net/flags.js` (ou `?social=1` em localhost) e configure o Supabase em `net/config.js`. O envio da partida é automático ao fim de cada jogo (`submitRunGlobal` em `js/ui/ranking.js`), com plausibilidade validada no servidor (`net/rules.js`).
 
 ---
 

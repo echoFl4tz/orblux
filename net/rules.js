@@ -38,6 +38,36 @@ export const CLAN = {
 /** Faixas de idade declaradas (perguntadas na 1ª entrada social). */
 export const AGE_BANDS = ['menor13', '13a17', '18+'];
 
+/* ---------------- partidas (ranking global) ---------------- */
+export const RUN = {
+  MAX_SCORE: 200000,   // plausibilidade máxima (ajustar só com o balanceamento)
+  MIN_SECONDS: 10,     // partidas < 10 s não pontuam no global
+  MAX_SECONDS: 7200,   // 2 h: acima disso é dado corrompido/adulterado
+};
+
+/**
+ * Régua de plausibilidade de partida — ESPELHO da validação do servidor
+ * (`submit_run` no SQL). O cliente usa para nem tentar enviar o impossível;
+ * quem decide é o servidor.
+ * @param {{score?:number, seconds?:number}} run
+ * @returns {{ok:boolean, code:string, error:string, value:object}}
+ */
+export function validateRun(run = {}) {
+  const score = Math.max(0, Math.floor(Number(run.score) || 0));
+  const seconds = Math.max(0, Number(run.seconds) || 0);
+  const value = { ...run, score, seconds };
+  if (score > RUN.MAX_SCORE) {
+    return { ok: false, code: 'implausible', error: 'Pontuação fora do intervalo possível.', value };
+  }
+  if (seconds < RUN.MIN_SECONDS) {
+    return { ok: false, code: 'too-short', error: 'Partida curta demais para pontuar.', value };
+  }
+  if (seconds > RUN.MAX_SECONDS) {
+    return { ok: false, code: 'too-long', error: 'Partida longa demais para pontuar.', value };
+  }
+  return { ok: true, code: 'ok', error: '', value };
+}
+
 /** Catálogo fixo de frases prontas (menores de 13: sem texto livre). */
 export const QUICK_PHRASES = [
   'GG!', 'Boa!', 'Vamos jogar?', 'Boa partida!', 'Nossa!',

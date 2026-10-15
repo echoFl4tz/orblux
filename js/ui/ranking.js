@@ -1,58 +1,62 @@
 /* =========================================================
-   Ranking local + estrutura pronta p/ ranking global
-   Top 3 em pódio (ouro/prata/bronze neon), resto em lista
+   Ranking local (localStorage) + ranking global opcional
+   da camada social (net/api.js).
+
+   • Local: sempre funciona, offline, só no dispositivo.
+   • Global: só com a flag GLOBAL_RANKING_ENABLED (desligada
+     por padrão — a produção fica intacta). Entra e sai pela
+     UMA interface net/api.js (mock/supabase/null) e o
+     SERVIDOR é a fonte da verdade: submitRun envia a partida
+     e o servidor valida a plausibilidade (net/rules.js
+     validateRun é o espelho — ver SOCIAL.md §4).
+
+   Análise de dados da rede: renderização por textContent
+   (nunca innerHTML) — linhas vindas do servidor não executam
+   HTML.
    ========================================================= */
 
 import { state } from '../core/state.js';
 import { on } from '../core/events.js';
-import { validateNickname, escapeHtml } from '../core/nickname.js';
+import { escapeHtml } from '../core/nickname.js';
+import { sfx } from '../core/audio.js';
+import { flag } from '../../net/flags.js';
+import { getApi } from '../../net/api.js';
+import { validateRun } from '../../net/rules.js';
 
-/* ------------------------------------------------------------------
-   RANKING GLOBAL (opcional) — Supabase — DESLIGADO por padrão
-   ------------------------------------------------------------------
-   1) Crie um projeto grátis em https://supabase.com
-   2) rode no SQL editor (com validação NO SERVIDOR — o cliente não é
-      confiável: qualquer pessoa pode enviar qualquer pontuação):
+const GLOBAL_LIMIT = 10;
+const RUN_VERSION = '1.0.0';   // versão da partida enviada (espelho de OX.version)
 
-      create table scores (
-        id bigserial primary key,
-        name text not null,
-        score integer not null,
-        created_at timestamp with time zone default now(),
-        -- nome: 3..12 chars, sem links/e-mails
-        constraint name_len check (char_length(name) between 3 and 12),
-        constraint name_no_url check (name !~ 'https?://|www\.|@'),
-        -- pontuação plausível (ajuste ao seu balanceamento)
-        constraint score_range check (score between 0 and 200000)
-      );
-      alter table scores enable row security;
-      create policy "leitura publica" on scores for select using (true);
-      create policy "insert publico" on scores for insert with check (true);
-
-   3) Aplique rate limit por IP/dispositivo no proxy/Edge Function do
-      Supabase (ex.: máx. 10 inserções/min por IP). O score do cliente
-      NÃO é confiável — trate a tabela como "diversão", não oficial.
-
-   4) MODERAÇÃO (exigida pela Google Play para conteúdo gerado por
-      usuários exibido a outros): cada linha do ranking global mostra um
-      link "Denunciar" que abre e-mail com o ID da entrada. Configure
-      MODERATION_EMAIL abaixo e apague linhas denunciadas no painel.
-
-   5) Preencha url/key abaixo e ligue GLOBAL_RANKING.enabled = true.
------------------------------------------------------------------- */
-export const GLOBAL_RANKING = {
-  enabled: false,
-  url: 'https://SEU-PROJETO.supabase.co/rest/v1/scores',
-  key: 'SUA-CHAVE-ANON-PUBLICA', // chave "anon public" (segura p/ cliente)
-  limit: 10,
-  moderationEmail: 'moderacao@SEU-DOMINIO.com',
-};
+let escopo = 'local';
+let globalPage = 0;
+let globalTotal = 0;
+let carregando = false;
 
 export function initRanking() {
-  on('screen:ranking', () => { renderRanking(); });
+  on('screen:ranking', () => {
+    renderRanking();
+    if (escopo === 'global') carregarGlobal(0);   // refresh ao (re)abrir a tela
+  });
   on('stats:changed', () => { renderRanking(); });
+
+  const scopes = document.getElementById('ranking-scopes');
+  const ligado = flag('GLOBAL_RANKING_ENABLED');
+  if (scopes) scopes.hidden = !ligado;            // produção: nem aparece
+  if (!ligado || !scopes) return;                 // sem flag: sem listeners
+
+  scopes.addEventListener('click', (e) => {
+    const btn = e.target.closest('[data-rank-scope]');
+    if (!btn || btn.disabled) return;
+    definirEscopo(btn.dataset.rankScope);
+  });
+  const more = document.getElementById('ranking-global-more');
+  if (more) more.addEventListener('click', () => { sfx('ui'); carregarGlobal(globalPage + 1); });
+  const retry = document.getElementById('ranking-global-retry');
+  if (retry) retry.addEventListener('click', () => { sfx('ui'); carregarGlobal(0); });
 }
 
+/* ------------------------------------------------------------------
+   LOCAL — pódio top 3 + lista (inalterado desde a Etapa 1)
+   ------------------------------------------------------------------ */
 export function renderRanking() {
   const list = document.getElementById('ranking-list');
   const podium = document.getElementById('ranking-podium');
@@ -65,7 +69,6 @@ export function renderRanking() {
     list.innerHTML = '';
     if (podium) { podium.innerHTML = ''; podium.hidden = true; }
     if (empty) empty.hidden = false;
-    if (GLOBAL_RANKING.enabled) fetchGlobal();
     return;
   }
   if (empty) empty.hidden = true;
@@ -105,58 +108,144 @@ export function renderRanking() {
       <span class="rank-date">${date}</span>
     </li>`;
   }).join('');
-
-  if (GLOBAL_RANKING.enabled) fetchGlobal();
 }
 
-/** Busca o ranking global (desligado por padrão; falha silenciosa). */
-async function fetchGlobal() {
-  const list = document.getElementById('ranking-global-list');
-  if (!list || !GLOBAL_RANKING.enabled) return;
+/* ------------------------------------------------------------------
+   GLOBAL — só com a flag; erros degradam com "Tentar de novo"
+   ------------------------------------------------------------------ */
+
+function definirEscopo(novo) {
+  escopo = novo === 'global' ? 'global' : 'local';
+  sfx('ui');
+  document.querySelectorAll('#ranking-scopes [data-rank-scope]').forEach((b) => {
+    const ativo = b.dataset.rankScope === escopo;
+    b.classList.toggle('active', ativo);
+    b.setAttribute('aria-pressed', ativo ? 'true' : 'false');
+  });
+  const loc = document.getElementById('ranking-local');
+  if (loc) loc.hidden = escopo === 'global';
+  const glob = document.getElementById('ranking-global');
+  if (glob) glob.hidden = escopo !== 'global';
+  if (escopo === 'global') carregarGlobal(0);
+}
+
+function statusGlobal(txt) {
+  const el = document.getElementById('ranking-global-status');
+  if (!el) return;
+  el.textContent = txt || '';
+  el.hidden = !txt;
+}
+
+/** Linha do ranking global: textContent em todo texto da rede. */
+function montarLinha(r) {
+  const li = document.createElement('li');
+  if (r.isMe) li.className = 'mine';
+
+  const esq = document.createElement('span');
+  const pos = document.createElement('span');
+  pos.className = 'rank-pos';
+  pos.textContent = `${Number(r.posicao) || '–'}º`;
+  const score = document.createElement('b');
+  score.textContent = (Number(r.score) || 0).toLocaleString('pt-BR');
+  const nick = document.createElement('span');
+  nick.className = 'rank-name';
+  const tag = typeof r.tag === 'string' && r.tag ? ` [${r.tag.slice(0, 4)}]` : '';
+  nick.textContent = `${String(r.nick || 'Jogador').slice(0, 16)}${tag}`;
+  esq.append(pos, score, nick);
+
+  const dir = document.createElement('span');
+  dir.className = 'rank-date';
+  const d = r.at ? new Date(r.at) : null;
+  dir.textContent = d && !Number.isNaN(d.getTime())
+    ? `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}`
+    : '';
+
+  li.append(esq, dir);
+  return li;
+}
+
+async function carregarGlobal(page = 0) {
+  if (carregando) return;
+  const lista = document.getElementById('ranking-global-list');
+  const cta = document.getElementById('ranking-global-cta');
+  const myEl = document.getElementById('ranking-global-my');
+  const more = document.getElementById('ranking-global-more');
+  const retry = document.getElementById('ranking-global-retry');
+  const foot = document.getElementById('ranking-global-foot');
+  if (!lista) return;
+
+  carregando = true;
+  if (retry) retry.hidden = true;
+  statusGlobal('Conectando…');
   try {
-    const res = await fetch(`${GLOBAL_RANKING.url}?select=id,name,score&order=score.desc&limit=${GLOBAL_RANKING.limit}`, {
-      headers: { apikey: GLOBAL_RANKING.key, Authorization: `Bearer ${GLOBAL_RANKING.key}` },
-    });
-    if (!res.ok) throw new Error(res.status);
-    const rows = await res.json();
-    if (list) {
-      // renderização segura: escapeHtml em todo dado vindo da rede; score é número
-      list.innerHTML = rows.map((r, i) => {
-        const nm = escapeHtml(String(r.name ?? '').slice(0, 12));
-        const sc = Number(r.score) || 0;
-        const id = escapeHtml(String(r.id ?? ''));
-        const report = GLOBAL_RANKING.moderationEmail
-          ? ` <a class="rank-report" href="mailto:${escapeHtml(GLOBAL_RANKING.moderationEmail)}?subject=${encodeURIComponent('Denúncia de ranking #')}${id}&body=${encodeURIComponent('Denuncio a entrada #' + id + ' do ranking global do ORBLUX.')}" aria-label="Denunciar esta entrada">Denunciar</a>`
-          : '';
-        return `<li><span><span class="rank-pos">${i + 1}º</span> <b>${nm}</b></span><span class="rank-date">${sc.toLocaleString('pt-BR')}${report}</span></li>`;
-      }).join('');
+    const api = getApi();
+    const sess = await api.auth.session();
+    if (!sess) {
+      // sem perfil social: convida a entrar na Comunidade (nunca força)
+      lista.textContent = '';
+      if (myEl) { myEl.textContent = ''; myEl.hidden = true; }
+      if (more) more.hidden = true;
+      if (foot) foot.hidden = true;
+      if (cta) cta.hidden = false;
+      statusGlobal('');
+      return;
     }
-    const title = document.getElementById('ranking-global-title');
-    if (title) title.hidden = false;
-  } catch (err) {
-    console.warn('[ranking] global indisponível:', err); // segue só com o local
+    if (cta) cta.hidden = true;
+
+    const data = await api.ranking.top({ scope: 'alltime', page, limit: GLOBAL_LIMIT });
+    const rows = Array.isArray(data.rows) ? data.rows : [];
+    if (page === 0) { lista.textContent = ''; }
+    globalTotal = Number(data.total) || 0;
+    for (const r of rows) lista.appendChild(montarLinha(r));
+    globalPage = page;
+
+    if (myEl) {
+      myEl.textContent = data.myRank
+        ? `Sua posição: ${data.myRank}º de ${globalTotal}`
+        : 'Suas partidas ainda não pontuaram no global.';
+      myEl.hidden = false;
+    }
+    const fim = (page + 1) * GLOBAL_LIMIT >= globalTotal;
+    if (more) more.hidden = fim;
+    if (foot) foot.hidden = fim;
+    statusGlobal(rows.length === 0 ? 'Nenhuma partida no ranking ainda.' : '');
+  } catch (e) {
+    console.warn('[ranking] global indisponível:', (e && e.code) || 'erro');
+    statusGlobal('Não foi possível carregar o ranking global.');
+    if (retry) retry.hidden = false;
+    if (foot) foot.hidden = false;
+    if (more) more.hidden = true;
+  } finally {
+    carregando = false;
   }
 }
 
-/** Envia uma pontuação ao ranking global (valida e sanitiza antes; desligado por padrão). */
-export async function submitGlobalScore(name, score) {
-  if (!GLOBAL_RANKING.enabled) return false;
-  // nunca confie no cliente: valida nome e limita a pontuação antes de enviar
-  const v = validateNickname(name);
-  if (!v.ok) return false;
-  const sc = Math.max(0, Math.min(200000, Math.floor(Number(score) || 0)));
+/**
+ * Envia a partida ao servidor quando o ranking global está ligado e o
+ * jogador tem perfil social. Fire-and-forget: falha NUNCA afeta a tela
+ * de fim de jogo, o ranking local ou o progresso.
+ */
+export async function submitRunGlobal(run = {}) {
+  if (!flag('GLOBAL_RANKING_ENABLED')) return false;
+  const payload = {
+    score: Math.floor(Number(run.score) || 0),
+    seconds: Math.round(Number(run.elapsed) || 0),
+    pickups: Number(run.pickups) || 0,
+    comboMax: Number(run.maxCombo) || 1,
+    level: Number(run.level) || 1,
+    seed: null,               // semente da corrida do dia chega na Fase 5
+    version: RUN_VERSION,
+  };
+  // régua local espelha a do servidor: nem tenta enviar o impossível
+  if (!validateRun(payload).ok) return false;
   try {
-    await fetch(GLOBAL_RANKING.url, {
-      method: 'POST',
-      headers: {
-        apikey: GLOBAL_RANKING.key,
-        Authorization: `Bearer ${GLOBAL_RANKING.key}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ name: v.value, score: sc }),
-    });
+    const api = getApi();
+    const sess = await api.auth.session();
+    if (!sess) return false;                 // sem perfil social: nada a enviar
+    await api.ranking.submitRun(payload);
     return true;
-  } catch {
+  } catch (e) {
+    console.warn('[ranking] partida não enviada:', (e && e.code) || 'erro');
     return false;
   }
 }
