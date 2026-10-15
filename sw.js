@@ -8,7 +8,7 @@
    Atualize CACHE_VERSION quando a lista PRECACHE mudar.
    ========================================================= */
 
-const CACHE_VERSION = 'orblux-v3';
+const CACHE_VERSION = 'orblux-v4';
 
 const PRECACHE = [
   './',
@@ -21,6 +21,7 @@ const PRECACHE = [
   './favicon.svg',
   './logo.svg',
   './privacy.html',
+  './termos.html',
   './js/main.js',
   './js/core/loop.js',
   './js/core/storage.js',

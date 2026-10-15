@@ -58,7 +58,7 @@ const ok = (cond, msg) => {
   );
   ok(true, 'service worker registra e assume a página');
   const ver = await page.evaluate(async () => (await caches.keys()).find((k) => k.startsWith('orblux-')) || null);
-  ok(ver === 'orblux-v3', `cache de versão atual (${ver})`);
+  ok(ver === 'orblux-v4', `cache de versão atual (${ver})`);
 
   console.log('===== SW — navegação é rede-primeiro =====');
   // injeta uma cópia "antiga" no cache: a recarga NÃO pode servi-la

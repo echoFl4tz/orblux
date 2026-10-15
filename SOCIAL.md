@@ -1,6 +1,6 @@
 # ORBLUX — Camada SOCIAL ONLINE (Supabase)
 
-> **Documento vivo.** Fases 0, 1, 2, 3, 4, 5 e 6 concluídas em 15/10/2026. Este documento manda sobre
+> **Documento vivo.** Fases 0 a 7 concluídas em 15/10/2026. Este documento manda sobre
 > qualquer instrução avulsa em caso de conflito. Cada fase só começa com a
 > aprovação da anterior. Links consultados com data na seção 9.
 
@@ -34,7 +34,7 @@
 | **4 (concluída)** | Clãs (criar com moedas, entrada, cargos, elenco de emblema) — ver §10 |
 | **5 (concluída)** | Torneios de clãs + **Corrida do Dia** com semente única (`net/rng.js` + `setSpawnerRng`) — ver §10 |
 | **6 (concluída)** | Backend real no Supabase (migrações + Edge Functions + jobs) e integração economia/rede — ver §10 |
-| 7 | Conformidade/loja (Data Safety, UGC, exclusão de conta, termos) |
+| **7 (concluída)** | Conformidade/loja: `privacy.html` sem CDN e com a camada social, `DATA_SAFETY.md` com UGC, checklist do Play Console — ver §10 |
 | 8 | Testes finais e auditoria |
 
 ## 2. Arquitetura do cliente (`pulso-neon/net/`)
@@ -499,3 +499,32 @@ a camada `net/` está pronta e testada; a interface vem nas fases 1..5).
   backend, mas ligar exige um projeto Supabase configurado
   (`supabase/README.md`) e o chat continua pendente da decisão §8.1
   (idade mínima 13 + LGPD/ECA, ver §6).
+
+### Fase 7 — Conformidade/loja (15/10/2026)
+
+- **`privacy.html` reescrito**: sem CDN (Google Fonts removido —
+  fontes auto-hospedadas via `css/fonts.css`, igual a `termos.html`);
+  nova **seção 7 "Comunidade online"** (o que vai ao servidor quando
+  as flags sociais são usadas: perfil, chat com retenção de 24 h,
+  denúncia/bloqueio/moderação, exclusão de conta, menores, desligar);
+  seção de **exclusão de conta e de dados** (caminhos in-app:
+  *Configurações → Apagar progresso* e *Configurações → Comunidade →
+  Apagar conta da comunidade*); Google Fonts saiu da lista de
+  terceiros (Supabase entrou como storage da comunidade); cross-link
+  com os `termos.html`.
+- **`DATA_SAFETY.md`**: linhas novas de UGC/conta social
+  (perfil da comunidade e conteúdo gerado pelo usuário — coletado e
+  compartilhado só com a comunidade ligada; chat com retenção de 24 h);
+  cenário 3 no formulário (comunidade ligada); notas de conformidade
+  de moderação, exclusão de conta e classificação.
+- **`SKINS_PLAY_CONSOLE.md` §7**: checklist ganhou termos da
+  comunidade publicados, exclusão de conta testada, classificação
+  etária com UGC e decisão sobre a comunidade na build publicada.
+- **Service worker**: `termos.html` entrou no pré-cache (páginas
+  legais legíveis offline) — `CACHE_VERSION` de `orblux-v3` para
+  `orblux-v4` (literal atualizado em `tests/sw-update.cjs`).
+- **Teste**: `backend-parity.test.mjs` ganhou "páginas públicas sem
+  CDN em runtime e com páginas legais ligadas" (varre `index.html`,
+  `privacy.html` e `termos.html` sem comentários; `src=`/`href=`
+  externos em script/stylesheet reprovam; exige `css/fonts.css`,
+  cross-links e pré-cache das duas páginas legais).

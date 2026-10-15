@@ -6,55 +6,53 @@
   <title>Política de Privacidade — ORBLUX</title>
   <meta name="theme-color" content="#05060f">
   <link rel="icon" href="favicon.svg" type="image/svg+xml">
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600;800&family=Inter:wght@400;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/fonts.css">
   <style>
     :root { --bg:#05060f; --text:#eaf6ff; --muted:#8fa3c8; --cyan:#22e6ff; }
     * { box-sizing:border-box; margin:0; padding:0; }
-    body { background:var(--bg); color:var(--text); font-family:'Inter',system-ui,sans-serif; line-height:1.65; padding:24px; }
+    body { background:var(--bg); color:var(--text); font-family:'Orblux Sans','Inter',system-ui,sans-serif; line-height:1.65; padding:24px; }
     main { max-width:760px; margin:0 auto; }
-    h1 { font-family:'Orbitron',sans-serif; color:var(--cyan); margin-bottom:4px; }
-    h2 { font-family:'Orbitron',sans-serif; font-size:1.05rem; color:var(--cyan); margin:26px 0 8px; }
+    h1 { font-family:'Orblux Display','Orbitron',sans-serif; color:var(--cyan); margin-bottom:4px; }
+    h2 { font-family:'Orblux Display','Orbitron',sans-serif; font-size:1.05rem; color:var(--cyan); margin:26px 0 8px; }
     p, li { color:var(--text); font-size:15px; margin-bottom:10px; }
     ul { padding-left:20px; }
     .muted { color:var(--muted); font-size:13px; }
     a { color:var(--cyan); }
     .box { border:1px solid rgba(34,230,255,.25); border-radius:12px; padding:16px; margin:14px 0; background:rgba(13,16,36,.7); }
-    .btn { display:inline-block; margin-top:18px; padding:12px 20px; border:1px solid var(--cyan); border-radius:10px; color:var(--text); text-decoration:none; font-family:'Orbitron',sans-serif; }
+    .btn { display:inline-block; margin-top:18px; padding:12px 20px; border:1px solid var(--cyan); border-radius:10px; color:var(--text); text-decoration:none; font-family:'Orblux Display','Orbitron',sans-serif; }
   </style>
 </head>
 <body>
 <main>
   <h1>Política de Privacidade</h1>
-  <p class="muted">Última atualização: outubro de 2026 · Jogo: ORBLUX</p>
+  <p class="muted">Última atualização: 15 de outubro de 2026 · Jogo: ORBLUX</p>
 
   <div class="box">
-    <p><b>Resumo em uma frase:</b> o jogo não pede nenhum dado pessoal, guarda seu recorde apenas no seu próprio dispositivo
-    e pode exibir anúncios (com o seu consentimento) conforme a LGPD.</p>
-    <p class="muted" style="font-size:13px">Este jogo foi renomeado de "Pulso Neon" para "ORBLUX" — os dados salvos
-    localmente são os mesmos e continuam valendo.</p>
+    <p><b>Resumo em uma frase:</b> o jogo não pede nenhum dado pessoal, guarda seu recorde apenas no seu próprio
+    dispositivo e só envia algo a um servidor se você escolher usar a <b>Comunidade online</b> (opcional e desligada
+    por padrão) — que pode exibir anúncios somente com o seu consentimento, conforme a LGPD.</p>
+    <p class="muted" style="font-size:13px">Para as regras da comunidade (UGC, moderação, punições), veja os
+    <a href="termos.html">Termos de Uso da Comunidade</a>. Este jogo foi renomeado de "Pulso Neon" para "ORBLUX" —
+    os dados salvos localmente são os mesmos e continuam valendo.</p>
   </div>
 
   <h2>1. Dados que coletamos</h2>
   <ul>
-    <li><b>Nenhum dado pessoal</b> é coletado: não há cadastro, login, e-mail ou telefone.</li>
+    <li><b>Nenhum dado pessoal</b> é coletado: não há cadastro com nome, login, e-mail ou telefone.</li>
     <li><b>Apelido:</b> você escolhe um apelido (ou usamos um gerado automaticamente, ex.: "Jogador4821").
       Por padrão, ele fica <b>salvo apenas no seu dispositivo</b> e aparece no ranking local e ao compartilhar.
       Não use seu nome real nem dados pessoais.</li>
-    <li><b>Dados locais (no seu dispositivo):</b> recorde, ranking local, conquistas, missões do dia, apelido e configurações
-      ficam gravados no <code>localStorage</code> do seu navegador. Por padrão, eles nunca são enviados para um servidor.</li>
+    <li><b>Dados locais (no seu dispositivo):</b> recorde, ranking local, conquistas, missões do dia, moedas,
+      skins compradas, apelido e configurações ficam gravados no <code>localStorage</code> do seu navegador.
+      Com os recursos sociais desligados (padrão), nada é enviado a um servidor.</li>
+    <li><b>Dados da Comunidade online (opcional — ver seção 7):</b> se você criar um perfil da comunidade,
+      alguns dados vão para um servidor externo: apelido social, país, faixa de idade, pontuações, mensagens
+      de chat (apagadas em 24 h), registros de denúncia/bloqueio e dados de clã/torneio.</li>
     <li><b>Dados de anúncios:</b> se você aceitar os anúncios, os parceiros (ex.: Google AdSense) podem usar cookies
       para personalizar os anúncios exibidos.</li>
     <li><b>Compras (skins):</b> as skins são compras únicas processadas pela <b>Google Play</b>. O jogo não vê nem
       guarda dados de pagamento; ele apenas consulta à Play Store quais skins você já comprou (ver seção 6).</li>
   </ul>
-  <div class="box">
-    <p><b>Ranking global (opcional, desligado por padrão):</b> se um dia for ativado, seu apelido e sua pontuação
-      são enviados a um servidor e <b>exibidos publicamente</b> a outros jogadores, para fins de funcionalidade do app
-      (ranking). Nesse caso, você pode pedir a remoção da sua entrada pelo e-mail de contato abaixo.
-      Enquanto estiver desligado, nada sai do seu dispositivo.</p>
-  </div>
 
   <h2>2. Cookies</h2>
   <p>Usamos apenas o armazenamento local do navegador para o funcionamento do jogo (recorde e configurações).
@@ -72,13 +70,17 @@
   </ul>
 
   <h2>4. Direitos da LGPD (Lei nº 13.709/2018)</h2>
-  <p>Como não tratamos dados pessoais, não há cadastro para excluir. Ainda assim, você pode:
+  <p>Como não tratamos dados pessoais no modo padrão, não há cadastro para excluir. Ainda assim, você pode:
   apagar todo o progresso do jogo no menu <i>Configurações → Apagar progresso</i>, e remover cookies/dados do site
   nas configurações do seu navegador a qualquer momento.</p>
+  <p>Se você usa a Comunidade online, pode <b>apagar sua conta da comunidade</b> dentro do próprio jogo
+  (<i>Configurações → Comunidade → Apagar conta da comunidade</i>) — a exclusão é <b>final</b> e remove perfil,
+  apelido social e conteúdo associado no servidor (ver seção 7).</p>
 
   <h2>5. Crianças</h2>
-  <p>O jogo não coleta dados de nenhum usuário, incluindo crianças. Os anúncios exibidos seguem as diretrizes
-  de conteúdo familiar das redes de anúncio.</p>
+  <p>O jogo não coleta dados de nenhum usuário, incluindo crianças. Na Comunidade online, menores de 13 anos
+  usam o chat em <b>modo restrito</b> (só frases prontas e emojis) e não criam nem gerenciam clãs. Os anúncios
+  exibidos seguem as diretrizes de conteúdo familiar das redes de anúncio.</p>
 
   <h2>6. Compras na Play Store (skins)</h2>
   <p>As skins são itens <b>estéticos</b> (não mudam a dificuldade nem a pontuação) comprados <b>uma única vez</b>
@@ -96,15 +98,44 @@
     <li>Não existe loot box, sorteio pago nem botão de compra durante a partida.</li>
   </ul>
 
-  <h2>7. Serviços de terceiros</h2>
+  <h2>7. Comunidade online (opcional, desligada por padrão)</h2>
+  <p>A Comunidade (perfil social, ranking global, chat, clãs e torneios de clãs) só funciona se você criar um
+  perfil dela — é <b>opcional</b> e quem não usa continua jogando 100% offline, sem enviar nada.</p>
   <ul>
-    <li><b>Google Fonts</b> (fontes) — <a href="https://policies.google.com/privacy?hl=pt-BR" target="_blank" rel="noopener">privacidade</a>.</li>
-    <li><b>Google AdSense</b> (anúncios, apenas com consentimento).</li>
-    <li><b>Google Play</b> (compras de skins, apenas no app publicado na Play Store).</li>
+    <li><b>Para onde vão os dados:</b> um servidor externo de hospedagem de dados (Supabase), fora do seu
+      dispositivo. Ficam lá: apelido social, país, faixa de idade, versão dos termos aceita, pontuações,
+      mensagens de chat, registros de denúncia/bloqueio e vínculo de clã.</li>
+    <li><b>Retenção:</b> mensagens do chat são apagadas automaticamente em <b>24 horas</b>; denúncias e
+      bloqueios existem enquanto sua conta existir; ao apagar a conta, perfil e conteúdo associado são
+      removidos de forma <b>irreversível</b>.</li>
+    <li><b>Visibilidade:</b> apelido e pontuação aparecem publicamente no ranking global; mensagens no chat
+      são visíveis para outros jogadores da mesma sala. Não use dados pessoais no conteúdo público.</li>
+    <li><b>Moderação:</b> todo painel social tem <b>Denunciar</b> e <b>Bloquear</b>. Mensagens podem ser
+      ocultadas automaticamente por filtro, e há silenciamento temporário (<i>mute</i>) ou banimento por
+      violação dos <a href="termos.html">Termos de Uso da Comunidade</a>. Punidos podem contestar pelo
+      canal de contato (seção 9).</li>
+    <li><b>Exclusão de conta:</b> <i>Configurações → Comunidade → Apagar conta da comunidade</i> — dentro do
+      próprio jogo, sem precisar de e-mail; é definitiva. Também pode pedir remoção pelo contato da seção 9.
+      O progresso salvo no aparelho (recorde, moedas, skins) é mantido.</li>
+    <li><b>Crianças:</b> menores de 13 anos usam o chat só com frases prontas/emojis (ver seção 5).</li>
+    <li><b>Desligar:</b> as flags sociais ficam desligadas por padrão; sem servidor configurado no app,
+      nada sai do dispositivo.</li>
   </ul>
 
-  <h2>8. Contato</h2>
-  <p>Dúvidas sobre privacidade: <a href="mailto:seu@email.com">seu@email.com</a> (troque pelo seu e-mail ao publicar).</p>
+  <h2>8. Serviços de terceiros</h2>
+  <ul>
+    <li><b>Supabase</b> (banco de dados da Comunidade online — só com o perfil da comunidade criado).</li>
+    <li><b>Google AdSense</b> (anúncios, apenas com consentimento; desligado por padrão).</li>
+    <li><b>Google Play</b> (compras de skins, apenas no app publicado na Play Store).</li>
+  </ul>
+  <p class="muted">As fontes do jogo são auto-hospedadas (arquivos locais) — nenhuma fonte é carregada de
+  servidores externos.</p>
+
+  <h2>9. Contato e exclusão de dados</h2>
+  <p>Dúvidas sobre privacidade ou pedidos de remoção de dados: <a href="mailto:seu@email.com">seu@email.com</a>
+  (troque pelo seu e-mail ao publicar). Dentro do jogo, o caminhos são:
+  <i>Configurações → Apagar progresso</i> (dados locais) e
+  <i>Configurações → Comunidade → Apagar conta da comunidade</i> (dados no servidor).</p>
 
   <a class="btn" href="index.html">← Voltar ao jogo</a>
 </main>

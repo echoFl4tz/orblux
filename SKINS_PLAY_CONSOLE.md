@@ -109,7 +109,11 @@ loja de skins (grade), detalhe com personalização, conquistas.
 - [ ] Testadores de licença adicionados
 - [ ] Política de reembolso (seção 4) colada
 - [ ] Política de privacidade: URL do `privacy.html` publicado
+- [ ] Termos da Comunidade: URL do `termos.html` publicado (exigível se o chat/UGC for ativado)
+- [ ] Exclusão de conta no app visível e testada (*Configurações → Comunidade → Apagar conta da comunidade* — exigência da Play para apps com UGC)
 - [ ] Data safety preenchido conforme `DATA_SAFETY.md`
+- [ ] Classificação etária: no questionnaire de conteúdo, marcar que os jogadores podem **enviar conteúdo** e **interagir entre si** se a comunidade for ligada (puxa a nota para 12+/Teen — coerente com §5)
+- [ ] Decisão sobre a **Comunidade online** ligada na build publicada (se ligada: servidor Supabase ativo, moderação ativa e seção 7 do `privacy.html` revisada)
 - [ ] Público-alvo/classificação etária definido (seção 5)
 - [ ] Ficha da loja (seção 6) preenchida
 - [ ] Decisão sobre verificação por servidor (`SERVER_VERIFY.enabled`)

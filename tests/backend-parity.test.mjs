@@ -322,3 +322,33 @@ test('códigos de erro do SQL pertencem à UMA interface', () => {
   }
   assert.ok(codigos.includes('insufficient-coins'), 'novo código de clã sem saldo');
 });
+
+test('páginas públicas sem CDN em runtime e com páginas legais ligadas', () => {
+  for (const nome of ['index.html', 'privacy.html', 'termos.html']) {
+    // comentários removidos antes da varredura (o snippet do AdSense fica
+    // comentado de propósito — só quem publica os anúncios o ativa)
+    const limpo = read(nome).replace(/<!--[\s\S]*?-->/g, '');
+    const tags = [
+      ...[...limpo.matchAll(/<script\b[^>]*>/gi)].map((m) => m[0]),
+      ...[...limpo.matchAll(/<link\b[^>]*>/gi)].map((m) => m[0]),
+    ];
+    for (const tag of tags) {
+      if (/stylesheet/i.test(tag) || /<script/i.test(tag)) {
+        assert.ok(!/\ssrc=["']https?:/i.test(tag), `${nome}: script externo em runtime: ${tag}`);
+        assert.ok(!/href=["']https?:/i.test(tag) || !/stylesheet/i.test(tag),
+          `${nome}: stylesheet externo em runtime: ${tag}`);
+      }
+    }
+  }
+  // páginas legais usam fontes auto-hospedadas (css/fonts.css)
+  for (const nome of ['privacy.html', 'termos.html']) {
+    assert.ok(read(nome).includes('css/fonts.css'), `${nome}: fontes locais (css/fonts.css)`);
+  }
+  // cross-links entre as páginas legais
+  assert.ok(read('termos.html').includes('privacy.html'), 'termos linka privacy');
+  assert.ok(read('privacy.html').includes('termos.html'), 'privacy linka termos');
+  // páginas legais legíveis offline (pré-cache do service worker)
+  const sw = read('sw.js');
+  assert.ok(sw.includes("'./privacy.html'"), 'sw pré-cacheia privacy.html');
+  assert.ok(sw.includes("'./termos.html'"), 'sw pré-cacheia termos.html');
+});
