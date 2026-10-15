@@ -14,6 +14,17 @@ export const SUPABASE_CONFIG = {
 };
 
 /**
+ * Contestação de bloqueio no chat (SOCIAL.md §8.5): o link do erro
+ * "muted"/"banned" abre o e-mail do dono com ID/apelido/punição —
+ * resposta esperada em até PRAZO_DIAS dias. Mesmo endereço placeholder
+ * usado nos Termos/Privacidade (troque pelos seus antes de publicar).
+ */
+export const APPEAL = {
+  email: 'seu@email.com',
+  prazoDias: 7,
+};
+
+/**
  * Cliente oficial @supabase/supabase-js — UMD local, versão PINADA
  * (2.117.2, publicada em 25/09/2026 — ≥14 dias, baixada de
  * jsdelivr/npm e verificada por SHA256 em SOCIAL.md).

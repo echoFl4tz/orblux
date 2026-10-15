@@ -1637,6 +1637,8 @@ body.reduce-motion .coins-progress-bar span { transition: none; }
 .chat-msg-text { margin: 0; color: var(--text-2); overflow-wrap: anywhere; word-break: break-word; }
 .chat-msg-act { flex: 0 0 auto; }
 .chat-send-error { margin: 0; color: var(--danger); }
+.chat-appeal { display: inline-block; margin-top: 6px; color: var(--primary); text-decoration: underline; }
+.chat-appeal[hidden] { display: none; }
 .chat-quick { display: flex; flex-direction: column; gap: var(--s1); }
 .chat-quick p { margin: 0; }
 .chat-quick-chips { display: flex; flex-wrap: wrap; gap: var(--s2); }

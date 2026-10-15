@@ -7,6 +7,8 @@
      bloqueio (some na hora) e desbloquear em "Bloqueados"
    • menor de 13: só frases prontas/emojis (sem texto livre)
    • offline ao abrir: "Tentar de novo" e retry volta à sala
+   • mute do servidor: erro inline + link "Contestar bloqueio"
+     (mailto com ID/apelido/punição — decisão §8.5)
    • 390x844, 360x640 e 1280x720 sem overflow; zero erros
    ========================================================= */
 'use strict';
@@ -227,6 +229,36 @@ async function newPage(browser, size, query) {
   await kp.waitForTimeout(350);
   await kp.screenshot({ path: path.join(SHOTS, 'menor13-390x844.png') });
   await kid.context.close();
+
+  /* ============ mute + contestação (mailto) ============ */
+  console.log('===== CHAT — mute com "Contestar bloqueio" =====');
+  const mt1 = await newPage(browser, { w: 390, h: 844 }, `?social=1&debug=1${ts}`);
+  const mp2 = mt1.page;
+  await mp2.evaluate(async () => {
+    await window.OX.socialApi().__seedProfile({ nickname: 'Muted', ageBand: '18+' });
+    // punição do servidor (mock): silenciado por 1 h
+    window.OX.socialApi().state.profile.mutedUntil = Date.now() + 3600e3;
+  });
+  await mp2.click('#btn-chat');
+  await mp2.waitForSelector('#chat-room', { state: 'visible', timeout: 8000 });
+  await mp2.fill('#chat-input', 'teste sob silenciamento');
+  await mp2.click('#chat-send');
+  await mp2.waitForSelector('#chat-send-error', { state: 'visible' });
+  ok((await mp2.textContent('#chat-send-error')).length > 0, 'mute: erro inline sob o campo');
+  ok(await mp2.isVisible('#chat-appeal'), 'link "Contestar bloqueio" visível no erro de mute');
+  const appealHref = decodeURIComponent(await mp2.getAttribute('#chat-appeal', 'href') || '');
+  ok(appealHref.startsWith('mailto:'), 'contestação abre o e-mail (mailto)');
+  ok(appealHref.includes('ID da conta:') && appealHref.includes('Muted') && appealHref.includes('Punição:'),
+    'mailto leva ID, apelido e punição');
+  await mp2.waitForTimeout(350);
+  await mp2.screenshot({ path: path.join(SHOTS, 'contestacao-390x844.png') });
+  // sem punição: envio passa e o link some
+  await mp2.evaluate(() => { window.OX.socialApi().state.profile.mutedUntil = 0; });
+  await mp2.fill('#chat-input', 'agora posso falar');
+  await mp2.click('#chat-send');
+  await mp2.waitForTimeout(350);
+  ok(await mp2.evaluate(() => document.getElementById('chat-appeal').hidden), 'sem punição o link fica oculto');
+  await mt1.context.close();
 
   /* ============ desktop 1280x720 ============ */
   console.log('===== CHAT — desktop 1280x720 =====');

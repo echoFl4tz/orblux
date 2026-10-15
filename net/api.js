@@ -902,8 +902,15 @@ class SupabaseProvider {
     const sb = await this._sb();
     const { data, error } = await sb.rpc(name, args);
     if (error) {
-      const code = error.code || error.message || 'server';
-      fail(code, 'O servidor recusou a operação. Tente de novo.');
+      // o SQL lança '<codigo>|<mensagem pt-BR>' (migração _functions):
+      // separamos o prefixo para preservar os códigos ESTÁVEIS da
+      // UMA interface (muted, name-taken, insufficient-coins, ...)
+      const raw = String(error.message || '');
+      const bar = raw.indexOf('|');
+      if (bar > 0 && /^[a-z0-9_-]+$/i.test(raw.slice(0, bar))) {
+        fail(raw.slice(0, bar), raw.slice(bar + 1));
+      }
+      fail(error.code || 'server', 'O servidor recusou a operação. Tente de novo.');
     }
     return data;
   }
@@ -944,7 +951,13 @@ class SupabaseProvider {
         p_terms_version: TERMS_VERSION,
       }),
       recover: (code) => this._rpc('profile_recover', { p_code: code }),
-      deleteAccount: () => this._rpc('account_delete'),
+      deleteAccount: async () => {
+        const res = await this._rpc('account_delete');
+        // exclusão FINAL: encerra também a sessão anônima (igual ao mock,
+        // que zera o usuário local) — vira "dispositivo novo"
+        try { await this.auth.signOut(); } catch { /* sessão já encerrada */ }
+        return res;
+      },
     };
   }
 
@@ -985,7 +998,17 @@ class SupabaseProvider {
     await this._leaveChannel();
     this._channel = sb.channel(`chat:${room}`, { config: { broadcast: { self: false } } });
     this._channel.on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'chat_messages', filter: `room=eq.${room}` },
-      (payload) => { this._listeners.message.forEach((fn) => fn(payload.new)); });
+      (payload) => {
+        // o payload vem em snake_case (colunas reais da tabela); a UI só
+        // entende o formato da UMA interface — mapeamos para camel aqui
+        const r = payload.new || {};
+        const msg = {
+          id: r.id, room: r.room, userId: r.user_id, nick: r.nick_snapshot,
+          tag: r.tag_snapshot || null, text: r.text,
+          at: r.created_at ? Date.parse(r.created_at) : 0, hidden: !!r.hidden,
+        };
+        this._listeners.message.forEach((fn) => fn(msg));
+      });
     await this._channel.subscribe();
     return true;
   }
@@ -1004,6 +1027,7 @@ class SupabaseProvider {
       }),
       join: (id) => this._rpc('clan_join', { p_id: id }),
       request: (id) => this._rpc('clan_request', { p_id: id }),
+      outgoingRequests: () => this._rpc('clan_outgoing'),
       invite: (userId, clanId) => this._rpc('clan_invite', { p_user_id: userId, p_clan_id: clanId || null }),
       requests: (clanId) => this._rpc('clan_requests', { p_clan_id: clanId || null }),
       acceptRequest: (userId, clanId) => this._rpc('clan_accept', { p_user_id: userId, p_clan_id: clanId || null }),

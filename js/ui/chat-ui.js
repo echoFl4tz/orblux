@@ -20,6 +20,7 @@ import { showScreen, openModal, closeModal, returnToMenu } from './screens.js';
 import { flag } from '../../net/flags.js';
 import { getApi, SocialError } from '../../net/api.js';
 import { CHAT, validateChatMessage } from '../../net/rules.js';
+import { APPEAL } from '../../net/config.js';
 
 const $ = (id) => document.getElementById(id);
 const NS = 'http://www.w3.org/2000/svg';
@@ -256,11 +257,37 @@ function configurarComposer() {
   esconderErroEnvio();
 }
 
-function erroEnvio(msg) {
+function erroEnvio(msg, codigo) {
   const el = $('chat-send-error');
-  if (!el) return;
-  el.textContent = msg || '';
-  el.hidden = !msg;
+  if (el) {
+    el.textContent = msg || '';
+    el.hidden = !msg;
+  }
+  // punição do servidor (muted/banned): mostra o link de contestação
+  // por e-mail — decisão §8.5 (resposta em até APPEAL.prazoDias dias)
+  const link = $('chat-appeal');
+  if (link) {
+    const contestar = !!msg && (codigo === 'muted' || codigo === 'banned');
+    link.hidden = !contestar;
+    link.href = contestar ? mailtoContestacao(codigo) : '#';
+  }
+}
+
+/** mailto com ID/apelido/punição (sem texto livre do jogador no assunto). */
+function mailtoContestacao(codigo) {
+  const punicao = codigo === 'banned' ? 'bloqueio (conta suspensa no chat)' : 'silenciamento (mute) no chat';
+  const assunto = `Contestar bloqueio — ORBLUX`;
+  const corpo = [
+    'Olá! Quero contestar uma punição no chat do ORBLUX.',
+    '',
+    `ID da conta: ${(perfil && perfil.id) || 'n/d'}`,
+    `Apelido: ${(perfil && perfil.nickname) || 'n/d'}`,
+    `Punição: ${punicao}`,
+    `Prazo de resposta: ${APPEAL.prazoDias} dias`,
+    '',
+    'Contexto (opcional): ',
+  ].join('\r\n');
+  return `mailto:${APPEAL.email}?subject=${encodeURIComponent(assunto)}&body=${encodeURIComponent(corpo)}`;
 }
 
 function esconderErroEnvio() { erroEnvio(''); }
@@ -289,7 +316,7 @@ async function enviar(bruto) {
   } catch (e) {
     // erros de envio (inclusive mute/ban do servidor) ficam INLINE
     console.warn('[chat] envio falhou:', (e && e.code) || 'erro');
-    erroEnvio(msgErro(e));
+    erroEnvio(msgErro(e), e instanceof SocialError ? e.code : null);
   }
 }
 

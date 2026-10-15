@@ -1,5 +1,6 @@
 # segredos locais — nunca commitar
 .env
+supabase/functions/.env
 
 # artefatos de build/dependências
 node_modules/

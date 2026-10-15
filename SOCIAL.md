@@ -1,6 +1,6 @@
 # ORBLUX — Camada SOCIAL ONLINE (Supabase)
 
-> **Documento vivo.** Fases 0, 1, 2, 3, 4 e 5 concluídas em 15/10/2026. Este documento manda sobre
+> **Documento vivo.** Fases 0, 1, 2, 3, 4, 5 e 6 concluídas em 15/10/2026. Este documento manda sobre
 > qualquer instrução avulsa em caso de conflito. Cada fase só começa com a
 > aprovação da anterior. Links consultados com data na seção 9.
 
@@ -33,7 +33,7 @@
 | **3 (concluída)** | Chat global (salas/shards, realtime, denúncia, bloqueio, moderação) — ver §10 |
 | **4 (concluída)** | Clãs (criar com moedas, entrada, cargos, elenco de emblema) — ver §10 |
 | **5 (concluída)** | Torneios de clãs + **Corrida do Dia** com semente única (`net/rng.js` + `setSpawnerRng`) — ver §10 |
-| 6 | Integração economia/rede + segurança (mutirão/raid no servidor) |
+| **6 (concluída)** | Backend real no Supabase (migrações + Edge Functions + jobs) e integração economia/rede — ver §10 |
 | 7 | Conformidade/loja (Data Safety, UGC, exclusão de conta, termos) |
 | 8 | Testes finais e auditoria |
 
@@ -72,63 +72,85 @@ UI (fases 1..5) ──► net/api.js ──► SupabaseProvider ──► backen
   Testado: mesma semente ⇒ sequência **idêntica** de obstáculos, pulsos e
   power-ups (`tests/rng.test.mjs`).
 
-## 3. Plano de dados (backend real — implementado nas fases 1..5)
+## 3. Plano de dados (backend real — implementado nas fases 1..6)
 
-Tabelas (todas com RLS):
+Tabelas (todas com RLS; escrita **só** via funções `security definer`):
 
 | Tabela | Colunas principais | Fase |
 |--------|--------------------|------|
-| `profiles` | `id uuid pk = auth.users.id`, `nickname citext unique`, `skin_id`, `country char(2)`, `age_band text check in ('menor13','13a17','18+')`, `terms_version`, `created_at`, `deleted_at` (anonimização), `banned_until`, `muted_until` | 1 |
-| `clans` | `id`, `nome unique`, `tag unique`, `descricao`, `tipo in (aberto,solicitacao,convite)`, `emblema jsonb` com **CHECK no elenco fechado** (`CLAN_ICONS`/`CLAN_COLORS`/`CLAN_FRAMES` de `net/rules.js` — nunca CSS arbitrário), `nivel`, `xp`, `trofeus`, `lider_id`, `created_at` | 4 |
-| `clan_members` | `clan_id`, `user_id`, `papel in (lider,vice,membro)`, `contribuicao`, `ultimo_dia`, pk composta | 4 |
-| `clan_requests` / `clan_invites` | fila de entrada | 4 |
-| `runs` | `id`, `user_id`, `score`, `seconds`, `pickups`, `combo_max`, `level`, `seed text null`, `version`, `week int`, `created_at`, `valid bool` | 2, 5 |
+| `profiles` | `id uuid pk = auth.users.id`, `nickname citext unique`, `skin_id`, `country char(2)`, `age_band text check in ('menor13','13a17','18+')`, `terms_version`, `recovery_code text unique`, `created_at`, `deleted_at` (anonimização), `banned_until`, `muted_until` | 1 |
+| `clans` | `id`, `nome unique`, `tag unique`, `descricao`, `tipo in (aberto,solicitacao,convite)`, `emblema jsonb` com **CHECK no elenco fechado** (`CLAN_ICONS`/`CLAN_COLORS`/`CLAN_FRAMES` de `net/rules.js` — nunca CSS arbitrário), `liga text default 'Bronze'` (6 ligas, move no fim da temporada), `lider_id`, `created_at` | 4, 6 |
+| `clan_members` | `clan_id`, `user_id`, `papel in (lider,vice,membro)`, `contribuicao`, `ultimo_dia`, pk (clan,user) | 4 |
+| `clan_requests` / `clan_invites` | fila de entrada (expiram em 7 dias via pg_cron) | 4, 6 |
+| `runs` | `id`, `user_id`, `score`, `seconds`, `pickups`, `combo_max`, `level`, `seed text null`, `version`, `valid bool`, `created_at` (índices em user/at, at, seed) | 2, 5 |
 | `chat_rooms` | `room text pk` (`global:pt-BR:<n>`), `occupancy int` | 3 |
-| `chat_messages` | `id bigint`, `room`, `user_id`, `nick_snapshot`, `tag_snapshot`, `text` (≤200), `created_at` (retenção 24 h via pg_cron) | 3 |
-| `chat_reports` | `message_id`, `reporter_id`, `reason`, `created_at` (3 denúncias distintas ⇒ `hidden`) | 3 |
-| `user_blocks` | `user_id`, `blocked_id` | 3 |
-| `tournament_seasons` | `number pk`, `starts_at`, `ends_at`, `liga` | 5 |
-| `tournament_contributions` | `season_id`, `clan_id`, `melhor_score`, `runs_validas` | 5 |
-| `tournament_history` | `season_id`, `clan_id`, `posicao`, `rewards jsonb`, `claimed bool` (índice único ⇒ recompensa **uma vez só**) | 5 |
-| `leaderboard_week` | view materializada por semana (`week`, `user_id`, `best_score`) | 2 |
+| `chat_messages` | `id bigint`, `room`, `user_id`, `nick_snapshot`, `tag_snapshot`, `text` (≤200), `hidden bool`, `created_at` (retenção 24 h via pg_cron; ÚNICA tabela com política de SELECT, para o Realtime) | 3, 6 |
+| `chat_reports` | `message_id`, `reporter_id`, `reason`, `acted bool` (fila da automação), `unique (message_id, reporter_id)` — 3 denúncias **distintas** ocultam | 3, 6 |
+| `user_blocks` | `user_id`, `blocked_id`, `nick_snapshot` | 3 |
+| `tournament_seasons` | `number int pk` (seg. 00:00 BRT), `starts_at`, `ends_at` | 5 |
+| `tournament_contributions` | **pk (season_number, user_id)**, `clan_id`, `melhor_score`, `runs_validas` — 1 linha por jogador/temporada | 5 |
+| `tournament_history` | **pk (season_number, user_id)**, `clan_id`, `posicao`, `liga`, `pontos`, `rewards jsonb`, `claimed bool`, `settled_at` — 1 recompensa por usuário/temporada | 5 |
+| `server_wallets` + `coin_ledger` | carteira do SERVIDOR (só moedas de jogabilidade social: partidas e clã) e ledger idempotente `unique (user_id, reason, ref)` — ver `ECONOMIA.md` | 6 |
+| `moderation_log` | fila de revisão do dono: `action in (hide,mute,ban,warn)`, `target_user_id`, `message_id`, `detail jsonb`, `by text` | 6 |
+| `app_rules` | réguas em pares `chave/valor` (chat, clã, partida, torneio) — **semeadas com os MESMOS números de `net/rules.js`/`economy.js`** (paridade testada) | 6 |
+| `clan_colors` / `clan_icons` / `clan_frames` | elenco fechado do emblema (índices 0..7/0..7/0..3) | 6 |
+| `reserved_words` / `quick_phrases` / `quick_emojis` / `bad_words` | termos reservados de nome, catálogo de frases/emojis e lista de ofensas — **idênticos** aos de `net/rules.js`/`js/core/*` | 6 |
+
+Não existe `leaderboard_week` materializada: `ranking_top(scope,page,limit)`
+calcula o melhor score de 7 dias (ou geral) por usuário em CTE — banco do
+free não precisa de refresh de view materializada.
 
 Princípios: `updated_at` com trigger; tudo validado em função; **nenhuma
-política de escrita para `anon` direta** — só `security definer` functions com
-validação; índices em `runs(week)`, `chat_messages(room, created_at desc)`,
-`clan_members(user_id)`.
+política de escrita** — o cliente só chama RPCs; grants de tabela revogados
+de `anon`/`authenticated` (sobra só o SELECT de `chat_messages`, exigido
+pelo Realtime — doc oficial consultada 15/10/2026, §9).
 
-## 4. Backend planejado (RPCs / Edge Functions / pg_cron)
+## 4. Backend (RPCs / Edge Functions / pg_cron) — implementado na Fase 6
 
-- **RPCs (`security definer`)**: `profile_get/upsert/recover`/`profile_recovery_code`,
-  `account_delete` (anonimiza + apaga UGC — exigência Play §7),
-  `submit_run` (valida plausibilidade: score ≤ 200 000, seconds ≥ 10, version
-  conhecida; 120 moedas creditadas **no servidor** via ledger idempotente),
-  `ranking_top(scope,page,limit)`, `ranking_mine`,
-  `chat_send` (limites de `net/rules.js` em SQL + mute/ban), `chat_history`,
-  `chat_report`, `user_block/unblock/blocks` (retorna **id + apelido** p/
-  a lista de bloqueados),
-  `clan_search/get/mine/members/create/join/request/invite/accept/decline/kick/
-  promote/demote/transfer/leave/dissolve/update` (`clan_create` debita as
-  500 moedas **no servidor**, com ledger idempotente — Fase 6/§7; a UI só
-  debita a carteira local depois do sucesso, espelho provisório),
-  `tournament_current/group/my_contribution/rewards/claim` (claim idempotente;
-  recompensa creditada **no servidor**), `daily_race` (devolve a semente do dia
-  em `America/Sao_Paulo` — `daily:AAAA-MM-DD`; `submit_run` só aceita `p_seed`
-  igual à semente de hoje, senão `invalid-seed`). Todos esses RPCs seguem a
-  doc oficial de Database functions: padrão `security invoker` + RLS, e
-  `revoke execute ... from anon, public` no que não é anônimo por natureza
-  (consultado 15/10/2026, ver §9).
-- **Edge Functions** (service_role aqui, nunca no cliente): `chat-moderation`
-  (fila de denúncias + mute/ban), `tournament-rollover` (segunda 00:03 BRT,
-  grava `tournament_history` e recompensas), `season-claim`.
-- **Realtime (chat)**: `chat_messages` precisa estar na publicação
-  `supabase_realtime` (dashboard → Database → Replication). O cliente
-  assina o canal da sala dentro de `chat.join()` (melhor esforço: sem
-  Realtime, histórico e envio seguem normalmente). Consultado 14/10/2026
-  (links §9).
-- **pg_cron**: limpeza de `chat_messages` > 24 h (a cada 15 min) e expiração de
-  convites/requisições (diária). `cron.schedule` documentado em
-  supabase.com/docs/guides/cron (consultado 14/10/2026).
+As 41 RPCs abaixo existem em `supabase/migrations/20261015030100_orblux_functions.sql`
+(todas `security definer` com `search_path` fixo; grants: EXECUTE só para
+`authenticated` — `anon`/`public` revogados; liquidação e moderação ficam com
+`service_role`). Erros seguem o padrão **`raise '<codigo>|<mensagem pt-BR>'`**:
+o `_rpc` do cliente separa o prefixo e repassa os códigos estáveis da UMA
+interface (`muted`, `name-taken`, `insufficient-coins`, `already_claimed`…).
+
+- **profile**: `profile_get/upsert/recover`, `profile_recovery_code`,
+  `account_delete` (anonimiza + apaga UGC — exigência Play §7; o cliente
+  encerra a sessão depois).
+- **chat**: `chat_online/join/history/send/report`, `user_block/unblock/blocks`.
+  `chat_send` aplica a régua completa de `net/rules.js` em SQL (vazio,
+  200, quick_only p/ menor13, contato/ofensa, duplicata 30 s, cooldown 2 s,
+  flood 15/min, CAPS) + mute/ban do banco; salas derivadas por shard
+  (`app_room`, mesmo algoritmo do mock).
+- **clãs**: `clan_search/get/mine/members/create/join/request/outgoing_requests/
+  invite/requests/accept/decline/kick/promote/demote/transfer/leave/dissolve/update`.
+  `clan_create` debita as 500 moedas **no servidor** (`server_wallets` +
+  ledger idempotente `clan_create:<clan>`); saldo curto responde
+  `insufficient-coins` com o quanto falta ("ganhe jogando" — nunca push de
+  pagamento). A UI debita a carteira local só depois do sucesso.
+- **torneios**: `tournament_current/group/my_contribution/rewards/claim`
+  + `daily_race`. O resgate é a RPC `tournament_claim` (não uma Edge
+  Function): idempotente por (temporada, usuário), 50 participação com 3+
+  partidas válidas, 40–300 por posição, +150 **só por promoção REAL**
+  (movimento de liga calculado no fim da temporada). `submit_run` só aceita
+  `p_seed` igual à semente de hoje (`invalid-seed`).
+- **ranking**: `ranking_top(scope,page,limit)` / `ranking_mine` (CTE com
+  melhor score de 7 dias ou geral; sem view materializada).
+- **integração economia/rede**: `submit_run` espelha `calcRunCoins`
+  (`js/core/economy.js`: cap 120 + 15 recorde + 10 primeira do dia) no
+  `server_wallets` do jogador — o servidor conhece o saldo social usado por
+  clã/torneio; a carteira local do jogador continua sendo a verdade para
+  skins/spend (ver `ECONOMIA.md`).
+- **Edge Functions** (service_role no ambiente, nunca no repositório):
+  `chat-moderation` (a cada 5 min: 3 denúncias distintas ⇒ oculta + mute
+  24 h + registro em `moderation_log` para o dono revisar — decisão §8.5) e
+  `tournament-rollover` (segunda 03:03 UTC = 00:03 BRT: chama
+  `tournament_settle_last`, idempotente). Guia de deploy: `supabase/README.md`.
+- **pg_cron + pg_net + Vault** (`..._jobs.sql`): limpeza de `chat_messages` >
+  24 h (a cada 15 min), expiração de pedidos/convites (diário), e os dois
+  jobs HTTP acima; chat_messages entra na publicação `supabase_realtime`.
+  Segredos (`orblux_project_url`, `orblux_edge_service_key`) ficam **no
+  Vault** — sem eles os jobs HTTP ficam parados e a migração avisa.
 
 ## 5. Limites REAIS do plano gratuito (Supabase), consultados em 14/10/2026
 
@@ -190,24 +212,34 @@ a camada `net/` está pronta e testada; a interface vem nas fases 1..5).
    partidas, 40–300 por posição, +150 por promoção; uma vez por
    temporada, idempotente no servidor); a **Corrida do Dia não
    paga moedas** (só recorde do dia + contribuição ao clã).
-5. **Fase 6**: quem modera (só o dono hoje) e política de appeal de ban.
+5. **Fase 6 (RESOLVIDA em 15/10/2026 — §8.5)**: moderação = **automação +
+   dono revisa**. A Edge Function `chat-moderation` roda a cada 5 min: 3
+   denúncias **distintas** ocultam a mensagem e aplicam **mute de 24 h**,
+   com registro em `moderation_log` (fila de revisão do dono — ver
+   `supabase/README.md`). Contestações: link **"Contestar bloqueio"** no
+   erro de mute/ban abre e-mail com ID da conta, apelido e punição; resposta
+   esperada em até **7 dias** (`APPEAL` em `net/config.js`). Banimento
+   manual é feito pelo dono no banco (`banned_until`).
 
 ## 9. Links consultados (14 e 15/10/2026)
 
-| Assunto | URL |
-|---------|-----|
-| Preços/limites free (500 MB, 50k MAU, 5 GB egress, pausa em 1 semana) | https://supabase.com/pricing |
-| Limites de Realtime (200 conexões, 100 msg/s, 2 M/mês) | https://supabase.com/docs/guides/realtime/rates-and-limits |
-| Auth anônima | https://supabase.com/docs/guides/auth/auth-anonymous |
-| RLS/políticas | https://supabase.com/docs/guides/auth/policies |
-| Edge Functions (limites free) | https://supabase.com/docs/guides/functions |
-| pg_cron / Supabase Cron | https://supabase.com/docs/guides/cron |
-| Realtime postgres_changes (tabela na publicação) | https://supabase.com/docs/guides/realtime/postgres-changes |
-| Assinar mudanças no cliente (broadcast p/ escala) | https://supabase.com/docs/guides/realtime/subscribing-to-database-changes |
-| Database functions (RPC: security invoker/definer, revoke de `execute`) | https://supabase.com/docs/guides/database/functions |
-| Play — política de UGC (moderação, termos, denúncia, bloqueio) | https://support.google.com/googleplay/android-developer/answer/9876937 |
-| Play — exclusão de conta (in-app + link web) | https://support.google.com/googleplay/android-developer/answer/13327111 |
-| Play — User Data policy | https://support.google.com/googleplay/android-developer/answer/10144311 |
+| Assunto | URL | Data |
+|---------|-----|------|
+| Preços/limites free (500 MB, 50k MAU, 5 GB egress, pausa em 1 semana) | https://supabase.com/pricing | 14/10/2026 |
+| Limites de Realtime (200 conexões, 100 msg/s, 2 M/mês) | https://supabase.com/docs/guides/realtime/rates-and-limits | 14/10/2026 |
+| Auth anônima | https://supabase.com/docs/guides/auth/auth-anonymous | 14/10/2026 |
+| Row Level Security (grants + políticas + security definer) | https://supabase.com/docs/guides/database/postgres/row-level-security | 15/10/2026 |
+| Edge Functions (limites free) | https://supabase.com/docs/guides/functions | 14/10/2026 |
+| pg_cron / Supabase Cron | https://supabase.com/docs/guides/cron | 14 e 15/10/2026 |
+| Realtime postgres_changes (tabela na publicação) | https://supabase.com/docs/guides/realtime/postgres-changes | 14/10/2026 |
+| Assinar mudanças no cliente (broadcast p/ escala) | https://supabase.com/docs/guides/realtime/subscribing-to-database-changes | 14/10/2026 |
+| Database functions (RPC: security invoker/definer, revoke de `execute`) | https://supabase.com/docs/guides/database/functions | 14 e 15/10/2026 |
+| Agendar Edge Functions com pg_cron + pg_net + Vault | https://supabase.com/docs/guides/functions/schedule-functions | 15/10/2026 |
+| pg_net (async HTTP do Postgres) | https://supabase.com/docs/guides/database/extensions/pg_net | 15/10/2026 |
+| Segredos de Edge Function (Vault) | https://supabase.com/docs/guides/functions/secrets | 15/10/2026 |
+| Play — política de UGC (moderação, termos, denúncia, bloqueio) | https://support.google.com/googleplay/android-developer/answer/9876937 | 14/10/2026 |
+| Play — exclusão de conta (in-app + link web) | https://support.google.com/googleplay/android-developer/answer/13327111 | 14/10/2026 |
+| Play — User Data policy | https://support.google.com/googleplay/android-developer/answer/10144311 | 14/10/2026 |
 
 ## 10. Registro das fases concluídas
 
@@ -398,3 +430,72 @@ a camada `net/` está pronta e testada; a interface vem nas fases 1..5).
 - **Produção segue com flags desligadas**: ligar torneios exige a
   Fase 6/§7 (RPCs SQL com RLS, `tournament-rollover` como Edge
   Function e ledger de recompensas no servidor).
+
+### Fase 6 — Backend real + integração economia/rede (15/10/2026)
+
+- **`supabase/migrations/20261015030000_orblux_schema.sql`**: 20 tabelas
+  com RLS, índices, triggers de `updated_at` e **sementes de paridade**
+  (`app_rules` com os mesmos números de `net/rules.js`/`nickname.js`/
+  `economy.js`; elenco do emblema, frases/emojis, reservados e 57
+  ofensas idênticos aos do cliente). Grants de tabela revogados de
+  `anon`/`authenticated`; única política de SELECT é a de
+  `chat_messages` (exigência do Realtime — doc RLS 15/10/2026, §9).
+- **`..._functions.sql`**: 41 RPCs `security definer` com `search_path`
+  fixo, erros `'<codigo>|<mensagem pt-BR>'` (o `_rpc` do cliente
+  separa o prefixo), helpers privados `app_*` revogados de
+  `public`/`anon` (EXECUTE do cliente só nas RPCs; liquidação e
+  moderação só com `service_role`). Destaques: `submit_run` espelha
+  `calcRunCoins` no `server_wallets` (cap 120 + bônus); `clan_create`
+  debita 500 com `insufficient-coins`; `tournament_claim` resgata de
+  forma idempotente; `tournament_settle(_last)` liquida temporada +
+  movimenta liga por GRUPO (8; promoção = top 5 com ≥6 clãs; 150 só
+  por promoção real; exige ≥1 partida válida por membro);
+  `app_chat_moderate` (3 denúncias distintas ⇒ oculta + mute 24 h +
+  `moderation_log`); salas de chat por shard determinístico
+  (`app_room`, mesmo hash do mock).
+- **`..._jobs.sql`**: extensões `pg_cron`/`pg_net`, publicação Realtime
+  de `chat_messages` e 4 jobs idempotentes — limpeza do chat (*/15 min,
+  24 h), expiração de pedidos/convites (diário, 7 dias),
+  `chat-moderation` (*/5 min) e `tournament-rollover` (seg.
+  03:03 UTC = 00:03 BRT). Jobs HTTP só são agendados quando os
+  segredos existem no **Vault** (`orblux_project_url`,
+  `orblux_edge_service_key`); sem eles a migração emite NOTICE.
+- **Edge Functions** `chat-moderation` e `tournament-rollover`
+  (delgadas: leem `SUPABASE_URL`/`SUPABASE_SERVICE_ROLE_KEY` do
+  ambiente e chamam a RPC certa via REST; gatilho HTTP exige a chave
+  de serviço). `supabase/README.md`: passo a passo de deploy **sem
+  nenhuma chave no git**.
+- **Cliente (`net/api.js`)**: `_rpc` interpreta `codigo|mensagem`;
+  `clans.outgoingRequests()` adicionado (a UI de clãs já o pedia);
+  `_subChat` mapeia o payload snake_case do Realtime para o formato
+  camel da UMA interface; `profile.deleteAccount` encerra a sessão
+  depois do RPC. `net/config.js` ganhou `APPEAL`
+  (e-mail de contestação + 7 dias).
+- **Contestação (decisão §8.5)**: `js/ui/chat-ui.js` mostra o link
+  **"Contestar bloqueio"** (`#chat-appeal`, junto a
+  `#chat-send-error`) nos erros `muted`/`banned` — abre mailto com
+  ID da conta, apelido, punição e prazo. CSS mínimo em
+  `css/style.css`; `.gitignore` cobre `supabase/functions/.env`.
+- **Testes**: `tests/backend-parity.test.mjs` (18 checagens — RPCs
+  cliente ⊆ SQL + grants; sementes/catálogos == `rules.js` etc.;
+  fórmula de moedas; liquidação; varredura de segurança: sem JWT/chave
+  no repo, config vazia, SECURITY DEFINER + search_path em toda
+  função, RLS em toda tabela, só política de SELECT, códigos de erro
+  da UMA interface) + `tests/chat-ui.cjs` com o cenário de mute +
+  contestação (+5 checagens; 38 no total).
+- **Divergências conhecidas mock ↔ servidor** (o mock é de mentira; o
+  servidor decide): ranking "semana" (mock escala por 0.4, servidor
+  calcula melhor score real dos últimos 7 dias); "online agora" (mock
+  usa hash fictício, servidor conta quem falou nos últimos 5 min);
+  clãs/ranking fictícios do mock não existem no servidor; carteira do
+  servidor só vê moedas de jogabilidade (missão/conquista/diária são
+  locais — se o saldo extra local cobrir o clã mas o saldo social
+  estiver abaixo de 500, aparece `insufficient-coins`, e é isso);
+  `profile_recover` do servidor move a identidade inteira (clã e UGC
+  junto); limite de 200 caracteres conta emojis como 2 no cliente
+  (UTF-16) e como 1 no servidor — o cliente é mais estrito e sempre
+  barra antes; bots de chat só existem no mock.
+- **Produção segue com flags desligadas**: clãs/torneios já têm
+  backend, mas ligar exige um projeto Supabase configurado
+  (`supabase/README.md`) e o chat continua pendente da decisão §8.1
+  (idade mínima 13 + LGPD/ECA, ver §6).

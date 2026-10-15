@@ -155,6 +155,15 @@ reexecutar o simulador regenera; se divergir, o simulador vence.)*
   compradas com dinheiro.
 - Crédito da partida acontece **uma única vez** por `game:over` (inclusive
   após revive — ver `main.js` e `tests/economy-ui.cjs`).
+- **Servidor social (Fase 6, Supabase)**: o ledger do servidor
+  (`server_wallets` + `coin_ledger`) espelha **só** o que se ganha jogando
+  (partidas via `submit_run`, débito do clã) e alimenta as regras sociais
+  (criar clã custa 500; torneio paga no resgate). **Não substitui** a
+  carteira local: missão, conquista, diária e skins continuam 100% no
+  aparelho. Consequência assumida: se um jogador só tem saldo local
+  "extra" (missões) para criar um clã, o servidor pode responder
+  `insufficient-coins` — moedas se ganham jogando, nunca se compram nem se
+  transferem (SOCIAL.md §10, Fase 6).
 
 ---
 
