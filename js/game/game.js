@@ -11,7 +11,8 @@ import {
   createPlayer, drawPlayer, drawObstacle, drawPickup, drawPowerup, drawOrbDecor,
   circleRectHit, circlesHit, COLORS,
 } from './entities.js';
-import { difficultyParams, spawnObstacles, spawnPickupWave, spawnPowerup, resetSpawner } from './spawner.js';
+import { difficultyParams, spawnObstacles, spawnPickupWave, spawnPowerup, resetSpawner, setSpawnerRng } from './spawner.js';
+import { hashSeed, mulberry32 } from '../../net/rng.js';
 import { equippedLook, skinCollectFx } from './skinrender.js';
 import {
   burst, ring, shockwave, floatText, comboText, levelBanner,
@@ -188,6 +189,10 @@ export function startGame(opts = {}) {
   g.elapsed = 0; g.sinceHit = 0;
   g.x2Timer = 0; g.reviveUsed = false; g.moved = false;
   g.runStats = { pickups: 0, maxCombo: 1, powerups: 0 };
+  // Corrida do Dia: mesma semente ⇒ MESMA sequência de obstáculos para
+  // todo mundo (net/rng.js). Sem semente = Math.random (partida normal).
+  g.runSeed = opts.seed != null ? String(opts.seed).slice(0, 40) : null;
+  setSpawnerRng(g.runSeed != null ? mulberry32(hashSeed(g.runSeed)) : null);
   resetSpawner(g);
   resetFX();
   resetInput();
@@ -233,6 +238,8 @@ export function quitToMenu() {
   g.x2Timer = 0;
   g.reviveUsed = false;
   g.bgFlash = 0;
+  g.runSeed = null;               // esquece a semente da corrida do dia
+  setSpawnerRng(null);            // volta ao Math.random das partidas normais
   resetSpawner(g);                 // zera timers/spawn da última partida
   resetFX();                       // remove partículas, textos, ondas e shake da morte
   resetInput();
@@ -259,6 +266,7 @@ function gameOver() {
     level: g.level,
     powerups: g.runStats.powerups,
     revived: g.reviveUsed,
+    seed: g.runSeed || null,          // Corrida do Dia: semente usada (null = normal)
   });
 }
 

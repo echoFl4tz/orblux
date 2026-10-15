@@ -348,6 +348,41 @@ test('torneios: temporada atual, grupo e recompensa ÚNICA (idempotente)', async
   assert.notEqual(nova.id, t.id);
 });
 
+test('torneios: participação com 3+ partidas válidas paga 50 moedas', async () => {
+  const api = mockApi();
+  await api.__seedProfile({ nickname: 'Participa', ageBand: '18+' });
+  for (let i = 0; i < 3; i++) {
+    await api.ranking.submitRun({ score: 900 + i * 10, seconds: 30, pickups: 4, comboMax: 2, level: 3 });
+  }
+  await api.tournaments.__rollover();
+  const h = (await api.tournaments.rewards())[0];
+  assert.equal(h.rewards.participacao, 50, '3+ partidas na temporada = recompensa de participação');
+  const got = await api.tournaments.claimReward(h.seasonId);
+  assert.equal(got.coins, h.rewards.total);
+  assert.equal((await api.tournaments.rewards())[0].coletada, true, 'rewards() reflete o resgate (coletada)');
+  await assert.rejects(() => api.tournaments.claimReward(h.seasonId), (e) => e.code === 'already_claimed');
+});
+
+test('torneios: Corrida do Dia entrega a semente do dia e rastreia meu melhor', async () => {
+  const api = mockApi();
+  await api.__seedProfile({ nickname: 'Diaria', ageBand: '18+' });
+  const d = await api.tournaments.daily();
+  assert.match(d.seed, /^daily:\d{4}-\d{2}-\d{2}$/, 'semente veio no formato daily:AAAA-MM-DD');
+  assert.equal(d.date, d.seed.slice(6), 'data e semente batem');
+  assert.equal((await api.tournaments.daily()).seed, d.seed, 'mesma data ⇒ mesma semente (determinística)');
+  assert.equal(d.melhorHoje, 0, 'sem corridas ainda');
+  // minha corrida de hoje pontua…
+  await api.ranking.submitRun({ score: 1234, seconds: 40, pickups: 6, comboMax: 3, level: 4, seed: d.seed });
+  const d2 = await api.tournaments.daily();
+  assert.equal(d2.melhorHoje, 1234, 'melhor de hoje rastreado pelo servidor');
+  // …mas semente de outro dia nunca pontua
+  await assert.rejects(
+    () => api.ranking.submitRun({ score: 2000, seconds: 40, pickups: 6, comboMax: 3, level: 4, seed: 'daily:1999-01-01' }),
+    (e) => e.code === 'invalid-seed',
+  );
+  assert.equal((await api.tournaments.daily()).melhorHoje, 1234, 'tentativa de semente velha foi rejeitada');
+});
+
 /* ---------------- ranking ---------------- */
 
 test('ranking: envio valida plausibilidade e o top mistura minhas partidas', async () => {

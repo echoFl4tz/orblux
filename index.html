@@ -188,6 +188,9 @@
           <button class="btn" data-action="clans" id="btn-clans" hidden>
             <svg class="ic" aria-hidden="true"><use href="#ic-flag"/></svg> Clãs
           </button>
+          <button class="btn" data-action="tournament" id="btn-tournament" hidden>
+            <svg class="ic" aria-hidden="true"><use href="#ic-trophy"/></svg> Torneio
+          </button>
           <button class="btn" data-action="settings">
             <svg class="ic" aria-hidden="true"><use href="#ic-gear"/></svg> Configurações
           </button>
@@ -305,6 +308,26 @@
           <div class="panel-foot column" id="ranking-global-foot" hidden>
             <button class="btn btn-small" id="ranking-global-more" hidden>Carregar mais</button>
             <button class="btn btn-primary" id="ranking-global-retry" hidden>Tentar de novo</button>
+          </div>
+        </div>
+
+        <!-- Corrida do Dia (Fase 5): semente do servidor; mesma rota p/ todos -->
+        <div id="daily-race" hidden>
+          <h3 class="card-title">
+            <svg class="ic" aria-hidden="true"><use href="#ic-flame"/></svg> Corrida do Dia
+          </h3>
+          <p class="small muted">O servidor entrega a semente de hoje: a mesma rota para todo mundo. Só o recorde conta — sem moedas extras.</p>
+          <p id="daily-date" class="small"></p>
+          <p id="daily-best" class="small muted">—</p>
+          <p id="daily-status" class="shop-status" role="status" aria-live="polite" hidden></p>
+          <div id="daily-cta" class="empty-state" hidden>
+            <svg class="ic" aria-hidden="true"><use href="#ic-globe"/></svg>
+            <p>Entre na comunidade para disputar a Corrida do Dia.</p>
+            <button class="btn btn-small" data-action="social">Comunidade</button>
+          </div>
+          <div class="panel-foot column" id="daily-foot" hidden>
+            <button class="btn btn-primary" id="daily-play" disabled>Jogar Corrida do Dia</button>
+            <button class="btn btn-small" id="daily-retry" hidden>Tentar de novo</button>
           </div>
         </div>
 
@@ -841,6 +864,9 @@
             <ul id="clans-requests" class="clans-requests" aria-label="Pedidos de entrada"></ul>
           </div>
           <div class="panel-foot column">
+            <button class="btn" id="clans-tournament-open" data-action="tournament" hidden>
+              <svg class="ic" aria-hidden="true"><use href="#ic-trophy"/></svg> Torneio do clã
+            </button>
             <button class="btn" id="clans-edit-open" hidden>
               <svg class="ic" aria-hidden="true"><use href="#ic-edit"/></svg> Editar clã
             </button>
@@ -900,6 +926,61 @@
       </div>
     </div>
   </div>
+
+  <!-- ================= TELA: TORNEIO (camada social — Fase 5) ================= -->
+  <section id="screen-tournament" class="screen" data-screen="tournament" aria-label="Torneio" role="dialog" aria-modal="true">
+    <div class="panel panel-wide">
+      <div class="panel-head">
+        <h2 class="panel-title">Torneio</h2>
+        <button class="icon-btn" data-action="tournament-close" aria-label="Fechar torneio">
+          <svg class="ic" aria-hidden="true"><use href="#ic-close"/></svg>
+        </button>
+      </div>
+      <div class="panel-body tournament-body">
+
+        <div id="tournament-loading" class="social-step">
+          <p class="small" role="status" aria-live="polite">Carregando temporada…</p>
+        </div>
+
+        <div id="tournament-cta" class="empty-state" hidden>
+          <svg class="ic" aria-hidden="true"><use href="#ic-globe"/></svg>
+          <p>Entre na comunidade para disputar a temporada com seu clã.</p>
+          <button class="btn btn-small" data-action="social">Comunidade</button>
+        </div>
+
+        <div id="tournament-error" class="social-step" hidden>
+          <p id="tournament-error-text" class="small" role="alert"></p>
+          <div class="panel-foot column">
+            <button class="btn btn-primary" id="tournament-retry">Tentar de novo</button>
+          </div>
+        </div>
+
+        <div id="tournament-noclan" class="empty-state" hidden>
+          <svg class="ic" aria-hidden="true"><use href="#ic-flag"/></svg>
+          <p>Entre em um clã para disputar a temporada.</p>
+          <button class="btn btn-small" data-action="clans">Ver clãs</button>
+        </div>
+
+        <div id="tournament-temporada" hidden>
+          <div class="tourn-head">
+            <span id="tournament-liga" class="chip"></span>
+            <span id="tournament-ends" class="small muted"></span>
+          </div>
+          <p id="tournament-rules" class="small muted"></p>
+          <h3 class="clans-sub">Grupo da liga</h3>
+          <ol id="tournament-group" class="tournament-group" aria-label="Classificação do grupo"></ol>
+          <p id="tournament-contrib" class="small"></p>
+          <p class="small muted">Suas melhores partidas da semana valem pontos para o clã.</p>
+          <h3 class="clans-sub">Recompensas (moedas — só jogando)</h3>
+          <ul id="tournament-rewards" class="tournament-rewards" aria-label="Recompensas de temporadas"></ul>
+          <p id="tournament-rewards-empty" class="small muted" hidden>Sua primeira temporada fecha na próxima segunda.</p>
+        </div>
+      </div>
+      <div class="panel-foot">
+        <button class="btn" data-action="tournament-close">Voltar</button>
+      </div>
+    </div>
+  </section>
 
   <!-- ================= MODAL: CONFIRMAR AÇÃO DE CLÃ ================= -->
   <div id="modal-clan-confirm" class="modal" hidden role="dialog" aria-modal="true" aria-labelledby="clan-confirm-title">

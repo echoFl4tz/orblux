@@ -690,8 +690,9 @@ class MockProvider {
       },
       rewards: async () => {
         await self._net();
+        const uid = self.state.user ? self.state.user.id : '';
         const list = self.state.tournament.history.slice(-6).reverse();
-        return list.map((h) => ({ ...h, coletada: !!self.state.tournament.claimed[h.seasonId] }));
+        return list.map((h) => ({ ...h, coletada: !!self.state.tournament.claimed[`${uid}:${h.seasonId}`] }));
       },
       claimReward: async (seasonId) => {
         await self._net();
@@ -704,6 +705,20 @@ class MockProvider {
         self._save();
         return { ok: true, coins: h.rewards.total, seasonId };
       },
+      // Corrida do Dia: o SERVIDOR entrega a semente do dia (o cliente
+      // nunca inventa). Mesma data ⇒ mesma semente em qualquer aparelho.
+      daily: async () => {
+        await self._net();
+        self._requireProfile();
+        const date = self._dailyDate();
+        const seed = `daily:${date}`;
+        const best = self.state.runs
+          .filter((r) => r.seed === seed && r.valid)
+          .reduce((b, r) => (!b || r.score > b.score ? r : b), null);
+        const d = new Date(self._now());
+        d.setHours(24, 0, 0, 0);               // vira no meio-dia local (servidor real: America/Sao_Paulo)
+        return { date, seed, endsAt: d.getTime(), melhorHoje: best ? best.score : 0 };
+      },
       __rollover: async () => { // dev/teste: fecha a temporada atual e abre a próxima
         await self._net();
         self._settleSeason();
@@ -714,6 +729,11 @@ class MockProvider {
     };
   }
 
+  /** Data local "YYYY-MM-DD" (mock; o servidor real usa America/Sao_Paulo). */
+  _dailyDate() {
+    const d = new Date(this._now());
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  }
   _seasonRuns() {
     const start = seasonStart(seasonWeekIdx(this._now()) + this.state.tournament.offsetWeeks);
     return this.state.runs.filter((r) => r.at >= start && r.valid);
@@ -785,6 +805,11 @@ class MockProvider {
         // mesma régua do servidor (net/rules.js): plausibilidade no mock fiel
         const v = validateRun(run);
         if (!v.ok) fail(v.code, v.error);
+        // régua da Corrida do Dia: semente enviada tem que ser a DE HOJE
+        // (espelho do servidor: p_seed = 'daily:' || current_date)
+        if (run.seed != null && String(run.seed) !== `daily:${self._dailyDate()}`) {
+          fail('invalid-seed', 'A semente não é a da corrida de hoje.');
+        }
         const { score, seconds } = v.value;
         const row = {
           id: self._id('run_'), userId: self.state.user.id,
@@ -1000,6 +1025,7 @@ class SupabaseProvider {
       myContribution: () => this._rpc('tournament_my_contribution'),
       rewards: () => this._rpc('tournament_rewards'),
       claimReward: (seasonId) => this._rpc('tournament_claim', { p_season_id: seasonId }),
+      daily: () => this._rpc('daily_race'),   // { date, seed, endsAt, melhorHoje }
     };
   }
 

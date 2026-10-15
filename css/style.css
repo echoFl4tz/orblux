@@ -1779,3 +1779,67 @@ body.reduce-motion .coins-progress-bar span { transition: none; }
 .clans-head-main b { font-family: var(--font-display); font-size: 1.15rem; color: var(--text-1); overflow-wrap: anywhere; }
 .clans-head-main .chip { align-self: flex-start; }
 .clan-req-actions { display: flex; gap: var(--s1); flex: 0 0 auto; }
+
+/* ============ 16. TORNEIO + CORRIDA DO DIA (camada social — Fase 5) ============ */
+.tournament-body { display: flex; flex-direction: column; gap: var(--s3); }
+.tourn-head { display: flex; align-items: center; gap: var(--s2); flex-wrap: wrap; }
+.tournament-group {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--s2);
+  max-height: min(38vh, 320px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(34, 230, 255, 0.3) transparent;
+}
+.tournament-group::-webkit-scrollbar { width: 6px; }
+.tournament-group::-webkit-scrollbar-thumb {
+  background: rgba(34, 230, 255, 0.28);
+  border-radius: var(--r-full);
+}
+.tourn-row {
+  display: flex;
+  align-items: center;
+  gap: var(--s2);
+  padding: var(--s2);
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+}
+.tourn-row.mine { border-color: var(--primary); background: var(--primary-soft); }
+.tourn-pos {
+  width: 34px;
+  flex: 0 0 auto;
+  text-align: center;
+  font-family: var(--font-display);
+  color: var(--text-2);
+}
+.tourn-main { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.tourn-nick { display: flex; align-items: baseline; gap: var(--s1); flex-wrap: wrap; }
+.tourn-nick b { font-family: var(--font-display); font-size: 0.95rem; color: var(--text-1); overflow-wrap: anywhere; }
+.tourn-meta { font-size: 0.75rem; color: var(--text-2); }
+.tournament-rewards {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--s2);
+}
+.tourn-reward {
+  display: flex;
+  align-items: center;
+  gap: var(--s2);
+  padding: var(--s2);
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  flex-wrap: wrap;
+}
+.tourn-reward-main { flex: 1; min-width: 120px; display: flex; flex-direction: column; gap: 2px; }
+.tourn-reward-main b { font-family: var(--font-display); color: var(--text-1); font-size: 0.95rem; }
+#daily-race { margin-top: var(--s3); display: flex; flex-direction: column; gap: var(--s1); }

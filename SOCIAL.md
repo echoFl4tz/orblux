@@ -1,6 +1,6 @@
 # ORBLUX — Camada SOCIAL ONLINE (Supabase)
 
-> **Documento vivo.** Fases 0, 1, 2, 3 e 4 concluídas em 15/10/2026. Este documento manda sobre
+> **Documento vivo.** Fases 0, 1, 2, 3, 4 e 5 concluídas em 15/10/2026. Este documento manda sobre
 > qualquer instrução avulsa em caso de conflito. Cada fase só começa com a
 > aprovação da anterior. Links consultados com data na seção 9.
 
@@ -32,7 +32,7 @@
 | **2 (concluída)** | Ranking global + `submit_run` anti-trapaça (validação plausibilidade no servidor); mantém ranking local como fallback (ver §10) |
 | **3 (concluída)** | Chat global (salas/shards, realtime, denúncia, bloqueio, moderação) — ver §10 |
 | **4 (concluída)** | Clãs (criar com moedas, entrada, cargos, elenco de emblema) — ver §10 |
-| 5 | Torneios de clãs + **Corrida do Dia** com semente única (`net/rng.js` + `setSpawnerRng`) |
+| **5 (concluída)** | Torneios de clãs + **Corrida do Dia** com semente única (`net/rng.js` + `setSpawnerRng`) — ver §10 |
 | 6 | Integração economia/rede + segurança (mutirão/raid no servidor) |
 | 7 | Conformidade/loja (Data Safety, UGC, exclusão de conta, termos) |
 | 8 | Testes finais e auditoria |
@@ -111,7 +111,13 @@ validação; índices em `runs(week)`, `chat_messages(room, created_at desc)`,
   promote/demote/transfer/leave/dissolve/update` (`clan_create` debita as
   500 moedas **no servidor**, com ledger idempotente — Fase 6/§7; a UI só
   debita a carteira local depois do sucesso, espelho provisório),
-  `tournament_current/group/my_contribution/rewards/claim` (claim idempotente).
+  `tournament_current/group/my_contribution/rewards/claim` (claim idempotente;
+  recompensa creditada **no servidor**), `daily_race` (devolve a semente do dia
+  em `America/Sao_Paulo` — `daily:AAAA-MM-DD`; `submit_run` só aceita `p_seed`
+  igual à semente de hoje, senão `invalid-seed`). Todos esses RPCs seguem a
+  doc oficial de Database functions: padrão `security invoker` + RLS, e
+  `revoke execute ... from anon, public` no que não é anônimo por natureza
+  (consultado 15/10/2026, ver §9).
 - **Edge Functions** (service_role aqui, nunca no cliente): `chat-moderation`
   (fila de denúncias + mute/ban), `tournament-rollover` (segunda 00:03 BRT,
   grava `tournament_history` e recompensas), `season-claim`.
@@ -178,10 +184,15 @@ a camada `net/` está pronta e testada; a interface vem nas fases 1..5).
    **500 moedas** (constante `CLAN.CREATE_COST_COINS = 500`,
    confirmado pelo usuário; carteira local, débito só após o
    servidor criar — moedas nunca se compram, ver §0/ECONOMIA).
-4. **Fase 5**: tamanho dos grupos de liga (8 proposto) e número de ligas.
+4. **Fase 5 (RESOLVIDA em 15/10/2026)**: ligas = **8 clãs por
+   grupo e 6 ligas** (Bronze→Lenda). Recompensas: a **temporada
+   do clã paga moedas** no resgate (50 participação com 3+
+   partidas, 40–300 por posição, +150 por promoção; uma vez por
+   temporada, idempotente no servidor); a **Corrida do Dia não
+   paga moedas** (só recorde do dia + contribuição ao clã).
 5. **Fase 6**: quem modera (só o dono hoje) e política de appeal de ban.
 
-## 9. Links consultados (14/10/2026)
+## 9. Links consultados (14 e 15/10/2026)
 
 | Assunto | URL |
 |---------|-----|
@@ -193,6 +204,7 @@ a camada `net/` está pronta e testada; a interface vem nas fases 1..5).
 | pg_cron / Supabase Cron | https://supabase.com/docs/guides/cron |
 | Realtime postgres_changes (tabela na publicação) | https://supabase.com/docs/guides/realtime/postgres-changes |
 | Assinar mudanças no cliente (broadcast p/ escala) | https://supabase.com/docs/guides/realtime/subscribing-to-database-changes |
+| Database functions (RPC: security invoker/definer, revoke de `execute`) | https://supabase.com/docs/guides/database/functions |
 | Play — política de UGC (moderação, termos, denúncia, bloqueio) | https://support.google.com/googleplay/android-developer/answer/9876937 |
 | Play — exclusão de conta (in-app + link web) | https://support.google.com/googleplay/android-developer/answer/13327111 |
 | Play — User Data policy | https://support.google.com/googleplay/android-developer/answer/10144311 |
@@ -333,3 +345,56 @@ a camada `net/` está pronta e testada; a interface vem nas fases 1..5).
 - **Produção segue com flags desligadas**: ligar os clãs depende da
   Fase 6/§7 (débito de moedas no servidor + RPCs SQL com RLS) e das
   decisões §8 restantes.
+
+### Fase 5 — Torneios de clãs + Corrida do Dia (15/10/2026)
+
+- **Corrida do Dia** (mesmo percurso para todo mundo): cartão na tela
+  de Ranking (`#daily-race`, com `TOURNAMENTS_ENABLED` +
+  `GLOBAL_RANKING_ENABLED`). A **semente vem do servidor**
+  (`tournaments.daily()` → `{date, seed, endsAt, melhorHoje}`; mock:
+  `daily:AAAA-MM-DD` determinístico, servidor real: RPC `daily_race` em
+  `America/Sao_Paulo`). `js/game/game.js` ganhou `startGame({seed})`:
+  injeta `mulberry32(hashSeed(seed))` no spawner (`setSpawnerRng`) —
+  a MESMA sequência de obstáculos em qualquer aparelho; sem semente =
+  `Math.random` como antes; `quitToMenu` zera de volta. O payload de
+  `game:over` carrega a `seed` usada; `submitRunGlobal` a envia ao
+  servidor, que **só aceita a semente de hoje** (mock espelha com
+  `invalid-seed`). Recompensa: **sem moedas** — só recorde do dia e
+  contribuição ao clã (decisão §8.4).
+- **Torneio de clãs**: botão `#btn-tournament` no menu + atalho
+  "Torneio do clã" na tela do clã (ocultos sem
+  `TOURNAMENTS_ENABLED`+`SOCIAL_ENABLED`); tela `#screen-tournament`
+  com 5 estados (loading → convite sem perfil → erro com "Tentar de
+  novo" → sem clã [CTA "Ver clãs"] → temporada). A temporada mostra
+  liga (8 clãs por grupo, 6 ligas — decisão §8.4), classificação com
+  meu clã destacado, minha contribuição (melhor partida da semana) e
+  o resgate de recompensas de temporadas encerradas.
+- **Moedas (decisão §8.4)**: temporada paga no resgate **50**
+  (participação, com 3+ partidas válidas) + **40–300** (posição) +
+  **150** (promoção) — servidor calcula e paga (mock: espelho); a UI
+  credita a carteira LOCAL (`wallet.earn`, motivo `torneio`) só
+  **DEPOIS** que o servidor confirma; resgate **idempotente** (uma vez
+  por temporada, `already_claimed` no servidor). Bug de mock corrigido
+  no caminho: `rewards()` agora lê `claimed[user:seasonId]` (mesma
+  chave do `claimReward`) — antes o estado "coletada" nunca aparecia.
+- `net/api.js`: `tournaments.daily()` nos provedores mock/supabase
+  (`daily_race`); `submitRun` valida a semente do dia. `js/ui/ranking.js`:
+  cartão da corrida, `jogarDiaria()` (mesma transição do botão Jogar:
+  áudio + `startGame({seed})` + `showScreen(null)`) e `seed` no envio
+  (gate: `GLOBAL_RANKING_ENABLED` **ou** `TOURNAMENTS_ENABLED`).
+- `js/ui/tournament-ui.js` (novo): textContent sempre; erros de abrir
+  degradam com "Tentar de novo"; flag desligada = botões ocultos e
+  **nenhum listener**. `js/ui/screens.js`: `SCREEN_IDS.tournament`,
+  `case 'tournament'`; css §16.
+- Testes: `tests/tournament-ui.cjs` (30 checagens Playwright: flags,
+  convites, semente do servidor em `game:over`, recorde do dia,
+  sem-clã/CTA, grupo 8+1, contribuição, resgate único creditando a
+  carteira, offline com retry, 390x844 e 1280x720 sem overflow, zero
+  erros de console) + 2 unitários novos (participação/resgate
+  idempotente + `coletada`; Corrida do Dia determinística com
+  `invalid-seed` para semente velha) — 128 unitários.
+- Docs: §4 com `daily_race` e a régua de segurança dos RPCs (Database
+  functions, consultado 15/10/2026, ver §9).
+- **Produção segue com flags desligadas**: ligar torneios exige a
+  Fase 6/§7 (RPCs SQL com RLS, `tournament-rollover` como Edge
+  Function e ledger de recompensas no servidor).

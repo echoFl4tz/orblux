@@ -33,10 +33,12 @@
 | **Missões do dia** | ao concluir cada uma (3 por dia) | 25 (fácil) / 40 (média) / 60 (difícil) |
 | **Conquistas** | 1 vez cada (14 no jogo) | 25 (pequena) / 40 (média) / 60 (grande) |
 | **Recompensa diária** | 1× por dia, com sequência | 20, 25, 30, 35, 40, 50, 100 (dia 7; ciclo repete no 8) |
+| **Torneio de clãs** (ocasional) | ao resgatar no fim da temporada semanal | 50 (participação, com 3+ partidas) + 40–300 (posição) + 150 (promoção) |
 
 **O que NÃO paga moedas:** pulsos avulsos na partida (`COINS_PICKUP = false` —
-os pulsos já entram na fórmula) e "dobrar com anúncio" (`COINS_AD_DOUBLE =
-false`, decisão registrada na seção 7).
+os pulsos já entram na fórmula), "dobrar com anúncio" (`COINS_AD_DOUBLE =
+false`, decisão registrada na seção 7) e a **Corrida do Dia** (só recorde do
+dia e contribuição ao clã — SOCIAL.md §8.4).
 
 Bônus de partida: **+15** por bater recorde **existente** (recorde anterior > 0)
 e **+10** pela 1ª partida do dia.

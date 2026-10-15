@@ -22,6 +22,7 @@ const SCREEN_IDS = {
   social: 'screen-social',
   chat: 'screen-chat',
   clans: 'screen-clans',
+  tournament: 'screen-tournament',
   pause: 'screen-pause',
   gameover: 'screen-gameover',
 };
@@ -325,6 +326,7 @@ function bindActions() {
       case 'social': sfx('ui'); emit('social:open'); break;
       case 'chat': sfx('ui'); emit('chat:open'); break;
       case 'clans': sfx('ui'); emit('clans:open'); break;
+      case 'tournament': sfx('ui'); emit('tournament:open'); break;
       case 'settings': sfx('ui'); applySettingsToUI(); showScreen('settings'); break;
       case 'menu':
         sfx('ui'); returnToMenu(); break;

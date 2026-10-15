@@ -22,6 +22,7 @@ import { initWalletUI } from './ui/wallet-ui.js';
 import { initSocialUI } from './ui/social-ui.js';
 import { initChatUI } from './ui/chat-ui.js';
 import { initClansUI } from './ui/clans-ui.js';
+import { initTournamentUI } from './ui/tournament-ui.js';
 import { initAds, onRunEnd as adsOnRunEnd, showRewarded } from './monetization/ads.js';
 import { initBilling, syncPurchases } from './monetization/billing.js';
 import * as wallet from './core/wallet.js';
@@ -50,6 +51,7 @@ function boot() {
   initSocialUI();
   initChatUI();
   initClansUI();
+  initTournamentUI();
   initShop();
   initAds();
 
@@ -168,7 +170,7 @@ function boot() {
         const issues = [];
         const vw = window.innerWidth;
         const vh = window.innerHeight;
-        const ids = ['screen-menu', 'screen-howto', 'screen-ranking', 'screen-skins', 'screen-settings', 'screen-social', 'screen-chat', 'screen-clans', 'screen-pause', 'screen-gameover'];
+        const ids = ['screen-menu', 'screen-howto', 'screen-ranking', 'screen-skins', 'screen-settings', 'screen-social', 'screen-chat', 'screen-clans', 'screen-tournament', 'screen-pause', 'screen-gameover'];
         for (const id of ids) {
           const el = document.getElementById(id);
           if (!el) continue;

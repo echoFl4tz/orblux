@@ -18,7 +18,9 @@
 import { state } from '../core/state.js';
 import { on } from '../core/events.js';
 import { escapeHtml } from '../core/nickname.js';
-import { sfx } from '../core/audio.js';
+import { sfx, initAudio, resumeAudio } from '../core/audio.js';
+import { startGame } from '../game/game.js';
+import { showScreen } from './screens.js';
 import { flag } from '../../net/flags.js';
 import { getApi } from '../../net/api.js';
 import { validateRun } from '../../net/rules.js';
@@ -31,10 +33,15 @@ let globalPage = 0;
 let globalTotal = 0;
 let carregando = false;
 
+// Corrida do Dia (Fase 5): semente vem do SERVIDOR (nunca do cliente)
+let diariaAtual = null;         // { date, seed, endsAt, melhorHoje }
+let diariaCarregando = false;
+
 export function initRanking() {
   on('screen:ranking', () => {
     renderRanking();
     if (escopo === 'global') carregarGlobal(0);   // refresh ao (re)abrir a tela
+    if (diariaVisivel()) carregarDiaria();        // refresh da Corrida do Dia
   });
   on('stats:changed', () => { renderRanking(); });
 
@@ -42,6 +49,16 @@ export function initRanking() {
   const ligado = flag('GLOBAL_RANKING_ENABLED');
   if (scopes) scopes.hidden = !ligado;            // produção: nem aparece
   if (!ligado || !scopes) return;                 // sem flag: sem listeners
+
+  // Corrida do Dia: só com TOURNAMENT_ENABLED (desligada em produção)
+  const diaria = document.getElementById('daily-race');
+  if (diaria) diaria.hidden = !diariaVisivel();
+  if (diaria && diariaVisivel()) {
+    const play = document.getElementById('daily-play');
+    if (play) play.addEventListener('click', () => { sfx('ui'); jogarDiaria(); });
+    const retry = document.getElementById('daily-retry');
+    if (retry) retry.addEventListener('click', () => { sfx('ui'); carregarDiaria(); });
+  }
 
   scopes.addEventListener('click', (e) => {
     const btn = e.target.closest('[data-rank-scope]');
@@ -52,6 +69,86 @@ export function initRanking() {
   if (more) more.addEventListener('click', () => { sfx('ui'); carregarGlobal(globalPage + 1); });
   const retry = document.getElementById('ranking-global-retry');
   if (retry) retry.addEventListener('click', () => { sfx('ui'); carregarGlobal(0); });
+}
+
+/* ------------------------------------------------------------------
+   CORRIDA DO DIA — a semente do dia vem do servidor; mesma semente =
+   mesmo percurso em qualquer aparelho (net/rng.js + game.js).
+   Recompensa: só recorde/contribuição — NUNCA moedas (decisão Fase 5).
+   ------------------------------------------------------------------ */
+
+function diariaVisivel() {
+  return flag('TOURNAMENTS_ENABLED') && flag('GLOBAL_RANKING_ENABLED');
+}
+
+function diariaStatus(txt) {
+  const el = document.getElementById('daily-status');
+  if (!el) return;
+  el.textContent = txt || '';
+  el.hidden = !txt;
+}
+
+async function carregarDiaria() {
+  if (diariaCarregando) return;
+  const cta = document.getElementById('daily-cta');
+  const foot = document.getElementById('daily-foot');
+  const play = document.getElementById('daily-play');
+  const retry = document.getElementById('daily-retry');
+  const dateEl = document.getElementById('daily-date');
+  const bestEl = document.getElementById('daily-best');
+  if (!dateEl) return;
+
+  diariaCarregando = true;
+  if (retry) retry.hidden = true;
+  diariaStatus('Conectando…');
+  try {
+    const api = getApi();
+    const sess = await api.auth.session();
+    if (!sess) {
+      if (cta) cta.hidden = false;
+      if (foot) foot.hidden = true;
+      if (play) play.disabled = true;
+      diariaStatus('');
+      return;
+    }
+    if (cta) cta.hidden = true;
+    if (foot) foot.hidden = false;
+    const d = await api.tournaments.daily();
+    diariaAtual = d;
+    const partes = String(d.date || '').split('-');
+    dateEl.textContent = partes.length === 3
+      ? `Hoje: ${partes[2]}/${partes[1]} — mesmo percurso para todo mundo`
+      : 'Mesmo percurso para todo mundo hoje.';
+    bestEl.textContent = d.melhorHoje
+      ? `Seu melhor de hoje: ${Number(d.melhorHoje).toLocaleString('pt-BR')} pts`
+      : 'Bata seu primeiro recorde de hoje!';
+    if (play) play.disabled = false;
+    diariaStatus('');
+  } catch (e) {
+    console.warn('[ranking] corrida do dia indisponível:', (e && e.code) || 'erro');
+    diariaStatus('Não foi possível carregar a corrida de hoje.');
+    if (retry) retry.hidden = false;
+    if (play) play.disabled = true;
+  } finally {
+    diariaCarregando = false;
+  }
+}
+
+async function jogarDiaria() {
+  const play = document.getElementById('daily-play');
+  try {
+    const d = diariaAtual || await getApi().tournaments.daily();
+    diariaAtual = d;
+    if (play) play.disabled = true;
+    initAudio();
+    resumeAudio();
+    startGame({ seed: d.seed });       // game.js injeta a semente no spawner
+    showScreen(null);                  // mesma transição do botão Jogar
+  } catch (e) {
+    console.warn('[ranking] corrida do dia falhou:', (e && e.code) || 'erro');
+    diariaStatus('Não foi possível abrir a corrida de hoje. Tente de novo.');
+    if (play) play.disabled = false;
+  }
 }
 
 /* ------------------------------------------------------------------
@@ -221,19 +318,20 @@ async function carregarGlobal(page = 0) {
 }
 
 /**
- * Envia a partida ao servidor quando o ranking global está ligado e o
- * jogador tem perfil social. Fire-and-forget: falha NUNCA afeta a tela
- * de fim de jogo, o ranking local ou o progresso.
+ * Envia a partida ao servidor quando o ranking global OU os torneios
+ * estão ligados e o jogador tem perfil social. Fire-and-forget: falha
+ * NUNCA afeta a tela de fim de jogo, o ranking local ou o progresso.
  */
 export async function submitRunGlobal(run = {}) {
-  if (!flag('GLOBAL_RANKING_ENABLED')) return false;
+  if (!flag('GLOBAL_RANKING_ENABLED') && !flag('TOURNAMENTS_ENABLED')) return false;
+  const seed = typeof run.seed === 'string' && run.seed ? run.seed.slice(0, 40) : null;
   const payload = {
     score: Math.floor(Number(run.score) || 0),
     seconds: Math.round(Number(run.elapsed) || 0),
     pickups: Number(run.pickups) || 0,
     comboMax: Number(run.maxCombo) || 1,
     level: Number(run.level) || 1,
-    seed: null,               // semente da corrida do dia chega na Fase 5
+    seed,                          // Corrida do Dia: a semente do servidor (null = partida normal)
     version: RUN_VERSION,
   };
   // régua local espelha a do servidor: nem tenta enviar o impossível
