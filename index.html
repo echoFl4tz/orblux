@@ -80,6 +80,8 @@
       <symbol id="ic-check2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="2"/><path d="M7.8 12.4l2.8 2.8 5.6-6" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
       <symbol id="ic-user" viewBox="0 0 24 24"><circle cx="12" cy="8" r="3.6" fill="none" stroke="currentColor" stroke-width="2"/><path d="M5 20a7 7 0 0 1 14 0" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></symbol>
       <symbol id="ic-globe" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="2"/><path d="M3 12h18M12 3c2.6 2.4 4 5.6 4 9s-1.4 6.6-4 9c-2.6-2.4-4-5.6-4-9s1.4-6.6 4-9z" fill="none" stroke="currentColor" stroke-width="2"/></symbol>
+      <symbol id="ic-chat" viewBox="0 0 24 24"><path d="M4 5.5h16v10.5H9.6L5.4 19.6V16H4z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></symbol>
+      <symbol id="ic-send" viewBox="0 0 24 24"><path d="M20.5 3.5l-6.4 17-3.3-7.3L3.5 9.9zM10.8 13.2l9.7-9.7" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></symbol>
     </defs>
   </svg>
 
@@ -178,6 +180,9 @@
           </button>
           <button class="btn" data-action="social" id="btn-social" hidden>
             <svg class="ic" aria-hidden="true"><use href="#ic-globe"/></svg> Comunidade
+          </button>
+          <button class="btn" data-action="chat" id="btn-chat" hidden>
+            <svg class="ic" aria-hidden="true"><use href="#ic-chat"/></svg> Chat
           </button>
           <button class="btn" data-action="settings">
             <svg class="ic" aria-hidden="true"><use href="#ic-gear"/></svg> Configurações
@@ -612,6 +617,9 @@
           </div>
           <button class="btn btn-small" id="social-show-code" aria-expanded="false" aria-controls="social-code-view">Mostrar código de recuperação</button>
           <p id="social-code-view" class="social-code" hidden></p>
+          <button class="btn" id="social-chat-open" data-action="chat" hidden>
+            <svg class="ic" aria-hidden="true"><use href="#ic-chat"/></svg> Abrir chat global
+          </button>
           <p class="small muted">Seu progresso do jogo fica salvo neste dispositivo. O perfil da comunidade serve para ranking global, chat e clãs (quando ativados).</p>
           <div class="panel-foot column">
             <button class="btn" id="social-signout">Sair da comunidade</button>
@@ -641,6 +649,127 @@
       </div>
     </div>
   </section>
+
+  <!-- ================= TELA: CHAT GLOBAL (camada social — Fase 3) ================= -->
+  <section id="screen-chat" class="screen" data-screen="chat" aria-label="Chat global" role="dialog" aria-modal="true">
+    <div class="panel panel-wide">
+      <div class="panel-head">
+        <h2 class="panel-title">Chat global</h2>
+        <button class="icon-btn" data-action="chat-close" aria-label="Fechar chat">
+          <svg class="ic" aria-hidden="true"><use href="#ic-close"/></svg>
+        </button>
+      </div>
+      <div class="panel-body chat-body">
+
+        <div id="chat-loading" class="social-step">
+          <p class="small" role="status" aria-live="polite">Conectando ao chat…</p>
+        </div>
+
+        <!-- sem perfil social: convite (nunca força) -->
+        <div id="chat-cta" class="empty-state" hidden>
+          <svg class="ic" aria-hidden="true"><use href="#ic-globe"/></svg>
+          <p>Entre na comunidade para conversar no chat global.</p>
+          <button class="btn btn-small" data-action="social">Comunidade</button>
+        </div>
+
+        <!-- erro de rede ao abrir: "Tentar de novo" -->
+        <div id="chat-error" class="social-step" hidden>
+          <p id="chat-error-text" class="small" role="alert"></p>
+          <div class="panel-foot column">
+            <button class="btn btn-primary" id="chat-retry">Tentar de novo</button>
+          </div>
+        </div>
+
+        <!-- sala conectada -->
+        <div id="chat-room" class="chat-room" hidden>
+          <div class="chat-head">
+            <span id="chat-online" class="chip" role="status" aria-live="polite">…</span>
+            <button class="btn btn-small" id="chat-blocked">
+              <svg class="ic ic-sm" aria-hidden="true"><use href="#ic-shield"/></svg>
+              Bloqueados <span id="chat-blocked-count">0</span>
+            </button>
+          </div>
+          <ol id="chat-list" class="chat-list" aria-label="Mensagens do chat"></ol>
+          <p id="chat-empty" class="small muted" hidden>Ainda não há mensagens. Diga olá!</p>
+          <div id="chat-quick" class="chat-quick" hidden>
+            <p class="small muted">Por sua segurança, você conversa só com frases prontas e emojis.</p>
+            <div id="chat-quick-chips" class="chat-quick-chips"></div>
+          </div>
+          <form id="chat-form" class="chat-form" autocomplete="off">
+            <input id="chat-input" class="chat-input" type="text" maxlength="200" enterkeyhint="send" aria-label="Mensagem" placeholder="Mensagem…" />
+            <button class="btn btn-primary chat-send" id="chat-send" type="submit">
+              <svg class="ic" aria-hidden="true"><use href="#ic-send"/></svg>
+              Enviar
+            </button>
+          </form>
+          <p id="chat-send-error" class="chat-send-error small" role="alert" hidden></p>
+        </div>
+      </div>
+      <div class="panel-foot">
+        <button class="btn" data-action="chat-close">Voltar</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= MODAL: AÇÕES DA MENSAGEM (denunciar/bloquear) ================= -->
+  <div id="modal-chat-actions" class="modal" hidden role="dialog" aria-modal="true" aria-labelledby="chat-actions-title">
+    <div class="panel modal-panel">
+      <div class="panel-head">
+        <h3 class="panel-title" id="chat-actions-title">Mensagem</h3>
+        <button class="icon-btn" id="chat-actions-close" aria-label="Fechar">
+          <svg class="ic" aria-hidden="true"><use href="#ic-close"/></svg>
+        </button>
+      </div>
+      <div class="panel-body">
+        <p id="chat-actions-preview" class="chat-actions-preview small"></p>
+
+        <div id="chat-actions-menu" class="social-options">
+          <button class="btn" id="chat-report-open">
+            <svg class="ic" aria-hidden="true"><use href="#ic-shield"/></svg> Denunciar mensagem
+          </button>
+          <button class="btn btn-danger" id="chat-block-go">
+            <svg class="ic" aria-hidden="true"><use href="#ic-user"/></svg> Bloquear <span id="chat-block-nick-a"></span>
+          </button>
+        </div>
+
+        <div id="chat-actions-reasons" class="social-options" hidden>
+          <p class="small muted">Por que você denuncia esta mensagem de <b id="chat-report-nick"></b>?</p>
+          <button class="btn" data-reason="spam">Spam ou flood</button>
+          <button class="btn" data-reason="ofensa">Ofensa ou assédio</button>
+          <button class="btn" data-reason="conteudo">Conteúdo impróprio</button>
+          <button class="btn" data-reason="outro">Outro motivo</button>
+        </div>
+
+        <div id="chat-actions-block" class="social-options" hidden>
+          <p class="small">Bloquear <b id="chat-block-nick"></b>? Você não verá mais as mensagens dele no seu chat. Dá para desbloquear depois em "Bloqueados".</p>
+          <button class="btn btn-danger" id="chat-block-confirm">Bloquear</button>
+        </div>
+      </div>
+      <div class="panel-foot column">
+        <button class="btn btn-ghost" id="chat-actions-cancel">Cancelar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= MODAL: JOGADORES BLOQUEADOS ================= -->
+  <div id="modal-chat-blocked" class="modal" hidden role="dialog" aria-modal="true" aria-labelledby="chat-blocked-title">
+    <div class="panel modal-panel">
+      <div class="panel-head">
+        <h3 class="panel-title" id="chat-blocked-title">Jogadores bloqueados</h3>
+        <button class="icon-btn" id="chat-blocked-close-x" aria-label="Fechar">
+          <svg class="ic" aria-hidden="true"><use href="#ic-close"/></svg>
+        </button>
+      </div>
+      <div class="panel-body">
+        <ul id="chat-blocked-list" class="chat-blocked-list"></ul>
+        <p id="chat-blocked-empty" class="small muted" hidden>Você não bloqueou ninguém.</p>
+        <p class="small muted">Bloquear esconde as mensagens do jogador na hora; desbloquear volta a mostrá-las.</p>
+      </div>
+      <div class="panel-foot">
+        <button class="btn" id="chat-blocked-close">Fechar</button>
+      </div>
+    </div>
+  </div>
 
   <!-- ================= MODAL: CONFIRMAR RESET ================= -->
   <div id="modal-confirm" class="modal" hidden role="dialog" aria-modal="true" aria-labelledby="confirm-title">

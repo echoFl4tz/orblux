@@ -1,6 +1,6 @@
 # ORBLUX — Camada SOCIAL ONLINE (Supabase)
 
-> **Documento vivo.** Fases 0, 1 e 2 concluídas em 14/10/2026. Este documento manda sobre
+> **Documento vivo.** Fases 0, 1, 2 e 3 concluídas em 14/10/2026. Este documento manda sobre
 > qualquer instrução avulsa em caso de conflito. Cada fase só começa com a
 > aprovação da anterior. Links consultados com data na seção 9.
 
@@ -30,7 +30,7 @@
 | **0 (esta)** | `SOCIAL.md`, `net/` (flags, rng, rules, config, api), spawner com rng injetável, testes de determinismo + contrato do mock |
 | **1 (concluída)** | Conta social: 1ª entrada social, faixa de idade, termos de Uso da Comunidade, apelido/skin/país, código de recuperação, **exclusão de conta** (ver §10) |
 | **2 (concluída)** | Ranking global + `submit_run` anti-trapaça (validação plausibilidade no servidor); mantém ranking local como fallback (ver §10) |
-| 3 | Chat global (salas/shards, realtime, denúncia, bloqueio, moderação) |
+| **3 (concluída)** | Chat global (salas/shards, realtime, denúncia, bloqueio, moderação) — ver §10 |
 | 4 | Clãs (criar com moedas, entrada, cargos, elenco de emblema) |
 | 5 | Torneios de clãs + **Corrida do Dia** com semente única (`net/rng.js` + `setSpawnerRng`) |
 | 6 | Integração economia/rede + segurança (mutirão/raid no servidor) |
@@ -105,13 +105,19 @@ validação; índices em `runs(week)`, `chat_messages(room, created_at desc)`,
   conhecida; 120 moedas creditadas **no servidor** via ledger idempotente),
   `ranking_top(scope,page,limit)`, `ranking_mine`,
   `chat_send` (limites de `net/rules.js` em SQL + mute/ban), `chat_history`,
-  `chat_report`, `user_block/unblock/blocks`,
+  `chat_report`, `user_block/unblock/blocks` (retorna **id + apelido** p/
+  a lista de bloqueados),
   `clan_search/get/mine/members/create/join/request/invite/accept/decline/kick/
   promote/demote/transfer/leave/dissolve/update`,
   `tournament_current/group/my_contribution/rewards/claim` (claim idempotente).
 - **Edge Functions** (service_role aqui, nunca no cliente): `chat-moderation`
   (fila de denúncias + mute/ban), `tournament-rollover` (segunda 00:03 BRT,
   grava `tournament_history` e recompensas), `season-claim`.
+- **Realtime (chat)**: `chat_messages` precisa estar na publicação
+  `supabase_realtime` (dashboard → Database → Replication). O cliente
+  assina o canal da sala dentro de `chat.join()` (melhor esforço: sem
+  Realtime, histórico e envio seguem normalmente). Consultado 14/10/2026
+  (links §9).
 - **pg_cron**: limpeza de `chat_messages` > 24 h (a cada 15 min) e expiração de
   convites/requisições (diária). `cron.schedule` documentado em
   supabase.com/docs/guides/cron (consultado 14/10/2026).
@@ -181,6 +187,8 @@ a camada `net/` está pronta e testada; a interface vem nas fases 1..5).
 | RLS/políticas | https://supabase.com/docs/guides/auth/policies |
 | Edge Functions (limites free) | https://supabase.com/docs/guides/functions |
 | pg_cron / Supabase Cron | https://supabase.com/docs/guides/cron |
+| Realtime postgres_changes (tabela na publicação) | https://supabase.com/docs/guides/realtime/postgres-changes |
+| Assinar mudanças no cliente (broadcast p/ escala) | https://supabase.com/docs/guides/realtime/subscribing-to-database-changes |
 | Play — política de UGC (moderação, termos, denúncia, bloqueio) | https://support.google.com/googleplay/android-developer/answer/9876937 |
 | Play — exclusão de conta (in-app + link web) | https://support.google.com/googleplay/android-developer/answer/13327111 |
 | Play — User Data policy | https://support.google.com/googleplay/android-developer/answer/10144311 |
@@ -235,3 +243,43 @@ a camada `net/` está pronta e testada; a interface vem nas fases 1..5).
   partida curta que NÃO vai ao servidor) + `validateRun` unitário.
   Denúncia/bloqueio de linhas do ranking global: Fase 3 (bloqueio) e
   Fase 7 (conformidade).
+
+### Fase 3 — Chat global (14/10/2026)
+
+- `index.html`: botão **Chat** no menu (`#btn-chat`) + atalho em
+  *Comunidade → perfil* (`#social-chat-open`), ocultos sem as flags;
+  tela `#screen-chat` com 4 estados (loading → convite sem perfil →
+  erro com "Tentar de novo" → sala), ícones `ic-chat`/`ic-send`, modal
+  de **ações da mensagem** (denunciar com motivos / bloquear) e modal
+  **Jogadores bloqueados** (com desbloquear).
+- `js/ui/chat-ui.js` (novo): entrada `data-action="chat"`; `join` +
+  `history` + `onMessage` (tempo real) pela UMA interface `net/api.js`;
+  textos da rede só via `textContent` (nunca `innerHTML`); envio com
+  régua local espelhando `net/rules.js` — erros **inline** sob o campo
+  (vazio, cooldown de 2 s, duplicata, contato/ofensa, e também
+  mute/ban vindos do servidor), nunca troca de tela; scroll automático
+  só quando perto do fim; Esc fecha os modais; sair encerra assinatura
+  e sala (`leave`). Flag desligada = botões ocultos e **nenhum
+  listener**; `CHAT_ENABLED` exige `SOCIAL_ENABLED` (sem Comunidade não
+  há CTA morto).
+- Menores de 13: campo de texto livre **oculto** — só frases
+  prontas/emojis do catálogo (`QUICK_PHRASES`/`QUICK_EMOJIS`), por 1
+  toque; menores de 13 **não escrevem texto livre** (Play UGC/Families).
+- `net/api.js`: contrato do chat unificado — `chat.join(room)` já
+  assina o tempo real da sala (mock: bots; supabase: canal
+  `chat_messages` via Realtime, melhor esforço); `blocks()` devolve
+  `[{id, nick}]` e `block(userId, nick)` congela o apelido (espelho do
+  `nick_snapshot`); mock migra estado antigo (`blockedNicks`).
+- `js/ui/screens.js`: `SCREEN_IDS.chat`, `case 'chat'` e
+  `returnToMenu` fecha os modais do chat.
+- Docs: §4 ganhou o contrato de `user_blocks` e a exigência da
+  publicação `supabase_realtime`; §9 com 2 links de Realtime
+  (14/10/2026).
+- Teste: `tests/chat-ui.cjs` (33 checagens Playwright: flag oculta,
+  convite, envio/cooldown/tempo real, denúncia com motivo, bloqueio +
+  desbloquear, offline com retry, menor de 13 só com frases prontas,
+  390x844/360x640/1280x720 sem overflow, zero erros de console) +
+  unitário do contrato `blocks()`.
+- **Produção segue com flags desligadas**: ligar o chat exige antes a
+  decisão §8.1 (idade mínima 13 + LGPD/ECA, ver §6) e a moderação
+  (Edge Function `chat-moderation`, Fase 6/§8.5).

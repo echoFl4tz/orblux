@@ -87,10 +87,13 @@ class MockProvider {
   /* ---------- persistência (localStorage com fallback memória) ---------- */
   _load() {
     const raw = getItem(MOCK_KEY);
-    if (raw && raw.v === 1) return raw;
+    if (raw && raw.v === 1) {
+      if (!raw.blockedNicks) raw.blockedNicks = {};   // migração: apelidos dos bloqueados
+      return raw;
+    }
     return {
       v: 1, seq: 0, user: null, profile: null, recoveryCode: null, vault: {},
-      taken: [], blocks: [], reports: [], hidden: {}, messages: {},
+      taken: [], blocks: [], blockedNicks: {}, reports: [], hidden: {}, messages: {},
       lastSentAt: 0, recentSent: [], lastText: '',
       clans: { mineId: null, role: null, waitUntil: 0, created: null, requests: [], outgoing: [], invites: [], members: [] },
       catalog: null,
@@ -357,19 +360,29 @@ class MockProvider {
         self._save();
         return { ok: true, hidden: !!self.state.hidden[messageId] };
       },
-      block: async (userId) => {
+      block: async (userId, nick) => {
         await self._net();
-        if (userId && !self.state.blocks.includes(userId)) self.state.blocks.push(userId);
+        if (userId && !self.state.blocks.includes(userId)) {
+          self.state.blocks.push(userId);
+          if (!self.state.blockedNicks) self.state.blockedNicks = {};
+          // apelido congelado no bloqueio (espelho do nick_snapshot do servidor)
+          self.state.blockedNicks[userId] = String(nick || 'Jogador').slice(0, 16);
+        }
         self._save();
         return true;
       },
       unblock: async (userId) => {
         await self._net();
         self.state.blocks = self.state.blocks.filter((x) => x !== userId);
+        if (self.state.blockedNicks) delete self.state.blockedNicks[userId];
         self._save();
         return true;
       },
-      blocks: async () => { await self._net(); return [...self.state.blocks]; },
+      blocks: async () => {
+        await self._net();
+        const nicks = self.state.blockedNicks || {};
+        return self.state.blocks.map((id) => ({ id, nick: nicks[id] || 'Jogador' }));
+      },
     };
   }
 
@@ -913,7 +926,12 @@ class SupabaseProvider {
     return {
       catalog: { phrases: QUICK_PHRASES, emojis: QUICK_EMOJIS },
       online: (room) => this._rpc('chat_online', { p_room: room || null }),
-      join: (room) => this._rpc('chat_join', { p_room: room || 'global' }),
+      join: async (room) => {
+        const res = await this._rpc('chat_join', { p_room: room || 'global' });
+        // tempo real da sala (melhor esforço): sem ele, histórico/janela seguem
+        try { await self._subChat(res && res.room); } catch { /* realtime opcional */ }
+        return res;
+      },
       leave: async () => { await self._leaveChannel(); return true; },
       history: ({ room, before, limit = CHAT.HISTORY_LIMIT } = {}) => this._rpc('chat_history', {
         p_room: room, p_before: before || null, p_limit: limit,
@@ -923,15 +941,7 @@ class SupabaseProvider {
         self._listeners.message.push(fn);
         return () => { self._listeners.message = self._listeners.message.filter((f) => f !== fn); };
       },
-      subscribe: async (room) => { // Realtime: canal por sala (chamado pela UI ao abrir o chat)
-        const sb = await self._sb();
-        await self._leaveChannel();
-        self._channel = sb.channel(`chat:${room}`, { config: { broadcast: { self: false } } });
-        self._channel.on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'chat_messages', filter: `room=eq.${room}` },
-          (payload) => { self._listeners.message.forEach((fn) => fn(payload.new)); });
-        await self._channel.subscribe();
-        return true;
-      },
+      subscribe: (room) => this._subChat(room),   // superfície avulsa; join já assina a sala
       report: ({ messageId, reason }) => this._rpc('chat_report', { p_message_id: messageId, p_reason: reason }),
       block: (userId) => this._rpc('user_block', { p_user_id: userId }),
       unblock: (userId) => this._rpc('user_unblock', { p_user_id: userId }),
@@ -940,6 +950,17 @@ class SupabaseProvider {
   }
   async _leaveChannel() {
     if (this._channel) { try { await this._channel.unsubscribe(); } catch { /* ignore */ } this._channel = null; }
+  }
+  /** Assina o Realtime da sala (postgres_changes em chat_messages). Melhor esforço. */
+  async _subChat(room) {
+    if (!room) return true;
+    const sb = await this._sb();
+    await this._leaveChannel();
+    this._channel = sb.channel(`chat:${room}`, { config: { broadcast: { self: false } } });
+    this._channel.on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'chat_messages', filter: `room=eq.${room}` },
+      (payload) => { this._listeners.message.forEach((fn) => fn(payload.new)); });
+    await this._channel.subscribe();
+    return true;
   }
 
   get clans() {

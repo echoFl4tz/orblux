@@ -236,6 +236,19 @@ test('chat: mutado e banido não escrevem', async () => {
   await assert.rejects(() => api.chat.send('oi'), (e) => e.code === 'banned');
 });
 
+test('chat: blocks() devolve {id, nick} (contrato p/ lista de bloqueados)', async () => {
+  const api = mockApi();
+  await api.chat.block('bot_2_1', 'Nico');
+  assert.deepEqual(await api.chat.blocks(), [{ id: 'bot_2_1', nick: 'Nico' }]);
+  // apelido padrão quando desconhecido + desbloquear limpa tudo
+  await api.chat.block('bot_3_0');
+  const b = await api.chat.blocks();
+  assert.equal(b.find((x) => x.id === 'bot_3_0').nick, 'Jogador');
+  await api.chat.unblock('bot_2_1');
+  await api.chat.unblock('bot_3_0');
+  assert.deepEqual(await api.chat.blocks(), []);
+});
+
 /* ---------------- clãs ---------------- */
 
 test('clãs: criar, regras (nome colidido, menor de 13, já em clã, espera de troca)', async () => {
