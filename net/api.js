@@ -201,6 +201,11 @@ class MockProvider {
     const self = this;
     return {
       get: async () => { await self._net(); return self.state.profile || null; },
+      getRecoveryCode: async () => {
+        await self._net();
+        self._requireProfile();
+        return self.state.recoveryCode || null;
+      },
       upsert: async (input = {}) => {
         await self._net();
         self._requireProfile();
@@ -262,6 +267,9 @@ class MockProvider {
         self._requireProfile();
         const id = self.state.user.id;
         // apaga dados sociais; preserva só o marcador p/ integridade de torneios
+        // exclusão é FINAL: descarta também o snapshot do vault e o código
+        if (self.state.recoveryCode) delete self.state.vault[self.state.recoveryCode];
+        self.state.recoveryCode = null;
         self.state.profile = null;
         self.state.user = null;
         self.state.blocks = []; self.state.reports = [];
@@ -889,6 +897,7 @@ class SupabaseProvider {
   get profile() {
     return {
       get: () => this._rpc('profile_get'),
+      getRecoveryCode: () => this._rpc('profile_recovery_code'),
       upsert: (input) => this._rpc('profile_upsert', {
         p_nickname: input.nickname, p_skin: input.skinId || null,
         p_country: input.country || null, p_age_band: input.ageBand,

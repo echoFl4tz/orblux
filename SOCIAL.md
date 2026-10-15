@@ -1,6 +1,6 @@
 # ORBLUX — Camada SOCIAL ONLINE (Supabase)
 
-> **Documento vivo.** Fase 0 concluída em 14/10/2026. Este documento manda sobre
+> **Documento vivo.** Fases 0 e 1 concluídas em 14/10/2026. Este documento manda sobre
 > qualquer instrução avulsa em caso de conflito. Cada fase só começa com a
 > aprovação da anterior. Links consultados com data na seção 9.
 
@@ -28,7 +28,7 @@
 | Fase | Entrega |
 |------|---------|
 | **0 (esta)** | `SOCIAL.md`, `net/` (flags, rng, rules, config, api), spawner com rng injetável, testes de determinismo + contrato do mock |
-| 1 | Conta social: 1ª entrada social, faixa de idade, termos de Uso da Comunidade, apelido/skin/país, código de recuperação, **exclusão de conta** |
+| **1 (concluída)** | Conta social: 1ª entrada social, faixa de idade, termos de Uso da Comunidade, apelido/skin/país, código de recuperação, **exclusão de conta** (ver §10) |
 | 2 | Ranking global + `submit_run` anti-trapaça (validação plausibilidade no servidor); mantém ranking local como fallback |
 | 3 | Chat global (salas/shards, realtime, denúncia, bloqueio, moderação) |
 | 4 | Clãs (criar com moedas, entrada, cargos, elenco de emblema) |
@@ -99,7 +99,7 @@ validação; índices em `runs(week)`, `chat_messages(room, created_at desc)`,
 
 ## 4. Backend planejado (RPCs / Edge Functions / pg_cron)
 
-- **RPCs (`security definer`)**: `profile_get/upsert/recover`,
+- **RPCs (`security definer`)**: `profile_get/upsert/recover`/`profile_recovery_code`,
   `account_delete` (anonimiza + apaga UGC — exigência Play §7),
   `submit_run` (valida plausibilidade: score ≤ 200 000, seconds ≥ 10, version
   conhecida; 120 moedas creditadas **no servidor** via ledger idempotente),
@@ -184,3 +184,29 @@ a camada `net/` está pronta e testada; a interface vem nas fases 1..5).
 | Play — política de UGC (moderação, termos, denúncia, bloqueio) | https://support.google.com/googleplay/android-developer/answer/9876937 |
 | Play — exclusão de conta (in-app + link web) | https://support.google.com/googleplay/android-developer/answer/13327111 |
 | Play — User Data policy | https://support.google.com/googleplay/android-developer/answer/10144311 |
+
+## 10. Registro das fases concluídas
+
+### Fase 1 — Conta social (14/10/2026)
+
+- `index.html`: botão **Comunidade** no menu (`#btn-social`, oculto sem a flag),
+  tela `#screen-social` com passos (fora → idade → termos → perfil → código →
+  dentro), grupo **Comunidade** em Configurações (`#group-social`: status +
+  atalho) e modal de confirmação de exclusão (`#modal-social-delete`).
+  Link dos termos também no rodapé do menu.
+- `termos.html`: Termos de Uso da Comunidade (UGC, moderação, menores de 13,
+  exclusão de conta, moedas) — exigência da política Play 9876937; fontes
+  locais, sem CDN.
+- `js/ui/social-ui.js` (novo): fluxo de 1ª entrada, `TERMS_VERSION` registrada
+  no upsert, código de recuperação exibido uma vez (revelar de novo exige
+  clique), sair, apagar conta (exclusão **final** — no mock apaga também o
+  vault e o código), erros de digitação inline e tela "Tentar de novo" para
+  rede. Flag `SOCIAL_ENABLED` desligada ⇒ botões ocultos e **nenhum listener**.
+- `net/api.js`: `profile.getRecoveryCode()` (mock: estado; supabase: RPC
+  `profile_recovery_code`); `deleteAccount` do mock descarta o snapshot do
+  vault e o código (exclusão final fiel ao servidor real).
+- `js/ui/screens.js`: `case 'social'`, `openModal/closeModal` exportados, Esc
+  fecha `#modal-social-delete`.
+- Teste: `tests/social-entry-ui.cjs` (Playwright: flag oculta/visível, fluxo
+  completo, recuperar por código, apagar conta, 390x844 e 1280x720, zero erros
+  de console).

@@ -19,10 +19,12 @@ import { initShare } from './ui/share.js';
 import { initNickname } from './ui/nickname.js';
 import { initShop } from './ui/skins-shop.js';
 import { initWalletUI } from './ui/wallet-ui.js';
+import { initSocialUI } from './ui/social-ui.js';
 import { initAds, onRunEnd as adsOnRunEnd, showRewarded } from './monetization/ads.js';
 import { initBilling, syncPurchases } from './monetization/billing.js';
 import * as wallet from './core/wallet.js';
 import * as economy from './core/economy.js';
+import { getApi } from '../net/api.js';
 import { burst, ring, shockwave, floatText, comboText, levelBanner } from './game/particles.js';
 
 function boot() {
@@ -43,6 +45,7 @@ function boot() {
   initShare();
   initNickname();
   initWalletUI();
+  initSocialUI();
   initShop();
   initAds();
 
@@ -144,6 +147,7 @@ function boot() {
         getCoins: () => wallet.getCoins(),
         saveWallet,   // p/ testes: gravar alterações manuais no estado (ex.: ontem)
         economy,      // constantes/funções puras p/ testes de navegador (só ?debug=1)
+        socialApi: () => getApi(),  // provedor social p/ testes de UI (só ?debug=1)
       } : {}),
       // captura/QA: emitir eventos e disparar FX de cena (sem tocar na lógica)
       emit,
@@ -156,7 +160,7 @@ function boot() {
         const issues = [];
         const vw = window.innerWidth;
         const vh = window.innerHeight;
-        const ids = ['screen-menu', 'screen-howto', 'screen-ranking', 'screen-skins', 'screen-settings', 'screen-pause', 'screen-gameover'];
+        const ids = ['screen-menu', 'screen-howto', 'screen-ranking', 'screen-skins', 'screen-settings', 'screen-social', 'screen-pause', 'screen-gameover'];
         for (const id of ids) {
           const el = document.getElementById(id);
           if (!el) continue;

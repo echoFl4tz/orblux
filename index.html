@@ -79,6 +79,7 @@
       <symbol id="ic-skin" viewBox="0 0 24 24"><circle cx="12" cy="12" r="6.6" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="12" cy="12" r="2.6" fill="currentColor"/><path d="M12 2.6v2.2M12 19.2v2.2M2.6 12h2.2M19.2 12h2.2M5.3 5.3l1.6 1.6M17.1 17.1l1.6 1.6M18.7 5.3l-1.6 1.6M6.9 17.1l-1.6 1.6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></symbol>
       <symbol id="ic-check2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="2"/><path d="M7.8 12.4l2.8 2.8 5.6-6" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
       <symbol id="ic-user" viewBox="0 0 24 24"><circle cx="12" cy="8" r="3.6" fill="none" stroke="currentColor" stroke-width="2"/><path d="M5 20a7 7 0 0 1 14 0" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></symbol>
+      <symbol id="ic-globe" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="2"/><path d="M3 12h18M12 3c2.6 2.4 4 5.6 4 9s-1.4 6.6-4 9c-2.6-2.4-4-5.6-4-9s1.4-6.6 4-9z" fill="none" stroke="currentColor" stroke-width="2"/></symbol>
     </defs>
   </svg>
 
@@ -175,6 +176,9 @@
             <svg class="ic" aria-hidden="true"><use href="#ic-skin"/></svg> Skins
             <span id="skins-badge" class="new-badge" hidden>Novo</span>
           </button>
+          <button class="btn" data-action="social" id="btn-social" hidden>
+            <svg class="ic" aria-hidden="true"><use href="#ic-globe"/></svg> Comunidade
+          </button>
           <button class="btn" data-action="settings">
             <svg class="ic" aria-hidden="true"><use href="#ic-gear"/></svg> Configurações
           </button>
@@ -204,6 +208,7 @@
 
         <footer class="menu-footer">
           <a href="privacy.html">Política de Privacidade</a>
+          <a href="termos.html" target="_blank" rel="noopener">Termos da Comunidade</a>
         </footer>
       </aside>
     </div>
@@ -365,6 +370,17 @@
             <ul id="set-ledger" class="extrato-list"></ul>
           </details>
         </div>
+        <div class="settings-group" id="group-social" hidden>
+          <h3><svg class="ic" aria-hidden="true"><use href="#ic-globe"/></svg> Comunidade</h3>
+          <div class="setting-row">
+            <span class="label">Status</span>
+            <span id="social-status" class="small">Fora da comunidade</span>
+          </div>
+          <p class="small muted" style="padding:2px 4px">Entrar na comunidade é opcional: o jogo funciona 100% offline. Ao entrar, seu apelido e suas pontuações podem aparecer no ranking global (quando ativado).</p>
+          <button class="btn" data-action="social" style="width:100%">
+            <svg class="ic" aria-hidden="true"><use href="#ic-globe"/></svg> Abrir Comunidade
+          </button>
+        </div>
         <div class="settings-group">
           <h3>Dados</h3>
           <p class="small muted" style="padding:8px 4px">Seu recorde e progresso ficam salvos apenas neste dispositivo (localStorage). Ao apagar o progresso, as skins compradas com dinheiro na Play Store são mantidas; moedas e skins compradas com moedas são apagadas (você escolhe no aviso).</p>
@@ -446,6 +462,166 @@
     </div>
   </section>
 
+  <!-- ================= TELA: COMUNIDADE (camada social) ================= -->
+  <section id="screen-social" class="screen" data-screen="social" aria-label="Comunidade" role="dialog" aria-modal="true">
+    <div class="panel">
+      <div class="panel-head">
+        <h2 class="panel-title"><svg class="ic" aria-hidden="true"><use href="#ic-globe"/></svg> Comunidade</h2>
+        <button class="icon-btn" data-action="menu" aria-label="Fechar">
+          <svg class="ic" aria-hidden="true"><use href="#ic-close"/></svg>
+        </button>
+      </div>
+      <div class="panel-body">
+
+        <!-- fora: introdução -->
+        <div id="social-fora" class="social-step" hidden>
+          <p class="small">O ORBLUX é 100% jogável offline. Entrar na comunidade é <b>opcional</b> e, quando ativados, libera o ranking global, o chat e os clãs.</p>
+          <ul class="social-bullets small">
+            <li>Seu recorde disputa o ranking global.</li>
+            <li>Chat com denúncia e bloqueio em todos os painéis.</li>
+            <li>Clãs e torneios semanalmente, só com moedas ganhas jogando.</li>
+          </ul>
+          <div class="panel-foot column">
+            <button class="btn btn-primary" id="social-start">Entrar na comunidade</button>
+            <button class="btn btn-ghost btn-small" id="social-recover-open">Já tenho um código de recuperação</button>
+          </div>
+        </div>
+
+        <!-- passo: idade -->
+        <div id="social-idade" class="social-step" hidden>
+          <p class="small">Sua faixa de idade ajusta o que você pode usar na comunidade (segurança dos jogadores).</p>
+          <div class="social-options" role="radiogroup" aria-label="Faixa de idade">
+            <button class="chip-btn" data-age="menor13" role="radio" aria-checked="false">Menor de 13 anos</button>
+            <button class="chip-btn" data-age="13a17" role="radio" aria-checked="false">13 a 17 anos</button>
+            <button class="chip-btn" data-age="18+" role="radio" aria-checked="false">18 anos ou mais</button>
+          </div>
+          <p id="social-age-note" class="small muted" role="status" aria-live="polite" hidden></p>
+          <div class="panel-foot column">
+            <button class="btn btn-primary" id="social-age-next" disabled>Continuar</button>
+            <button class="btn btn-ghost" data-social="back">Voltar</button>
+          </div>
+        </div>
+
+        <!-- passo: termos -->
+        <div id="social-termos" class="social-step" hidden>
+          <p class="small">Antes de criar conteúdo na comunidade (apelido, mensagens, clãs e pontuações), leia e aceite os <a href="termos.html" target="_blank" rel="noopener">Termos de Uso da Comunidade</a>.</p>
+          <p class="small muted">Em qualquer tela social haverá denúncia e bloqueio de jogadores. Menores de 13 anos usam só frases prontas e emojis no chat.</p>
+          <label class="setting-row">
+            <span class="label">Li e aceito os Termos de Uso da Comunidade</span>
+            <input type="checkbox" id="social-terms-check" class="switch">
+          </label>
+          <div class="panel-foot column">
+            <button class="btn btn-primary" id="social-terms-next" disabled>Aceitar e continuar</button>
+            <button class="btn btn-ghost" data-social="back">Voltar</button>
+          </div>
+        </div>
+
+        <!-- passo: perfil -->
+        <div id="social-perfil" class="social-step" hidden>
+          <p class="small muted">Não use seu nome real nem dados pessoais. Você pode alterar o país depois; a faixa de idade não muda.</p>
+          <label class="nick-field" for="social-nick">
+            <span class="nick-label">Apelido</span>
+            <span class="nick-inputwrap">
+              <input type="text" id="social-nick" class="nick-input" placeholder="Ex.: NeoPilot"
+                     maxlength="12" autocomplete="off" autocapitalize="off" autocorrect="off"
+                     spellcheck="false" enterkeyhint="done" aria-describedby="social-nick-error">
+            </span>
+          </label>
+          <p id="social-nick-error" class="nick-error" role="status" aria-live="polite"></p>
+          <label class="nick-field" for="social-country">
+            <span class="nick-label">País</span>
+            <span class="nick-inputwrap">
+              <select id="social-country" class="nick-input" aria-label="País">
+                <option value="BR">Brasil</option>
+                <option value="AR">Argentina</option>
+                <option value="CL">Chile</option>
+                <option value="CO">Colômbia</option>
+                <option value="MX">México</option>
+                <option value="PT">Portugal</option>
+                <option value="PE">Peru</option>
+                <option value="UY">Uruguai</option>
+                <option value="PY">Paraguai</option>
+                <option value="BO">Bolívia</option>
+                <option value="EC">Equador</option>
+                <option value="VE">Venezuela</option>
+                <option value="OUT">Outro país</option>
+              </select>
+            </span>
+          </label>
+          <div class="panel-foot column">
+            <button class="btn btn-primary" id="social-enter">Criar perfil e entrar</button>
+            <button class="btn btn-ghost" data-social="back">Voltar</button>
+          </div>
+        </div>
+
+        <!-- passo: recuperar por código -->
+        <div id="social-recuperar" class="social-step" hidden>
+          <p class="small">Digite o código de recuperação que recebeu ao criar o perfil para usar o mesmo perfil em outro aparelho.</p>
+          <label class="nick-field" for="social-recover-input">
+            <span class="nick-label">Código de recuperação</span>
+            <span class="nick-inputwrap">
+              <input type="text" id="social-recover-input" class="nick-input" placeholder="XXXXXXXXXXXX"
+                     maxlength="12" autocomplete="off" autocapitalize="characters" autocorrect="off"
+                     spellcheck="false" aria-describedby="social-recover-error">
+            </span>
+          </label>
+          <p id="social-recover-error" class="nick-error" role="status" aria-live="polite"></p>
+          <div class="panel-foot column">
+            <button class="btn btn-primary" id="social-recover-go">Recuperar perfil</button>
+            <button class="btn btn-ghost" data-social="back">Voltar</button>
+          </div>
+        </div>
+
+        <!-- passo: guarde o código (uma vez, pós-criação) -->
+        <div id="social-codigo" class="social-step" hidden>
+          <p class="small">Guarde este código: ele recupera seu perfil em outro aparelho. <b>Quem tiver o código usa seu perfil</b> — não envie para desconhecidos.</p>
+          <p id="social-code-value" class="social-code" aria-live="polite"></p>
+          <div class="panel-foot column">
+            <button class="btn" id="social-code-copy">
+              <svg class="ic" aria-hidden="true"><use href="#ic-copy"/></svg> Copiar código
+            </button>
+            <button class="btn btn-primary" id="social-code-ok">Já guardei</button>
+          </div>
+        </div>
+
+        <!-- dentro: perfil da comunidade -->
+        <div id="social-dentro" class="social-step" hidden>
+          <div class="social-profile">
+            <b id="social-nick-out"></b>
+            <span class="small muted"><span id="social-age-out"></span> · <span id="social-country-out"></span></span>
+          </div>
+          <button class="btn btn-small" id="social-show-code" aria-expanded="false" aria-controls="social-code-view">Mostrar código de recuperação</button>
+          <p id="social-code-view" class="social-code" hidden></p>
+          <p class="small muted">Seu progresso do jogo fica salvo neste dispositivo. O perfil da comunidade serve para ranking global, chat e clãs (quando ativados).</p>
+          <div class="panel-foot column">
+            <button class="btn" id="social-signout">Sair da comunidade</button>
+            <button class="btn btn-danger" id="social-delete">
+              <svg class="ic" aria-hidden="true"><use href="#ic-trash"/></svg> Apagar conta da comunidade
+            </button>
+          </div>
+        </div>
+
+        <!-- conectando -->
+        <div id="social-loading" class="social-step" hidden>
+          <p class="small" role="status" aria-live="polite">Conectando à comunidade…</p>
+        </div>
+
+        <!-- erro com "Tentar de novo" -->
+        <div id="social-erro" class="social-step" hidden>
+          <p id="social-erro-text" class="small" role="alert"></p>
+          <div class="panel-foot column">
+            <button class="btn btn-primary" id="social-retry">Tentar de novo</button>
+            <button class="btn btn-ghost" data-social="back">Voltar</button>
+          </div>
+        </div>
+
+      </div>
+      <div class="panel-foot">
+        <button class="btn" data-action="menu">Voltar</button>
+      </div>
+    </div>
+  </section>
+
   <!-- ================= MODAL: CONFIRMAR RESET ================= -->
   <div id="modal-confirm" class="modal" hidden role="dialog" aria-modal="true" aria-labelledby="confirm-title">
     <div class="panel modal-panel">
@@ -478,6 +654,22 @@
       <div class="panel-foot column">
         <button class="btn btn-primary" id="daily-claim">Resgatar</button>
         <button class="btn" id="daily-later">Agora não</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= MODAL: APAGAR CONTA DA COMUNIDADE ================= -->
+  <div id="modal-social-delete" class="modal" hidden role="dialog" aria-modal="true" aria-labelledby="sd-title">
+    <div class="panel modal-panel">
+      <div class="panel-head">
+        <h3 class="panel-title" id="sd-title">Apagar conta da comunidade?</h3>
+      </div>
+      <p>Seu perfil da comunidade (apelido social, país, faixa de idade e histórico do servidor) será apagado. <b>Seu progresso neste dispositivo (recorde, moedas, skins) continua aqui.</b> Isso não pode ser desfeito.</p>
+      <div class="panel-foot column">
+        <button class="btn btn-danger" id="sd-confirm">
+          <svg class="ic" aria-hidden="true"><use href="#ic-trash"/></svg> Apagar conta
+        </button>
+        <button class="btn" id="sd-cancel">Cancelar</button>
       </div>
     </div>
   </div>

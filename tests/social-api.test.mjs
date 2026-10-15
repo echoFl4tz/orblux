@@ -145,6 +145,24 @@ test('profile: recuperação por código e exclusão de conta', async () => {
   assert.equal(p.nickname, 'Sobrevivente');
   await api.profile.deleteAccount();
   assert.equal(await api.profile.get(), null);
+  // exclusão é FINAL: o código antigo não recupera mais nada (vault apagado)
+  await assert.rejects(() => api.profile.recover(code), (e) => e.code === 'invalid-code');
+});
+
+test('profile: getRecoveryCode exige sessão e devolve o mesmo código do vault', async () => {
+  const api = mockApi();
+  await assert.rejects(() => api.profile.getRecoveryCode(), (e) => e.code === 'no-session');
+  await api.__seedProfile({ nickname: 'CodigoTeste', ageBand: '18+' });
+  const code = await api.profile.getRecoveryCode();
+  assert.equal(code.length, 12);
+  assert.equal(code, api.state.recoveryCode);
+});
+
+test('profile: getRecoveryCode some após apagar a conta', async () => {
+  const api = mockApi();
+  await api.__seedProfile({ nickname: 'ApagouTeste', ageBand: '18+' });
+  await api.profile.deleteAccount();
+  await assert.rejects(() => api.profile.getRecoveryCode(), (e) => e.code === 'no-session');
 });
 
 /* ---------------- chat ---------------- */

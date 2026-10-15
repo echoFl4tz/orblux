@@ -19,6 +19,7 @@ const SCREEN_IDS = {
   ranking: 'screen-ranking',
   skins: 'screen-skins',
   settings: 'screen-settings',
+  social: 'screen-social',
   pause: 'screen-pause',
   gameover: 'screen-gameover',
 };
@@ -118,6 +119,7 @@ export function returnToMenu() {
   closeAllAds();
   emit('share:close');
   closeModal('modal-confirm');
+  closeModal('modal-social-delete');
 
   // 3) remove todos os toasts da tela
   clearToasts();
@@ -237,7 +239,7 @@ function updateBestDisplay() {
 // ---------------------------------------------------------
 //  Modais (confirmação / compartilhar) com foco gerenciado
 // ---------------------------------------------------------
-function openModal(id) {
+export function openModal(id) {
   const modal = document.getElementById(id);
   if (!modal) return;
   lastFocused = document.activeElement;
@@ -249,7 +251,7 @@ function openModal(id) {
   }
 }
 
-function closeModal(id) {
+export function closeModal(id) {
   const modal = document.getElementById(id);
   if (!modal || modal.hidden) return;
   modal.hidden = true;
@@ -263,6 +265,8 @@ function bindModals() {
     if (e.key !== 'Escape') return;
     const confirmM = document.getElementById('modal-confirm');
     if (confirmM && !confirmM.hidden) { closeModal('modal-confirm'); return; }
+    const socialDel = document.getElementById('modal-social-delete');
+    if (socialDel && !socialDel.hidden) { closeModal('modal-social-delete'); return; }
     const shareM = document.getElementById('modal-share');
     if (shareM && !shareM.hidden) { emit('share:close'); return; }
   });
@@ -312,6 +316,7 @@ function bindActions() {
       case 'howto': sfx('ui'); showScreen('howto'); break;
       case 'ranking': sfx('ui'); emit('screen:ranking'); showScreen('ranking'); break;
       case 'skins': sfx('ui'); showScreen('skins'); emit('shop:open'); break;
+      case 'social': sfx('ui'); emit('social:open'); break;
       case 'settings': sfx('ui'); applySettingsToUI(); showScreen('settings'); break;
       case 'menu':
         sfx('ui'); returnToMenu(); break;
