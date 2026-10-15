@@ -82,6 +82,7 @@
       <symbol id="ic-globe" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="2"/><path d="M3 12h18M12 3c2.6 2.4 4 5.6 4 9s-1.4 6.6-4 9c-2.6-2.4-4-5.6-4-9s1.4-6.6 4-9z" fill="none" stroke="currentColor" stroke-width="2"/></symbol>
       <symbol id="ic-chat" viewBox="0 0 24 24"><path d="M4 5.5h16v10.5H9.6L5.4 19.6V16H4z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></symbol>
       <symbol id="ic-send" viewBox="0 0 24 24"><path d="M20.5 3.5l-6.4 17-3.3-7.3L3.5 9.9zM10.8 13.2l9.7-9.7" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></symbol>
+      <symbol id="ic-flag" viewBox="0 0 24 24"><path d="M6 3.5v17M6 4.5h12l-3 4 3 4H6" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></symbol>
     </defs>
   </svg>
 
@@ -183,6 +184,9 @@
           </button>
           <button class="btn" data-action="chat" id="btn-chat" hidden>
             <svg class="ic" aria-hidden="true"><use href="#ic-chat"/></svg> Chat
+          </button>
+          <button class="btn" data-action="clans" id="btn-clans" hidden>
+            <svg class="ic" aria-hidden="true"><use href="#ic-flag"/></svg> Clãs
           </button>
           <button class="btn" data-action="settings">
             <svg class="ic" aria-hidden="true"><use href="#ic-gear"/></svg> Configurações
@@ -620,6 +624,9 @@
           <button class="btn" id="social-chat-open" data-action="chat" hidden>
             <svg class="ic" aria-hidden="true"><use href="#ic-chat"/></svg> Abrir chat global
           </button>
+          <button class="btn" id="social-clans-open" data-action="clans" hidden>
+            <svg class="ic" aria-hidden="true"><use href="#ic-flag"/></svg> Meu clã
+          </button>
           <p class="small muted">Seu progresso do jogo fica salvo neste dispositivo. O perfil da comunidade serve para ranking global, chat e clãs (quando ativados).</p>
           <div class="panel-foot column">
             <button class="btn" id="social-signout">Sair da comunidade</button>
@@ -767,6 +774,145 @@
       </div>
       <div class="panel-foot">
         <button class="btn" id="chat-blocked-close">Fechar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= TELA: CLÃS (camada social — Fase 4) ================= -->
+  <section id="screen-clans" class="screen" data-screen="clans" aria-label="Clãs" role="dialog" aria-modal="true">
+    <div class="panel panel-wide">
+      <div class="panel-head">
+        <h2 class="panel-title">Clãs</h2>
+        <button class="icon-btn" data-action="clans-close" aria-label="Fechar clãs">
+          <svg class="ic" aria-hidden="true"><use href="#ic-close"/></svg>
+        </button>
+      </div>
+      <div class="panel-body clans-body">
+
+        <div id="clans-loading" class="social-step">
+          <p class="small" role="status" aria-live="polite">Carregando clãs…</p>
+        </div>
+
+        <!-- sem perfil social: convite (nunca força) -->
+        <div id="clans-cta" class="empty-state" hidden>
+          <svg class="ic" aria-hidden="true"><use href="#ic-globe"/></svg>
+          <p>Entre na comunidade para criar ou entrar em um clã.</p>
+          <button class="btn btn-small" data-action="social">Comunidade</button>
+        </div>
+
+        <!-- erro de rede ao abrir: "Tentar de novo" -->
+        <div id="clans-error" class="social-step" hidden>
+          <p id="clans-error-text" class="small" role="alert"></p>
+          <div class="panel-foot column">
+            <button class="btn btn-primary" id="clans-retry">Tentar de novo</button>
+          </div>
+        </div>
+
+        <!-- fora de clã: busca + criar -->
+        <div id="clans-fora" class="clans-fora" hidden>
+          <input id="clans-search" class="chat-input" type="search" aria-label="Buscar clã por nome ou tag" placeholder="Buscar por nome ou tag…" enterkeyhint="search" />
+          <ul id="clans-list" class="clans-list" aria-label="Clãs encontrados"></ul>
+          <p id="clans-empty" class="small muted" hidden>Nenhum clã encontrado.</p>
+          <p id="clans-wait" class="small muted" hidden>Você acabou de sair de um clã — existe uma espera de 24 h para entrar em outro.</p>
+          <div class="panel-foot column">
+            <button class="btn btn-primary" id="clans-create-open">
+              <svg class="ic" aria-hidden="true"><use href="#ic-flag"/></svg>
+              Criar clã — <span id="clans-create-cost">500</span> moedas
+            </button>
+            <p id="clans-create-hint" class="small muted" hidden></p>
+          </div>
+        </div>
+
+        <!-- meu clã -->
+        <div id="clans-dentro" class="clans-dentro" hidden>
+          <div class="clans-head">
+            <span id="clans-emblema" class="clan-emblema" aria-hidden="true"></span>
+            <div class="clans-head-main">
+              <b id="clans-nome"></b>
+              <span id="clans-tag" class="chip"></span>
+              <span id="clans-meta" class="small muted"></span>
+            </div>
+          </div>
+          <p id="clans-desc" class="small muted"></p>
+          <h3 class="clans-sub">Membros (<span id="clans-count">0</span>/<span id="clans-max">30</span>)</h3>
+          <ul id="clans-members" class="clans-members" aria-label="Membros do clã"></ul>
+          <div id="clans-requests-wrap" hidden>
+            <h3 class="clans-sub">Pedidos de entrada (<span id="clans-req-count">0</span>)</h3>
+            <ul id="clans-requests" class="clans-requests" aria-label="Pedidos de entrada"></ul>
+          </div>
+          <div class="panel-foot column">
+            <button class="btn" id="clans-edit-open" hidden>
+              <svg class="ic" aria-hidden="true"><use href="#ic-edit"/></svg> Editar clã
+            </button>
+            <button class="btn btn-danger" id="clans-leave">Sair do clã</button>
+            <button class="btn btn-danger" id="clans-dissolve" hidden>
+              <svg class="ic" aria-hidden="true"><use href="#ic-trash"/></svg> Dissolver clã
+            </button>
+          </div>
+        </div>
+      </div>
+      <div class="panel-foot">
+        <button class="btn" data-action="clans-close">Voltar</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= MODAL: CRIAR/EDITAR CLÃ ================= -->
+  <div id="modal-clan-create" class="modal" hidden role="dialog" aria-modal="true" aria-labelledby="clan-form-title">
+    <div class="panel modal-panel">
+      <div class="panel-head">
+        <h3 class="panel-title" id="clan-form-title">Criar clã</h3>
+        <button class="icon-btn" id="clan-form-close" aria-label="Fechar">
+          <svg class="ic" aria-hidden="true"><use href="#ic-close"/></svg>
+        </button>
+      </div>
+      <div class="panel-body clans-form">
+        <label class="small muted" for="clan-nome">Nome do clã</label>
+        <input id="clan-nome" class="chat-input" type="text" maxlength="20" autocomplete="off" aria-describedby="clan-nome-err" />
+        <p id="clan-nome-err" class="chat-send-error small" hidden></p>
+
+        <label class="small muted" for="clan-tag-input">Tag (3 a 4 letras ou números)</label>
+        <input id="clan-tag-input" class="chat-input" type="text" maxlength="4" autocomplete="off" aria-describedby="clan-tag-err" />
+        <p id="clan-tag-err" class="chat-send-error small" hidden></p>
+
+        <label class="small muted" for="clan-desc-input">Descrição (opcional)</label>
+        <input id="clan-desc-input" class="chat-input" type="text" maxlength="160" autocomplete="off" />
+
+        <p class="small muted" id="clan-tipo-label">Tipo de entrada</p>
+        <div class="clan-tipo" role="radiogroup" aria-labelledby="clan-tipo-label">
+          <button type="button" class="chip-btn" data-tipo="aberto" role="radio" aria-checked="true">Aberto</button>
+          <button type="button" class="chip-btn" data-tipo="solicitacao" role="radio" aria-checked="false">Por solicitação</button>
+          <button type="button" class="chip-btn" data-tipo="convite" role="radio" aria-checked="false">Só convite</button>
+        </div>
+
+        <p class="small muted" id="clan-emblem-label">Emblema</p>
+        <div id="clan-emblem-preview" class="clan-emblem-preview" aria-hidden="true"></div>
+        <div id="clan-icons" class="clan-picker" role="radiogroup" aria-label="Ícone do emblema"></div>
+        <div id="clan-cores" class="clan-picker clan-picker-cores" role="radiogroup" aria-label="Cor do emblema"></div>
+        <div id="clan-molduras" class="clan-picker" role="radiogroup" aria-label="Moldura do emblema"></div>
+
+        <p id="clan-form-cost" class="small muted"></p>
+        <p id="clan-form-error" class="chat-send-error small" role="alert" hidden></p>
+      </div>
+      <div class="panel-foot column">
+        <button class="btn btn-primary" id="clan-form-submit">Criar clã</button>
+        <button class="btn btn-ghost" id="clan-form-cancel">Cancelar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= MODAL: CONFIRMAR AÇÃO DE CLÃ ================= -->
+  <div id="modal-clan-confirm" class="modal" hidden role="dialog" aria-modal="true" aria-labelledby="clan-confirm-title">
+    <div class="panel modal-panel">
+      <div class="panel-head">
+        <h3 class="panel-title" id="clan-confirm-title">Confirmar</h3>
+      </div>
+      <div class="panel-body">
+        <p id="clan-confirm-text" class="small"></p>
+      </div>
+      <div class="panel-foot column">
+        <button class="btn btn-danger" id="clan-confirm-ok">Confirmar</button>
+        <button class="btn btn-ghost" id="clan-confirm-cancel">Cancelar</button>
       </div>
     </div>
   </div>

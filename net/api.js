@@ -22,7 +22,7 @@ import { isMockProvider } from './flags.js';
 import { supabaseSettings, SUPABASE_UMD_PATH } from './config.js';
 import { seededRng, randInt, pick } from './rng.js';
 import {
-  CHAT, CLAN, validateChatMessage, validateClanName, validateClanTag, validateRun,
+  CHAT, CLAN, validateChatMessage, validateClanName, validateClanTag, validateClanEmblem, validateRun,
   normalizeChat, validateNickname, AGE_BANDS, QUICK_PHRASES, QUICK_EMOJIS,
 } from './rules.js';
 
@@ -467,10 +467,12 @@ class MockProvider {
         const takenT = self.state.catalog.clans.some((c) => normalizeChat(c.tag) === normalizeChat(vt.value));
         if (takenN) fail('name-taken', 'Já existe um clã com esse nome.');
         if (takenT) fail('tag-taken', 'Já existe um clã com essa tag.');
+        // moedas: a carteira é LOCAL (pn_wallet) — o cliente debita após criar;
+        // no servidor real, clan_create debita no banco (Fase 6/§7)
         const clan = {
           id: self._id('clan_'), nome: vn.value, tag: vt.value, tipo,
           descricao: String(descricao).slice(0, 160),
-          emblema: { icon: emblema.icon | 0, cor: emblema.cor || '#22e6ff', moldura: emblema.moldura | 0 },
+          emblema: validateClanEmblem(emblema).value,
           pais: p.country || 'BR', nivel: 1, xp: 0, trofeus: 0,
           liderId: p.id, members: [{ userId: p.id, nick: p.nickname, papel: 'lider', contribuicao: 0, ultimoDia: 0 }],
         };
@@ -607,7 +609,7 @@ class MockProvider {
         if (!c) fail('no-clan', 'Você não está em um clã.');
         if (patch.descricao !== undefined) c.descricao = String(patch.descricao).slice(0, 160);
         if (patch.tipo && ['aberto', 'solicitacao', 'convite'].includes(patch.tipo)) c.tipo = patch.tipo;
-        if (patch.emblema) c.emblema = { ...c.emblema, ...patch.emblema };
+        if (patch.emblema) c.emblema = validateClanEmblem({ ...c.emblema, ...patch.emblema }).value;
         if (patch.nome !== undefined) {
           const v = validateClanName(patch.nome);
           if (!v.ok) fail('invalid-name', v.error);

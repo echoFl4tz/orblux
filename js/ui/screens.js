@@ -21,6 +21,7 @@ const SCREEN_IDS = {
   settings: 'screen-settings',
   social: 'screen-social',
   chat: 'screen-chat',
+  clans: 'screen-clans',
   pause: 'screen-pause',
   gameover: 'screen-gameover',
 };
@@ -123,6 +124,8 @@ export function returnToMenu() {
   closeModal('modal-social-delete');
   closeModal('modal-chat-actions');
   closeModal('modal-chat-blocked');
+  closeModal('modal-clan-create');
+  closeModal('modal-clan-confirm');
 
   // 3) remove todos os toasts da tela
   clearToasts();
@@ -321,6 +324,7 @@ function bindActions() {
       case 'skins': sfx('ui'); showScreen('skins'); emit('shop:open'); break;
       case 'social': sfx('ui'); emit('social:open'); break;
       case 'chat': sfx('ui'); emit('chat:open'); break;
+      case 'clans': sfx('ui'); emit('clans:open'); break;
       case 'settings': sfx('ui'); applySettingsToUI(); showScreen('settings'); break;
       case 'menu':
         sfx('ui'); returnToMenu(); break;

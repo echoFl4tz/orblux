@@ -1,6 +1,6 @@
 # ORBLUX — Camada SOCIAL ONLINE (Supabase)
 
-> **Documento vivo.** Fases 0, 1, 2 e 3 concluídas em 14/10/2026. Este documento manda sobre
+> **Documento vivo.** Fases 0, 1, 2, 3 e 4 concluídas em 15/10/2026. Este documento manda sobre
 > qualquer instrução avulsa em caso de conflito. Cada fase só começa com a
 > aprovação da anterior. Links consultados com data na seção 9.
 
@@ -31,7 +31,7 @@
 | **1 (concluída)** | Conta social: 1ª entrada social, faixa de idade, termos de Uso da Comunidade, apelido/skin/país, código de recuperação, **exclusão de conta** (ver §10) |
 | **2 (concluída)** | Ranking global + `submit_run` anti-trapaça (validação plausibilidade no servidor); mantém ranking local como fallback (ver §10) |
 | **3 (concluída)** | Chat global (salas/shards, realtime, denúncia, bloqueio, moderação) — ver §10 |
-| 4 | Clãs (criar com moedas, entrada, cargos, elenco de emblema) |
+| **4 (concluída)** | Clãs (criar com moedas, entrada, cargos, elenco de emblema) — ver §10 |
 | 5 | Torneios de clãs + **Corrida do Dia** com semente única (`net/rng.js` + `setSpawnerRng`) |
 | 6 | Integração economia/rede + segurança (mutirão/raid no servidor) |
 | 7 | Conformidade/loja (Data Safety, UGC, exclusão de conta, termos) |
@@ -79,7 +79,7 @@ Tabelas (todas com RLS):
 | Tabela | Colunas principais | Fase |
 |--------|--------------------|------|
 | `profiles` | `id uuid pk = auth.users.id`, `nickname citext unique`, `skin_id`, `country char(2)`, `age_band text check in ('menor13','13a17','18+')`, `terms_version`, `created_at`, `deleted_at` (anonimização), `banned_until`, `muted_until` | 1 |
-| `clans` | `id`, `nome unique`, `tag unique`, `descricao`, `tipo in (aberto,solicitacao,convite)`, `emblema jsonb`, `nivel`, `xp`, `trofeus`, `lider_id`, `created_at` | 4 |
+| `clans` | `id`, `nome unique`, `tag unique`, `descricao`, `tipo in (aberto,solicitacao,convite)`, `emblema jsonb` com **CHECK no elenco fechado** (`CLAN_ICONS`/`CLAN_COLORS`/`CLAN_FRAMES` de `net/rules.js` — nunca CSS arbitrário), `nivel`, `xp`, `trofeus`, `lider_id`, `created_at` | 4 |
 | `clan_members` | `clan_id`, `user_id`, `papel in (lider,vice,membro)`, `contribuicao`, `ultimo_dia`, pk composta | 4 |
 | `clan_requests` / `clan_invites` | fila de entrada | 4 |
 | `runs` | `id`, `user_id`, `score`, `seconds`, `pickups`, `combo_max`, `level`, `seed text null`, `version`, `week int`, `created_at`, `valid bool` | 2, 5 |
@@ -108,7 +108,9 @@ validação; índices em `runs(week)`, `chat_messages(room, created_at desc)`,
   `chat_report`, `user_block/unblock/blocks` (retorna **id + apelido** p/
   a lista de bloqueados),
   `clan_search/get/mine/members/create/join/request/invite/accept/decline/kick/
-  promote/demote/transfer/leave/dissolve/update`,
+  promote/demote/transfer/leave/dissolve/update` (`clan_create` debita as
+  500 moedas **no servidor**, com ledger idempotente — Fase 6/§7; a UI só
+  debita a carteira local depois do sucesso, espelho provisório),
   `tournament_current/group/my_contribution/rewards/claim` (claim idempotente).
 - **Edge Functions** (service_role aqui, nunca no cliente): `chat-moderation`
   (fila de denúncias + mute/ban), `tournament-rollover` (segunda 00:03 BRT,
@@ -172,8 +174,10 @@ a camada `net/` está pronta e testada; a interface vem nas fases 1..5).
    ou shard por região, como manter o projeto free ativo (ping semanal).
 2. **Fase 2**: valor exato de recompensa de ranking (hoje: moedas iguais às da
    partida, nunca dinheiro).
-3. **Fase 4**: custo de criar clã em moedas (constante `CLAN.CREATE_COST_COINS`
-   = 500, proposto).
+3. **Fase 4 (RESOLVIDA em 14/10/2026)**: custo de criar clã =
+   **500 moedas** (constante `CLAN.CREATE_COST_COINS = 500`,
+   confirmado pelo usuário; carteira local, débito só após o
+   servidor criar — moedas nunca se compram, ver §0/ECONOMIA).
 4. **Fase 5**: tamanho dos grupos de liga (8 proposto) e número de ligas.
 5. **Fase 6**: quem modera (só o dono hoje) e política de appeal de ban.
 
@@ -283,3 +287,49 @@ a camada `net/` está pronta e testada; a interface vem nas fases 1..5).
 - **Produção segue com flags desligadas**: ligar o chat exige antes a
   decisão §8.1 (idade mínima 13 + LGPD/ECA, ver §6) e a moderação
   (Edge Function `chat-moderation`, Fase 6/§8.5).
+
+### Fase 4 — Clãs (15/10/2026)
+
+- `index.html`: botão **Clãs** no menu (`#btn-clans`) + atalho
+  *Comunidade → perfil* (`#social-clans-open`), ocultos sem as flags;
+  tela `#screen-clans` com 5 estados (loading → convite sem perfil →
+  erro com "Tentar de novo" → fora de clã [busca] → meu clã); ícone
+  `ic-flag`; modal **criar/editar clã** (nome, tag, descrição, tipo de
+  entrada, elenco de emblema) e modal **confirmação** (sair/dissolver/
+  expulsar).
+- `js/ui/clans-ui.js` (novo): entrada `data-action="clans"`; todas as
+  ações pela UMA interface `net/api.js` (mock valida como o servidor);
+  texto da rede só via `textContent`; `CLANS_ENABLED` exige
+  `SOCIAL_ENABLED` (sem Comunidade não há CTA morto); flag desligada =
+  botões ocultos e **nenhum listener**; Esc fecha os modais; aviso de
+  espera de 24 h após sair (a constante é só aviso — quem barra é o
+  servidor).
+- **Moedas (decisão §8.3, resolvida)**: criar clã custa
+  `CLAN.CREATE_COST_COINS = 500` da carteira LOCAL (`pn_wallet`):
+  o cliente só debita **depois** que o servidor confirma a criação
+  (`wallet.spend` com rollback; se o débito local falhar, alerta em
+  console e o clã segue — o servidor é a fonte da verdade). Sem saldo:
+  botão inativo + "Faltam X moedas — ganhe jogando" (**nunca** push de
+  pagamento). No backend real, `clan_create` debitará no banco
+  (Fase 6/§7). Menores de 13 não criam clã (só entram por convite).
+- **Emblema (elenco fechado)**: `net/rules.js` ganhou `CLAN_ICONS` (8),
+  `CLAN_FRAMES` (4) e `CLAN_COLORS` (8) + `validateClanEmblem` — valores
+  fora da paleta caem no padrão (imune a injeção de CSS); o mock valida
+  em `clans.create`/`clans.update` e a UI renderiza com a paleta lida
+  de novo. Cargos: líder (promover/rebaixar/expulsar/transferir/editar/
+  dissolver) e vice (aceitar/recusar pedidos e expulsar membros);
+  pedidos de entrada com aceitar/recusar; tipos de entrada aberto/
+  solicitação/convite (convite = só visualizar na busca).
+- `js/ui/screens.js`: `SCREEN_IDS.clans`, `case 'clans'` e
+  `returnToMenu` fecha os modais dos clãs. `js/core/wallet.js` sem
+  mudança (reuso de `spend`/`canAfford`/`getCoins`).
+- Testes: `tests/clans-ui.cjs` (45 checagens Playwright: flag oculta,
+  convite sem perfil, busca filtrando, custo em moedas com saldo
+  insuficiente, criação com emblema + débito 600→100, pedidos,
+  cargos, edição pelo líder, sair com espera de 24 h, offline com
+  retry, entrar/solicitar/só-convite, menor de 13, 390x844 e
+  1280x720 sem overflow, zero erros de console) + unitário do elenco
+  fechado do emblema (`tests/social-api.test.mjs`).
+- **Produção segue com flags desligadas**: ligar os clãs depende da
+  Fase 6/§7 (débito de moedas no servidor + RPCs SQL com RLS) e das
+  decisões §8 restantes.

@@ -244,4 +244,29 @@ export function validateClanTag(raw) {
   return { ok: true, value: tag.toUpperCase(), error: '' };
 }
 
+/* ---------------- emblema de clã (elenco fechado) ---------------- */
+// Cores em paleta FIXA: o servidor nunca aceita CSS arbitrário do cliente.
+export const CLAN_ICONS = ['play', 'trophy', 'medal', 'shield', 'bolt', 'heart', 'flame', 'pulse'];
+export const CLAN_FRAMES = 4;
+export const CLAN_COLORS = ['#22e6ff', '#7cff6b', '#ffd166', '#ff6bd6', '#b98cff', '#ff8f5e', '#5ea2ff', '#f2f6ff'];
+
+/**
+ * Valida emblema (espelho do servidor): fora do elenco vira o padrão.
+ * Nunca devolve valor arbitrário — imune a injeção de CSS.
+ */
+export function validateClanEmblem(raw = {}) {
+  const icon = Number(raw.icon);
+  const moldura = Number(raw.moldura);
+  const cor = String(raw.cor || '').toLowerCase();
+  return {
+    ok: true,
+    value: {
+      icon: Number.isInteger(icon) && icon >= 0 && icon < CLAN_ICONS.length ? icon : 0,
+      moldura: Number.isInteger(moldura) && moldura >= 0 && moldura < CLAN_FRAMES ? moldura : 0,
+      cor: CLAN_COLORS.includes(cor) ? cor : CLAN_COLORS[0],
+    },
+    error: '',
+  };
+}
+
 export { validateNickname };

@@ -1675,3 +1675,107 @@ body.reduce-motion .coins-progress-bar span { transition: none; }
   border-radius: var(--r-sm);
   overflow-wrap: anywhere;
 }
+
+/* ============ 15. CLÃS (camada social — Fase 4) ============ */
+.clans-body { display: flex; flex-direction: column; gap: var(--s3); }
+.clans-fora, .clans-dentro { display: flex; flex-direction: column; gap: var(--s3); min-height: 0; }
+.clans-list, .clans-members, .clans-requests {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--s2);
+  max-height: min(38vh, 320px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(34, 230, 255, 0.3) transparent;
+}
+.clans-list::-webkit-scrollbar, .clans-members::-webkit-scrollbar, .clans-requests::-webkit-scrollbar { width: 6px; }
+.clans-list::-webkit-scrollbar-thumb, .clans-members::-webkit-scrollbar-thumb, .clans-requests::-webkit-scrollbar-thumb {
+  background: rgba(34, 230, 255, 0.28);
+  border-radius: var(--r-full);
+}
+.clan-row {
+  display: flex;
+  align-items: center;
+  gap: var(--s2);
+  padding: var(--s2);
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+}
+.clan-row.mine { border-color: var(--primary); background: var(--primary-soft); }
+.clan-row-main { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.clan-row-nick { display: flex; align-items: baseline; gap: var(--s1); flex-wrap: wrap; }
+.clan-row-nick b { font-family: var(--font-display); font-size: 0.95rem; color: var(--text-1); overflow-wrap: anywhere; }
+.clan-row-meta { font-size: 0.75rem; color: var(--text-2); }
+.clan-tipo-badge {
+  font-size: 0.7rem;
+  padding: 1px 8px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-full);
+  color: var(--text-2);
+  flex: 0 0 auto;
+}
+.clan-papel {
+  font-size: 0.7rem;
+  padding: 1px 8px;
+  border-radius: var(--r-full);
+  border: 1px solid rgba(34, 230, 255, 0.35);
+  color: var(--primary);
+  flex: 0 0 auto;
+}
+.clan-papel.vice { border-color: rgba(255, 209, 102, 0.45); color: #ffd166; }
+/* emblema */
+.clan-emblema, .clan-emblem-preview .clan-emblema {
+  width: 44px;
+  height: 44px;
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: var(--surface-1);
+  border: 2px solid currentColor;
+}
+.clan-emblema[data-moldura="0"] { border-color: transparent; }
+.clan-emblema[data-moldura="2"] { border-style: double; border-width: 4px; }
+.clan-emblema[data-moldura="3"] { border-style: dashed; }
+.clan-emblem-preview { display: flex; justify-content: center; margin: var(--s1) 0; }
+.clan-emblem-preview .clan-emblema { width: 56px; height: 56px; }
+.clan-picker { display: flex; flex-wrap: wrap; gap: var(--s2); }
+.clan-pick {
+  width: 42px;
+  height: 42px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  color: var(--text-1);
+  cursor: pointer;
+  padding: 0;
+}
+.clan-pick[aria-checked="true"] { border-color: var(--primary); background: var(--primary-soft); }
+.clan-pick-cores { width: 34px; height: 34px; border-radius: var(--r-full); }
+.clan-pick-frame { font-size: 0.8rem; color: var(--text-2); }
+.clans-form { display: flex; flex-direction: column; gap: var(--s1); }
+.clans-form .chat-input { margin-bottom: var(--s1); }
+.clans-form label { margin-top: var(--s2); }
+.clan-tipo { display: flex; flex-wrap: wrap; gap: var(--s2); margin: var(--s1) 0; }
+.clans-sub {
+  margin: var(--s1) 0 0;
+  font-family: var(--font-display);
+  font-size: 0.9rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-2);
+}
+.clans-head { display: flex; align-items: center; gap: var(--s3); }
+.clans-head-main { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.clans-head-main b { font-family: var(--font-display); font-size: 1.15rem; color: var(--text-1); overflow-wrap: anywhere; }
+.clans-head-main .chip { align-self: flex-start; }
+.clan-req-actions { display: flex; gap: var(--s1); flex: 0 0 auto; }

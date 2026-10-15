@@ -70,6 +70,10 @@ Total da coleção em moedas: **33.300**. Cada skin tem **dois caminhos
 independentes**: moedas (grátis, jogando) ou Play Billing (dinheiro real — só
 pula a espera; skins são 100% estéticas).
 
+Fora da coleção existe um sumidouro social: **criar um clã custa 500 moedas**
+(`CLAN.CREATE_COST_COINS`, SOCIAL.md §8.3) — cerca de 1–3 dias de jogo; também
+é pago só com moedas ganhas jogando, nunca com dinheiro.
+
 ---
 
 ## 4. Saída do simulador

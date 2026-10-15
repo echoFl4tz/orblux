@@ -308,6 +308,20 @@ test('clãs: menores de 13 não criam clã (só convite)', async () => {
   await assert.rejects(() => api.clans.create({ nome: 'Clã Kids', tag: 'KID' }), (e) => e.code === 'age-restricted');
 });
 
+test('clãs: emblema é elenco FECHADO (cores fora da paleta viram padrão)', async () => {
+  const api = mockApi();
+  await api.__seedProfile({ nickname: 'Emblem', ageBand: '18+' });
+  const c = await api.clans.create({
+    nome: 'Emblema Teste', tag: 'EMB',
+    emblema: { icon: 99, cor: 'red; background:url(evil)', moldura: -3 },
+  });
+  assert.deepEqual(c.emblema, { icon: 0, cor: '#22e6ff', moldura: 0 }, 'valores fora do elenco caem no padrão');
+  const u = await api.clans.update({ emblema: { icon: 3, cor: '#ff6bd6', moldura: 2 } });
+  assert.deepEqual(u.emblema, { icon: 3, cor: '#ff6bd6', moldura: 2 }, 'valores válidos passam');
+  const u2 = await api.clans.update({ emblema: { cor: 'javascript:alert(1)' } });
+  assert.equal(u2.emblema.cor, '#22e6ff', 'CSS arbitrário nunca chega ao elenco');
+});
+
 /* ---------------- torneios ---------------- */
 
 test('torneios: temporada atual, grupo e recompensa ÚNICA (idempotente)', async () => {
