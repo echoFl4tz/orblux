@@ -1433,3 +1433,123 @@ body[data-screen="gameover"] .toasts {
 }
 body.reduce-motion .skin-card-canvas { animation: none; }
 body.reduce-motion .skin-card:hover { transform: none; }
+
+/* ---------------------------------------------------------
+   12. MOEDAS (chip do menu, diária, progresso, extrato)
+--------------------------------------------------------- */
+.coin-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--s2);
+  flex-wrap: wrap;
+}
+.coin-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  border-radius: var(--r-full);
+  background: rgba(255, 228, 94, 0.1);
+  border: 1px solid rgba(255, 228, 94, 0.35);
+  color: var(--reward);
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: var(--fs-body);
+  font-variant-numeric: tabular-nums;
+}
+.coin-chip .ic { color: var(--reward); }
+.coin-chip-unit {
+  font-family: var(--font-sans);
+  font-size: var(--fs-caption);
+  color: var(--text-2);
+  font-weight: 500;
+}
+.btn-daily {
+  border-color: rgba(255, 228, 94, 0.45);
+  color: var(--reward);
+  font-size: var(--fs-caption);
+}
+.btn-daily .ic { color: var(--reward); }
+.btn-daily:hover, .btn-daily:focus-visible { border-color: var(--reward); }
+#daily-title { display: flex; align-items: center; gap: var(--s2); }
+#daily-title .ic { color: var(--reward); }
+.btn-coins { border-color: rgba(255, 228, 94, 0.5); color: var(--reward); }
+.btn-coins .ic { color: var(--reward); }
+.btn-coins:hover, .btn-coins:focus-visible { border-color: var(--reward); }
+
+.go-coins {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--s2);
+  margin-top: var(--s3);
+  padding: var(--s2) var(--s3);
+  border-radius: var(--r-sm);
+  background: rgba(255, 228, 94, 0.1);
+  border: 1px solid rgba(255, 228, 94, 0.35);
+  color: var(--reward);
+  font-size: var(--fs-body);
+}
+.go-coins b { font-family: var(--font-display); }
+
+.coins-progress { margin-top: var(--s3); }
+.coins-progress-bar {
+  height: 6px;
+  border-radius: var(--r-full);
+  background: rgba(255, 255, 255, 0.1);
+  overflow: hidden;
+}
+.coins-progress-bar span {
+  display: block;
+  height: 100%;
+  width: 0;
+  border-radius: var(--r-full);
+  background: linear-gradient(90deg, var(--reward), #ffb020);
+  transition: width var(--dur-3) var(--ease);
+}
+.coins-progress p { margin: 6px 0 0; }
+
+/* Configurações → Moedas */
+.coin-balance-line {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--s2);
+  padding: var(--s1) 4px var(--s2);
+}
+.coin-balance-line .label {
+  color: var(--text-2);
+  font-size: var(--fs-caption);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+.coin-balance-line .record-value { color: var(--reward); }
+.extrato summary {
+  cursor: pointer;
+  color: var(--text-2);
+  font-size: var(--fs-caption);
+  padding: var(--s2) 4px;
+}
+.extrato summary:hover { color: var(--text-1); }
+.extrato-list { list-style: none; margin: 0; padding: 0 var(--s1); }
+.extrato-list li {
+  display: flex;
+  align-items: center;
+  gap: var(--s2);
+  padding: 6px 0;
+  border-bottom: 1px dashed var(--line);
+  font-size: var(--fs-caption);
+  color: var(--text-2);
+}
+.extrato-list li:last-child { border-bottom: 0; }
+.extrato-list .extrato-data { font-variant-numeric: tabular-nums; opacity: 0.75; min-width: 78px; }
+.extrato-list .extrato-motivo { flex: 1; }
+.extrato-list .extrato-delta { font-family: var(--font-display); font-weight: 700; }
+.extrato-list .pos { color: var(--success); }
+.extrato-list .neg { color: var(--text-1); }
+
+@media (prefers-reduced-motion: reduce) {
+  .coins-progress-bar span { transition: none; }
+}
+body.reduce-motion .coins-progress-bar span { transition: none; }

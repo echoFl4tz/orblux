@@ -12,8 +12,9 @@ import { on } from '../core/events.js';
 import { sfx, initAudio, resumeAudio } from '../core/audio.js';
 import { showToast } from './toasts.js';
 import {
-  state, ownsSkin, equipSkin, markSkinSeen, setSkinCustom, resetSkinCustom,
+  state, ownsSkin, equipSkin, markSkinSeen, setSkinCustom, resetSkinCustom, grantSkin,
 } from '../core/state.js';
+import * as wallet from '../core/wallet.js';
 import {
   SKINS, BUNDLE_SKU, PALETAS, RASTROS, AURAS, getSkin, getSkinBySku, resolveLook,
 } from '../game/skins.js';
@@ -48,6 +49,10 @@ export function initShop() {
   });
   on('shop:open', openShop);
   on('state:reset', updateBadge);
+  // saldo mudou (diária, missão, outra compra): atualiza o progresso do detalhe
+  on('wallet:changed', () => {
+    if (shopOpen && detailId) renderCoinsProgress(getSkin(detailId));
+  });
   updateBadge();
 }
 
@@ -235,6 +240,7 @@ function renderDetailActions() {
   const note = $('detail-note');
   box.innerHTML = '';
   note.hidden = true;
+  renderCoinsProgress(null);                 // esconde; volta se aplicável abaixo
   if (!detailId) return;
   const s = getSkin(detailId);
   const mkBtn = (label, cls, action) => {
@@ -257,8 +263,26 @@ function renderDetailActions() {
     return;
   }
 
-  // não possui: experimentar + comprar
+  // não possui: experimentar + DOIS caminhos (moedas grátis PRIMEIRO,
+  // Play Billing como alternativa — sem priorizar o pagamento)
   box.appendChild(mkBtn('Experimentar', '', 'trial'));
+
+  if (s.coinPrice) {
+    const b = document.createElement('button');
+    b.className = 'btn btn-coins';
+    b.dataset.shop = 'buy-coins';
+    const ic = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    ic.setAttribute('class', 'ic ic-sm');
+    ic.setAttribute('aria-hidden', 'true');
+    const use = document.createElementNS('http://www.w3.org/2000/svg', 'use');
+    use.setAttribute('href', '#ic-coin');
+    ic.appendChild(use);
+    b.appendChild(ic);
+    b.appendChild(document.createTextNode(` Comprar por ${s.coinPrice} moedas`));
+    box.appendChild(b);
+    renderCoinsProgress(s);
+  }
+
   const preco = priceOf(s.sku);
   if (preco) {
     box.appendChild(mkBtn(`Comprar por ${preco}`, 'btn-primary', 'buy'));
@@ -271,6 +295,57 @@ function renderDetailActions() {
       ? 'Preço indisponível no momento. Toque em Restaurar compras ou tente mais tarde.'
       : 'Compras disponíveis apenas na Play Store (esta é uma demonstração).';
   }
+}
+
+/**
+ * Progresso honesto de compra com moedas: saldo vs preço, sem
+ * contagem regressiva e sem botão empurrando para pagar — só o
+ * quanto falta (o jogador decide).
+ */
+function renderCoinsProgress(s) {
+  const box = $('detail-coins');
+  if (!box) return;
+  if (!s || !s.coinPrice || ownsSkin(s.id)) { box.hidden = true; return; }
+  const saldo = wallet.getCoins();
+  const falta = Math.max(0, s.coinPrice - saldo);
+  const pct = Math.min(100, Math.floor((saldo / s.coinPrice) * 100));
+  const fill = $('coins-progress-fill');
+  if (fill) fill.style.width = `${pct}%`;
+  const txt = $('detail-coins-text');
+  if (txt) {
+    txt.textContent = falta > 0
+      ? `Suas moedas: ${saldo} de ${s.coinPrice} — faltam ${falta}. Ganhe jogando: partidas, missões e recompensa diária.`
+      : `Suas moedas: ${saldo} de ${s.coinPrice} — você já pode comprar.`;
+  }
+  box.hidden = false;
+}
+
+/**
+ * Compra com MOEDAS (grátis, só ganhas jogando). Gasto atômico:
+ * wallet.spend valida → grava → concede a skin; falha = rollback.
+ * Sem empurrão para pagar: se faltar, só mostramos quanto falta.
+ */
+function buyWithCoins(s) {
+  if (!s || !s.coinPrice || ownsSkin(s.id)) return;
+  const r = wallet.spend(s.coinPrice, 'skin', s.id, () => grantSkin(s.id, 'coins'));
+  if (r.ok) {
+    sfx('achievement');
+    showToast({ icon: 'ic-coin', title: 'Skin comprada!', desc: `${s.nome} — ${s.coinPrice} moedas` });
+    renderGrid();
+    refreshDetail();
+    return;
+  }
+  if (r.reason === 'insufficient') {
+    showToast({
+      icon: 'ic-coin',
+      title: 'Moedas insuficientes',
+      desc: `Faltam ${s.coinPrice - wallet.getCoins()} moedas — ganhe jogando.`,
+    });
+    renderCoinsProgress(s);
+    return;
+  }
+  if (r.reason === 'busy') return;              // duplo toque: ignora
+  showToast({ icon: 'ic-mission', title: 'Não foi possível concluir', desc: 'Tente de novo em instantes.' });
 }
 
 // ---------------------------------------------------------
@@ -631,6 +706,7 @@ function onShopClick(e) {
       break;
     }
     case 'buy': sfx('ui'); openBuyModal(getSkin(detailId).sku); break;
+    case 'buy-coins': sfx('ui'); buyWithCoins(getSkin(detailId)); break;
     case 'bundle': sfx('ui'); openBuyModal(BUNDLE_SKU); break;
     case 'custom': {
       sfx('ui');

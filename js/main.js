@@ -5,7 +5,7 @@
 
 import { startLoop } from './core/loop.js';
 import { on, emit } from './core/events.js';
-import { state, saveStats, addScoreToRanking } from './core/state.js';
+import { state, saveStats, addScoreToRanking, saveWallet } from './core/state.js';
 import { initAudio, resumeAudio, sfx } from './core/audio.js';
 import { initInput } from './core/input.js';
 import { initGame, update, render, startGame, forceGameOver, revive, game } from './game/game.js';
@@ -18,6 +18,7 @@ import { initRanking } from './ui/ranking.js';
 import { initShare } from './ui/share.js';
 import { initNickname } from './ui/nickname.js';
 import { initShop } from './ui/skins-shop.js';
+import { initWalletUI } from './ui/wallet-ui.js';
 import { initAds, onRunEnd as adsOnRunEnd, showRewarded } from './monetization/ads.js';
 import { initBilling, syncPurchases } from './monetization/billing.js';
 import * as wallet from './core/wallet.js';
@@ -41,6 +42,7 @@ function boot() {
   initRanking();
   initShare();
   initNickname();
+  initWalletUI();
   initShop();
   initAds();
 
@@ -140,7 +142,8 @@ function boot() {
       ...(ecoDebug ? {
         addCoins: (n = 0, reason = 'debug') => wallet.earn(n, reason, 'ox'),
         getCoins: () => wallet.getCoins(),
-        economy,   // constantes/funções puras p/ testes de navegador (só ?debug=1)
+        saveWallet,   // p/ testes: gravar alterações manuais no estado (ex.: ontem)
+        economy,      // constantes/funções puras p/ testes de navegador (só ?debug=1)
       } : {}),
       // captura/QA: emitir eventos e disparar FX de cena (sem tocar na lógica)
       emit,
