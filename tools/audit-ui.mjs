@@ -96,5 +96,37 @@ for (const [f, size] of Object.entries(parts)) {
 check(total < 150, `total ${total.toFixed(1)} KB < 150 KB`);
 
 // ---------------------------------------------------------
+// 6) Idioma: nenhum texto em inglês visível na interface
+// ---------------------------------------------------------
+console.log('\n— Idioma (pt-BR) —');
+// palavras que denunciam interface não traduzida (nomes próprios e
+// falsos positivos do pt-BR — Menu, Chat, Ranking, Combo, OK — fora)
+// palavras que denunciam interface não traduzida (falsos positivos do
+// pt-BR fora: Menu, Chat, Ranking, Combo, OK, No, Cancelar/Confirmar
+// em português — o \b final é obrigatório para não casar prefixos)
+const INGLES = /\b(Score|Loading|Error|Retry|Close|Cancel|Next|Settings|Options|Buy|Shop|Coins?|Hearts?|Share|Install|Update|Restart|Resume|Warning|Offline|Online|Yes|Save|Delete|Confirm|Submit|Login|Logout|Password|Continue|Start|Quit|Exit|Game Over|Level|Wave|Best|Record|New|Daily|Rewards?|Claim|Watch|Video|Ads?|Achievements?|Leaderboard|Nickname|Username|Message|Report|Block|Send|Create|Join|Leave|Season|League|Tournament)\b/;
+// texto visível do HTML: comentários, <script>/<style> e tags saem;
+// sobra o que o jogador lê (inclui aria-labels, capturados à parte)
+const visivelHtml = html
+  .replace(/<!--[\s\S]*?-->/g, ' ')
+  .replace(/<(script|style)[\s\S]*?<\/\1>/gi, ' ')
+  .replace(/<[^>]+>/g, ' ')
+  .replace(/\s+/g, ' ');
+const ariaLabels = [...html.matchAll(/aria-label="([^"]*)"/g)].map((m) => m[1]).join(' · ');
+const achouHtml = (visivelHtml + ' · ' + ariaLabels).match(INGLES);
+check(!achouHtml, `index.html sem inglês visível${achouHtml ? ` (achou: "${achouHtml[0]}")` : ''}`);
+// literals de texto nos módulos de UI (só strings com espaços — corta
+// identificadores/caminhos; template literals com ${} ficam de fora)
+for (const f of ['js/ui/screens.js', 'js/ui/hud.js', 'js/ui/missions.js', 'js/ui/achievements.js',
+  'js/ui/toasts.js', 'js/ui/ranking.js', 'js/ui/skins-shop.js', 'js/game/tutorial.js',
+  'js/game/game.js', 'js/core/nickname.js']) {
+  const src = readFileSync(join(ROOT, f), 'utf8');
+  const lits = [...src.matchAll(/'([A-Za-zÀ-ÿ][^'\n]*\s[^'\n]*)'|"([A-Za-zÀ-ÿ][^"\n]*\s[^"\n]*)"|`([^`$}\n]*\s[^`]*)`/g)]
+    .map((m) => m[1] || m[2] || m[3]);
+  const erro = lits.find((s) => INGLES.test(s));
+  check(!erro, `${f} sem inglês em texto de UI${erro ? ` (achou: "${erro.slice(0, 60)}")` : ''}`);
+}
+
+// ---------------------------------------------------------
 console.log(fails === 0 ? '\nAUDIT OK — nenhuma falha' : `\nAUDIT: ${fails} falha(s)`);
 process.exit(fails === 0 ? 0 : 1);

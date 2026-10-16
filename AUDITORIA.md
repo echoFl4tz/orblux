@@ -13,7 +13,7 @@ verificado, do que ficou pendente e do que fazer antes de publicar.
 | Testes unitários (13 arquivos) | `node --test tests/*.test.mjs` | **154/154** |
 | Simulação do jogo inteiro | `node tests/smoke.mjs` | **59/59** |
 | Referências internas | `node tools/validate-refs.mjs` | OK |
-| Auditoria de UI (tamanho/a11y) | `node tools/audit-ui.mjs` | OK (< 150 KB) |
+| Auditoria de UI (tamanho/a11y/idioma) | `node tools/audit-ui.mjs` | OK (< 150 KB, sem inglês) |
 | Suítes Playwright (15) | `node tests/<suite>.cjs` | **15/15** |
 
 Zero erros de console em todas as suítes (390x844, 1280x720 e 360x640).
