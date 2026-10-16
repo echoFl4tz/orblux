@@ -14,7 +14,7 @@ verificado, do que ficou pendente e do que fazer antes de publicar.
 | Simulação do jogo inteiro | `node tests/smoke.mjs` | **59/59** |
 | Referências internas | `node tools/validate-refs.mjs` | OK |
 | Auditoria de UI (tamanho/a11y) | `node tools/audit-ui.mjs` | OK (< 150 KB) |
-| Suítes Playwright (13) | `node tests/<suite>.cjs` | **13/13** |
+| Suítes Playwright (14) | `node tests/<suite>.cjs` | **14/14** |
 
 Zero erros de console em todas as suítes (390x844, 1280x720 e 360x640).
 
@@ -32,17 +32,18 @@ Zero erros de console em todas as suítes (390x844, 1280x720 e 360x640).
 | `skin-custom.test.mjs` | Personalização de cor/contorno sem efeito em jogabilidade |
 | `state-migration.test.mjs` | Migrações de `localStorage` (`pn_*`, versões) |
 | `rng.test.mjs` | RNG determinístico (Corrida do Dia com semente única) |
+| `score.test.mjs` | Pontuação (Fase 2): ondas determinísticas pelo tempo (limite de 20 s, clamp anti-valor-ruim, teto do bônus), constantes finitas/positivas — mesmos números do `app_rules` |
 | `nickname.test.mjs` | Validação de apelido (3–12, reservados, ofensas) |
 | `social-api.test.mjs` | Contrato da UMA interface (mock/NullProvider) e códigos de erro |
 | `backend-parity.test.mjs` | **21 checagens**: cliente ↔ SQL (RPCs, regras, sementes, fórmula de moedas), varredura de segurança (sem chaves, RLS, SECURITY DEFINER, grants), vendor pinado (SHA256), flags desligadas, páginas legais sem CDN |
 
-### Simulação (`tests/smoke.mjs` — 49)
+### Simulação (`tests/smoke.mjs` — 59)
 
 Lógica do jogo inteiro sem navegador: colisões, spawn, ondas, missões,
 conquistas, ranking local, moedas, reset, ritmo/determinismo do spawner
 (curva por segundo, mesma semente ⇒ mesma cadência — Fase 1).
 
-### Suítes Playwright (`node tests/<suite>.cjs` — 13)
+### Suítes Playwright (`node tests/<suite>.cjs` — 14)
 
 | Suíte | Cobre |
 |-------|-------|
@@ -57,6 +58,7 @@ conquistas, ranking local, moedas, reset, ritmo/determinismo do spawner
 | `tournament-ui` | Torneios, resgate idempotente, Corrida do Dia |
 | `sw-update` | Service worker: rede-primeiro, offline do cache, atualização (`orblux-v4`) |
 | `perf-ui` | Performance (Fase 1): 55+ FPS com CPU throttle 4x em GPU real, reinício < 400 ms, zero erros |
+| `responsive-ui` | Resoluções-alvo (Fase 3): 360x640/390x844/1280x720 × 12 telas (menu, como jogar, ranking, ajustes, loja, social, chat, clãs, torneio, pausa, fim de jogo e HUD da partida) — sem overflow horizontal/vertical, botões dentro da largura, zero erros |
 
 ## 3. Matriz de conformidade (regras inegociáveis → garantia verificada)
 
