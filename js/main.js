@@ -5,7 +5,7 @@
 
 import { startLoop } from './core/loop.js';
 import { on, emit } from './core/events.js';
-import { state, saveStats, addScoreToRanking, saveWallet } from './core/state.js';
+import { state, saveStats, addScoreToRanking, saveWallet, todayKey } from './core/state.js';
 import { initAudio, resumeAudio, sfx } from './core/audio.js';
 import { initInput } from './core/input.js';
 import { initGame, update, render, startGame, forceGameOver, revive, game } from './game/game.js';
@@ -77,8 +77,28 @@ function boot() {
     st.bestCombo = Math.max(st.bestCombo, run.maxCombo);
     st.bestLevel = Math.max(st.bestLevel, run.level);
     st.totalTime = Math.round((st.totalTime || 0) + run.elapsed);
+    const bestAnterior = st.best;
     const isRecord = run.score > st.best;
     if (isRecord) st.best = run.score;
+
+    // ---- moedas da partida (ECONOMIA.md) ----
+    // A fórmula pura já existia (calcRunCoins) mas NUNCA foi ligada aqui:
+    // agora o fim de jogo credita de verdade e o bloco "Você ganhou N
+    // moedas" recebe o payload (wallet:run-coins). Bônus de recorde só
+    // quando JÁ existia um recorde; 1ª partida do dia via lastRunDay.
+    const hoje = todayKey();
+    const primeiraDoDia = st.lastRunDay !== hoje;
+    st.lastRunDay = hoje;
+    const ganho = economy.calcRunCoins({
+      pickups: run.pickups,
+      score: run.score,
+      seconds: run.elapsed,
+      recordBroken: isRecord && bestAnterior > 0,
+      firstRunToday: primeiraDoDia,
+    });
+    const creditado = wallet.earn(ganho, 'partida', `run-${st.runs}`);
+    emit('wallet:run-coins', { coins: creditado.ok ? creditado.granted : 0 });
+
     saveStats();
 
     const position = addScoreToRanking(run.score);

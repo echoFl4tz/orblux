@@ -32,6 +32,7 @@ let escopo = 'local';
 let globalPage = 0;
 let globalTotal = 0;
 let carregando = false;
+let filaGlobal = null;        // página pedida durante um carregamento em voo
 
 // Corrida do Dia (Fase 5): semente vem do SERVIDOR (nunca do cliente)
 let diariaAtual = null;         // { date, seed, endsAt, melhorHoje }
@@ -262,7 +263,12 @@ function montarLinha(r) {
 }
 
 async function carregarGlobal(page = 0) {
-  if (carregando) return;
+  if (carregando) {
+    // clique/pedido durante um carregamento em voo: guarda a página mais
+    // adiantante em fila (nunca descarta clique do usuário em silêncio)
+    if (page > globalPage) filaGlobal = page;
+    return;
+  }
   const lista = document.getElementById('ranking-global-list');
   const cta = document.getElementById('ranking-global-cta');
   const myEl = document.getElementById('ranking-global-my');
@@ -314,6 +320,12 @@ async function carregarGlobal(page = 0) {
     if (more) more.hidden = true;
   } finally {
     carregando = false;
+    // drena a fila: o clique "Carregar mais" que chegou durante o voo
+    if (filaGlobal !== null) {
+      const p = filaGlobal;
+      filaGlobal = null;
+      if (p === globalPage + 1) carregarGlobal(p);
+    }
   }
 }
 

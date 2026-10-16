@@ -1081,10 +1081,29 @@
       <div class="go-nick" id="go-nick" hidden></div>
       <div class="go-score"><span id="go-score">0</span></div>
       <div class="go-best">Recorde: <span id="go-best">0</span></div>
+      <div class="go-gap" id="go-gap" hidden></div>
       <div id="go-stats" class="go-stats"></div>
       <div id="go-coins" class="go-coins" hidden>
         <svg class="ic ic-sm" aria-hidden="true"><use href="#ic-coin"/></svg>
         <span>Você ganhou <b id="go-coins-value">0</b> moedas</span>
+      </div>
+      <div id="go-progress" class="go-progress" hidden>
+        <div class="go-prog" id="go-prog-skin" hidden>
+          <div class="go-prog-head">
+            <svg class="ic ic-sm" aria-hidden="true"><use href="#ic-coin"/></svg>
+            <span class="go-prog-label" id="go-prog-skin-label">Próxima skin</span>
+            <span class="go-prog-frac" id="go-prog-skin-frac">0/0</span>
+          </div>
+          <div class="go-prog-track"><span id="go-prog-skin-fill"></span></div>
+        </div>
+        <div class="go-prog" id="go-prog-missions" hidden>
+          <div class="go-prog-head">
+            <svg class="ic ic-sm" aria-hidden="true"><use href="#ic-mission"/></svg>
+            <span class="go-prog-label">Missões de hoje</span>
+            <span class="go-prog-frac" id="go-prog-missions-frac">0/0</span>
+          </div>
+          <div class="go-prog-track"><span id="go-prog-missions-fill"></span></div>
+        </div>
       </div>
       <div class="panel-foot column">
         <button class="btn btn-primary btn-big" data-action="replay">

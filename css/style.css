@@ -1493,6 +1493,53 @@ body.reduce-motion .skin-card:hover { transform: none; }
 }
 .go-coins b { font-family: var(--font-display); }
 
+/* Faltam N pontos para o recorde (incentivo sem pressão) */
+.go-gap {
+  margin-top: 6px;
+  color: var(--text-2);
+  font-size: var(--fs-small, 0.85rem);
+  text-align: center;
+}
+.go-gap b { color: var(--cyan, #22e6ff); font-family: var(--font-display); }
+
+/* Barras de progresso do fim de jogo (próxima skin + missões do dia) */
+.go-progress {
+  display: grid;
+  gap: var(--s2);
+  margin-top: var(--s3);
+}
+.go-prog {
+  padding: var(--s2) var(--s3);
+  border-radius: var(--r-sm);
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+}
+.go-prog-head {
+  display: flex;
+  align-items: center;
+  gap: var(--s2);
+  margin-bottom: 6px;
+  font-size: var(--fs-small, 0.85rem);
+  color: var(--text-2);
+}
+.go-prog-head .ic { color: var(--reward); flex: none; }
+.go-prog-label { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.go-prog-frac { font-family: var(--font-display); color: var(--text); }
+.go-prog-track {
+  height: 6px;
+  border-radius: var(--r-full);
+  background: rgba(255, 255, 255, 0.1);
+  overflow: hidden;
+}
+.go-prog-track span {
+  display: block;
+  height: 100%;
+  width: 0;
+  border-radius: var(--r-full);
+  background: linear-gradient(90deg, var(--reward), #ffb020);
+  transition: width var(--dur-3) var(--ease);
+}
+
 .coins-progress { margin-top: var(--s3); }
 .coins-progress-bar {
   height: 6px;

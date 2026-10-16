@@ -119,7 +119,7 @@ await import('../js/main.js');
 const OX = globalThis.window.OX; // main.js grava em window (mock no Node)
 const { state, resetAllProgress } = await import('../js/core/state.js');
 const { game, revive, quitToMenu } = await import('../js/game/game.js');
-const { difficultyParams } = await import('../js/game/spawner.js');
+const { difficultyParams, nextPickupTimer, nextSpawnTimer, setSpawnerRng } = await import('../js/game/spawner.js');
 const { createPickup, createObstacle } = await import('../js/game/entities.js');
 const events = await import('../js/core/events.js');
 
@@ -182,6 +182,32 @@ assert(d60.interval < d0.interval, `intervalo de spawn diminui (${d0.interval.to
 assert(d60.interval > 0.25, 'intervalo nunca fica impossível');
 const dEasy = difficultyParams(30, true);
 assert(dEasy.interval > difficultyParams(30).interval, 'tutorial é mais fácil que o modo normal');
+
+console.log('\n— Etapa F2: ritmo inicial, densidade por área e determinismo —');
+const d10 = difficultyParams(10);
+assert(d10.interval <= 0.75, `rampa acelerada: 10 s já em <= 0,75 s (${d10.interval.toFixed(2)} s)`);
+assert(Math.abs(difficultyParams(15).interval - 0.64) < 0.001, 'curva contínua na virada dos 15 s (0,64 s)');
+const mkRng = () => { let s = 42; return () => ((s = (s * 1664525 + 1013904223) >>> 0), s / 4294967296); };
+const gTel = { elapsed: 12, W: 390, H: 844, runSeed: null };
+setSpawnerRng(mkRng());
+const tRef = nextPickupTimer(gTel);
+setSpawnerRng(mkRng());
+const tIni = nextPickupTimer({ ...gTel, elapsed: 3 });
+setSpawnerRng(mkRng());
+const tWide = nextPickupTimer({ ...gTel, W: 1280, H: 720 });
+assert(tRef >= 0.98 && tRef <= 1.72, `390x844: cadência base 1,0–1,7 s (${tRef.toFixed(2)} s)`);
+assert(tIni >= 0.69 && tIni <= 1.01, `10 s iniciais: pulsos 0,7–1,0 s (${tIni.toFixed(2)} s)`);
+assert(tWide < tRef, `1280x720 ganha densidade por área (${tWide.toFixed(2)} s < ${tRef.toFixed(2)} s)`);
+setSpawnerRng(mkRng());
+const corridaA = nextPickupTimer({ ...gTel, W: 1280, H: 720, runSeed: 'corrida-1' });
+setSpawnerRng(mkRng());
+const corridaB = nextPickupTimer({ ...gTel, W: 360, H: 640, runSeed: 'corrida-1' });
+assert(corridaA === corridaB,
+  `Corrida do Dia: mesma cadência em qualquer aparelho (${corridaA.toFixed(2)} s)`);
+setSpawnerRng(mkRng());
+const jt = nextSpawnTimer(0.7);
+assert(jt >= 0.59 && jt <= 0.81, `jitter de obstáculo pelo rng da semente (±15% = ${jt.toFixed(2)} s)`);
+setSpawnerRng(null);
 
 console.log('\n— Etapa G: game over, ranking e estatísticas —');
 overPayload = null;

@@ -148,11 +148,12 @@ export function updateTexts(dt) {
 }
 
 // ---- Combo em destaque (número grande ao centro-alto ao subir o multiplicador) ----
-const combo = { active: false, x: 0, y: 0, str: '', color: '#ffe45e', life: 0, maxLife: 1 };
+const combo = { active: false, x: 0, y: 0, str: '', color: '#ffe45e', life: 0, maxLife: 1, size: 46 };
 
-export function comboText(x, y, str, color = '#ffe45e') {
+export function comboText(x, y, str, color = '#ffe45e', size = 46) {
   combo.active = true;
   combo.x = x; combo.y = y; combo.str = str; combo.color = color;
+  combo.size = size;                       // cresce com o multiplicador (game.js)
   combo.maxLife = combo.life = 1.0;
 }
 
@@ -190,13 +191,13 @@ export function drawTexts(ctx) {
     ctx.shadowBlur = 0;
   }
 
-  // combo grande semitransparente (pulso + fade)
+  // combo grande semitransparente (pulso + fade; tamanho vindo de comboText)
   if (combo.active) {
     const k = combo.life / combo.maxLife;
     const age = 1 - k;
     const pulse = 1 + (1 - k) * 0.3 + Math.sin(age * 9) * 0.04;
     ctx.globalAlpha = Math.min(0.85, k * 1.5);
-    ctx.font = `900 ${Math.round(46 * pulse)}px ${DISPLAY_FONT}`;
+    ctx.font = `900 ${Math.round(combo.size * pulse)}px ${DISPLAY_FONT}`;
     ctx.fillStyle = combo.color;
     ctx.shadowColor = combo.color;
     ctx.shadowBlur = 22;

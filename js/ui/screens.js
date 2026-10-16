@@ -5,7 +5,9 @@
    ========================================================= */
 
 import { on, emit } from '../core/events.js';
-import { state, saveSettings, resetAllProgress, resetTutorialFlag, markTutorialDone } from '../core/state.js';
+import { state, saveSettings, resetAllProgress, resetTutorialFlag, markTutorialDone, ownsSkin } from '../core/state.js';
+import { getCoins } from '../core/wallet.js';
+import { SKINS } from '../game/skins.js';
 import { startGame, pauseGame, resumeGame, quitToMenu, game, setReduceMotion } from '../game/game.js';
 import { sfx, initAudio, applyVolume, setMusicEnabled, resumeAudio } from '../core/audio.js';
 import { showToast, trimToasts, clearToasts } from './toasts.js';
@@ -144,8 +146,16 @@ export function returnToMenu() {
   if (goScore) goScore.textContent = '0';
   const goRecord = document.getElementById('go-record');
   if (goRecord) goRecord.hidden = true;
+  const goGap = document.getElementById('go-gap');
+  if (goGap) { goGap.hidden = true; goGap.textContent = ''; }
   const goStats = document.getElementById('go-stats');
   if (goStats) goStats.innerHTML = '';
+  const goProgress = document.getElementById('go-progress');
+  if (goProgress) goProgress.hidden = true;
+  const goProgSkin = document.getElementById('go-prog-skin');
+  if (goProgSkin) goProgSkin.hidden = true;
+  const goProgMis = document.getElementById('go-prog-missions');
+  if (goProgMis) goProgMis.hidden = true;
   const pauseScore = document.getElementById('pause-score');
   if (pauseScore) pauseScore.textContent = '0';
 
@@ -190,6 +200,10 @@ export function showGameOver({ score, best, isRecord, position, elapsed, pickups
   btnRevive.hidden = game.reviveUsed;
   btnRevive.disabled = false;
 
+  // incentivo honesto + barras de progresso (estado real, nada inventado)
+  renderGoGap(score, best, isRecord);
+  renderEndProgress();
+
   showScreen('gameover');
 
   // selo de recorde: solta confetes (desligado com movimento reduzido)
@@ -197,6 +211,61 @@ export function showGameOver({ score, best, isRecord, position, elapsed, pickups
 
   // animação de contagem do placar
   animateScore(scoreEl, score);
+}
+
+/**
+ * Frase de incentivo quando NÃO houve recorde: "Faltaram N pontos…".
+ * Some quando há recorde ou quando nunca existiu um.
+ */
+function renderGoGap(score, best, isRecord) {
+  const el = document.getElementById('go-gap');
+  if (!el) return;
+  const gap = (best || 0) - score;
+  const mostrar = !isRecord && gap > 0;
+  el.hidden = !mostrar;
+  if (mostrar) el.innerHTML = `Faltaram <b>${gap.toLocaleString('pt-BR')}</b> pontos para o seu recorde`;
+}
+
+/**
+ * Barras de progresso do fim de jogo: próxima skin de moedas e
+ * missões do dia. Lê o estado REAL — roda depois de missions:report
+ * e do crédito da partida (main.js reporta antes de chamar aqui).
+ */
+function renderEndProgress() {
+  const box = document.getElementById('go-progress');
+  if (!box) return;
+
+  // 1) próxima skin comprável com moedas (a mais barata que ainda não temos)
+  const rowSkin = document.getElementById('go-prog-skin');
+  const prox = SKINS
+    .filter((s) => s.coinPrice && !ownsSkin(s.id))
+    .sort((a, b) => a.coinPrice - b.coinPrice)[0];
+  if (prox) {
+    const coins = getCoins();
+    const pct = Math.min(100, Math.round((coins / prox.coinPrice) * 100));
+    rowSkin.hidden = false;
+    document.getElementById('go-prog-skin-label').textContent = `Próxima skin: ${prox.nome}`;
+    document.getElementById('go-prog-skin-frac').textContent =
+      `${coins.toLocaleString('pt-BR')}/${prox.coinPrice.toLocaleString('pt-BR')}`;
+    document.getElementById('go-prog-skin-fill').style.width = `${pct}%`;
+  } else {
+    rowSkin.hidden = true;
+  }
+
+  // 2) missões do dia (concluídas do total)
+  const rowMis = document.getElementById('go-prog-missions');
+  const list = Array.isArray(state.missions?.list) ? state.missions.list : [];
+  if (list.length) {
+    const done = list.filter((m) => m.done).length;
+    rowMis.hidden = false;
+    document.getElementById('go-prog-missions-frac').textContent = `${done}/${list.length}`;
+    document.getElementById('go-prog-missions-fill').style.width =
+      `${Math.round((done / list.length) * 100)}%`;
+  } else {
+    rowMis.hidden = true;
+  }
+
+  box.hidden = rowSkin.hidden && rowMis.hidden;
 }
 
 /** Confetes dourados em volta do selo NOVO RECORDE (poucos elementos, uma vez). */

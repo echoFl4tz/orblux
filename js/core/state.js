@@ -48,6 +48,7 @@ const DEFAULT_STATS = {
   bestCombo: 1,
   bestLevel: 1,
   totalTime: 0, // segundos totais jogados
+  lastRunDay: '', // último dia (AAAA-MM-DD) com partida — bônus "1ª do dia"
 };
 
 /** Versão de armazenamento gravada (ausente = 1, legado). */

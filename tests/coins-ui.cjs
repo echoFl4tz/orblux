@@ -196,14 +196,19 @@ async function newPage(browser, size, query) {
   ok(!/Play|dinheiro|R\$|compre/.test(depois), 'toast só informa quanto falta (sem empurrão para pagar)');
   await mp.waitForTimeout(300);
   await mp.screenshot({ path: path.join(SHOTS, 'loja-faltam-390x844.png') });
-
   // (7) bloco do fim de jogo
   await mp.evaluate(() => {
     window.OX.screen('gameover');
     document.getElementById('go-score').textContent = '2480';
     window.OX.emit('wallet:run-coins', { coins: 42 });
   });
-  await mp.waitForTimeout(350);                       // visibility troca em 50% da transição (0.2s)
+  // espera a visibilidade COMPUTADA da tela (não só o layout): em
+  // headless sob carga a transição de 0.2s só vira "visible" quando um
+  // quadro é amostrado — um sleep fixo de 350ms ficava instável
+  await mp.waitForFunction(() => {
+    const el = document.getElementById('go-coins');
+    return !!el && !el.hidden && getComputedStyle(el).visibility === 'visible';
+  }, null, { timeout: 6000 }).catch(() => {});
   ok(await mp.isVisible('#go-coins'), 'linha "Você ganhou" aparece com o payload');
   ok((await mp.textContent('#go-coins')).includes('42'), 'valor 42 exibido');
   await mp.waitForTimeout(300);

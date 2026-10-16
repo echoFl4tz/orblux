@@ -11,10 +11,10 @@ verificado, do que ficou pendente e do que fazer antes de publicar.
 | Bateria | Comando | Resultado |
 |---------|---------|-----------|
 | Testes unitários (12 arquivos) | `node --test tests/*.test.mjs` | **150/150** |
-| Simulação do jogo inteiro | `node tests/smoke.mjs` | **42/42** |
+| Simulação do jogo inteiro | `node tests/smoke.mjs` | **49/49** |
 | Referências internas | `node tools/validate-refs.mjs` | OK |
 | Auditoria de UI (tamanho/a11y) | `node tools/audit-ui.mjs` | OK (< 150 KB) |
-| Suítes Playwright (12) | `node tests/<suite>.cjs` | **12/12** |
+| Suítes Playwright (13) | `node tests/<suite>.cjs` | **13/13** |
 
 Zero erros de console em todas as suítes (390x844, 1280x720 e 360x640).
 
@@ -36,12 +36,13 @@ Zero erros de console em todas as suítes (390x844, 1280x720 e 360x640).
 | `social-api.test.mjs` | Contrato da UMA interface (mock/NullProvider) e códigos de erro |
 | `backend-parity.test.mjs` | **21 checagens**: cliente ↔ SQL (RPCs, regras, sementes, fórmula de moedas), varredura de segurança (sem chaves, RLS, SECURITY DEFINER, grants), vendor pinado (SHA256), flags desligadas, páginas legais sem CDN |
 
-### Simulação (`tests/smoke.mjs` — 42)
+### Simulação (`tests/smoke.mjs` — 49)
 
 Lógica do jogo inteiro sem navegador: colisões, spawn, ondas, missões,
-conquistas, ranking local, moedas, reset.
+conquistas, ranking local, moedas, reset, ritmo/determinismo do spawner
+(curva por segundo, mesma semente ⇒ mesma cadência — Fase 1).
 
-### Suítes Playwright (`node tests/<suite>.cjs` — 12)
+### Suítes Playwright (`node tests/<suite>.cjs` — 13)
 
 | Suíte | Cobre |
 |-------|-------|
@@ -55,6 +56,7 @@ conquistas, ranking local, moedas, reset.
 | `clans-ui` | Criar (500 moedas), entrada, cargos, emblema, offline |
 | `tournament-ui` | Torneios, resgate idempotente, Corrida do Dia |
 | `sw-update` | Service worker: rede-primeiro, offline do cache, atualização (`orblux-v4`) |
+| `perf-ui` | Performance (Fase 1): 55+ FPS com CPU throttle 4x em GPU real, reinício < 400 ms, zero erros |
 
 ## 3. Matriz de conformidade (regras inegociáveis → garantia verificada)
 

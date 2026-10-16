@@ -9,6 +9,9 @@
      (4) OX.economy publicado em ?debug=1
      (5) 390x844 e 1280x720 sem overflow; zero erros de console
      (6) preços em moedas do catálogo ao vivo (600/1500/3500/6000)
+     (7) moedas da PARTIDA ligadas: >= 10 s credita e mostra o ganho,
+         partida curta não paga (nunca "ganhou 0") + barras de
+         progresso do fim de jogo (próxima skin e missões)
    Pré-requisito: dev server em http://localhost:8080 (sobe se preciso).
    Uso: node tests/economy-ui.cjs
    ========================================================= */
@@ -148,6 +151,32 @@ async function newPage(browser, size, query) {
   // (3) partida começa com pontuação 0 (sem bônus legado)
   await mp.evaluate(() => OX.start({ tutorial: false }));
   ok(await mp.evaluate(() => OX.game.score) === 0, 'partida começa com 0 pontos (sem bônus de missão)');
+
+  // (7) moedas da PARTIDA ligadas (ECONOMIA.md): 12 s paga e mostra o ganho
+  await mp.evaluate(() => { OX.game.player.invuln = 999; OX.advance(12); OX.endRun(); });
+  await mp.waitForSelector('#screen-gameover.active');
+  const goCoins = await mp.evaluate(() => {
+    const box = document.getElementById('go-coins');
+    return {
+      hidden: box.hidden,
+      val: Number((document.getElementById('go-coins-value').textContent || '0').replace(/\D/g, '')),
+    };
+  });
+  ok(!goCoins.hidden && goCoins.val > 0, `partida de 12 s credita moedas e mostra o ganho (${goCoins.val})`);
+  const prog = await mp.evaluate(() => ({
+    hidden: document.getElementById('go-progress').hidden,
+    skin: document.getElementById('go-prog-skin').hidden,
+    skinLabel: document.getElementById('go-prog-skin-label').textContent,
+    misFrac: document.getElementById('go-prog-missions-frac').textContent,
+  }));
+  ok(!prog.hidden && !prog.skin && /Próxima skin/.test(prog.skinLabel),
+    `barra da próxima skin (${prog.skinLabel})`);
+  ok(/\/3$/.test(prog.misFrac), `barra das missões do dia (${prog.misFrac})`);
+  // partida curta (< 10 s) não paga e NUNCA mostra "Você ganhou 0 moedas"
+  await mp.evaluate(() => { OX.start({ tutorial: false }); OX.advance(5); OX.endRun(); });
+  await mp.waitForTimeout(200);
+  ok(await mp.evaluate(() => document.getElementById('go-coins').hidden),
+    'partida de 5 s não paga (sem bloco "ganhou 0 moedas")');
   await mobile.context.close();
 
   /* ============ 1280x720 ============ */

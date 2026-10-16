@@ -106,7 +106,8 @@ function refreshAll() {
 function showRunCoins(p) {
   const box = $('go-coins');
   if (!box) return;
-  if (p && Number.isFinite(p.coins) && p.coins >= 0) {
+  // só mostra quando há ganho REAL (> 0): nunca "Você ganhou 0 moedas"
+  if (p && Number.isFinite(p.coins) && p.coins > 0) {
     const val = $('go-coins-value');
     if (val) val.textContent = fmt(p.coins);
     box.hidden = false;

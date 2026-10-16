@@ -11,7 +11,7 @@ import {
   createPlayer, drawPlayer, drawObstacle, drawPickup, drawPowerup, drawOrbDecor,
   circleRectHit, circlesHit, COLORS,
 } from './entities.js';
-import { difficultyParams, spawnObstacles, spawnPickupWave, spawnPowerup, resetSpawner, setSpawnerRng } from './spawner.js';
+import { difficultyParams, spawnObstacles, spawnPickupWave, spawnPowerup, resetSpawner, setSpawnerRng, nextSpawnTimer, nextPickupTimer, nextPowerTimer } from './spawner.js';
 import { hashSeed, mulberry32 } from '../../net/rng.js';
 import { equippedLook, skinCollectFx } from './skinrender.js';
 import {
@@ -53,8 +53,11 @@ export const game = {
   runStats: { pickups: 0, maxCombo: 1, powerups: 0 },
 
   stars: [], bgOffset: 0,
-  bgStatic: null, fogLayer: null, vignette: null,
+  bgStatic: null,              // fundo estático offscreen (pintado só no resize)
   bgFlash: 0,               // flash sutil do fundo ao subir de nível (s)
+  resScale: 1,                 // qualidade adaptativa dos pixels (1 → 0,85 → 0,7)
+  frameAcc: 0, frameN: 0,      // janela p/ medir a duração média dos quadros
+  smoothFrames: 0,             // quadros lisos consecutivos (p/ voltar ao topo)
   reduceMotion: false,
 };
 
@@ -63,6 +66,9 @@ export const game = {
 // ---------------------------------------------------------
 export function initGame(canvas) {
   game.canvas = canvas;
+  // canvas ÚNICO e opaco: fundo estático assado num offscreen e pintado com
+  // 1 drawImage/quadro. Split em camadas DOM testou pior (~1,5 ms/quadro
+  // de compósito software no main thread, ~3 camadas = 55 FPS inatingível).
   game.ctx = canvas.getContext('2d', { alpha: false });
   game.reduceMotion = state.settings.reduceMotion;
   resize();
@@ -78,8 +84,8 @@ export function resize() {
   const h = window.innerHeight || document.documentElement.clientHeight;
   g.dpr = Math.min(window.devicePixelRatio || 1, 2); // limita a 2 (performance)
   g.W = w; g.H = h;
-  g.canvas.width = Math.round(w * g.dpr);
-  g.canvas.height = Math.round(h * g.dpr);
+  g.canvas.width = Math.round(w * g.dpr * g.resScale);
+  g.canvas.height = Math.round(h * g.dpr * g.resScale);
   g.canvas.style.width = w + 'px';
   g.canvas.style.height = h + 'px';
 
@@ -93,19 +99,6 @@ export function resize() {
     g.player.x = Math.max(g.player.r, Math.min(g.W - g.player.r, g.player.x));
     g.player.y = Math.max(g.player.r, Math.min(g.H - g.player.r, g.player.y));
   }
-}
-
-/** Cria um canvas offscreen em resolução de dispositivo e desenha nele. */
-function prerender(paint) {
-  const g = game;
-  const c = document.createElement('canvas');
-  if (!c.getContext) return null; // ambiente sem canvas (testes/sem DOM)
-  c.width = Math.max(1, Math.round(g.W * g.dpr));
-  c.height = Math.max(1, Math.round(g.H * g.dpr));
-  const ctx = c.getContext('2d');
-  ctx.scale(g.dpr, g.dpr);
-  paint(ctx, g.W, g.H);
-  return c;
 }
 
 function buildBackdrop() {
@@ -129,7 +122,9 @@ function buildBackdrop() {
   for (let i = 0; i < nearCount; i++) g.stars.push(mk(true));
   for (let i = 0; i < farCount; i++) g.stars.push(mk(false));
 
-  // camada estática (gradiente vertical + brilho sutil do horizonte)
+  // fundo estático offscreen: gradiente + horizonte + névoa + vinheta +
+  // verticais da grade — UMA vez por resize. Por quadro custa só 1
+  // drawImage (a vinheta sozinha custava ~7,8 ms/quadro em software).
   g.bgStatic = prerender((ctx, w, h) => {
     const grad = ctx.createLinearGradient(0, 0, 0, h);
     grad.addColorStop(0, '#070a1c');
@@ -144,30 +139,56 @@ function buildBackdrop() {
     glow.addColorStop(1, 'rgba(40,70,160,0)');
     ctx.fillStyle = glow;
     ctx.fillRect(0, hz - h * 0.14, w, h * 0.26);
-  });
 
-  // névoa: manchas largas e muito dessaturadas (roxo/azul-marinho, ≤ 0.15)
-  g.fogLayer = prerender((ctx, w, h) => {
+    // névoa: manchas largas e muito dessaturadas (roxo/azul-marinho, ≤ 0.15)
     const blobs = [
       { x: w * 0.2, y: h * 0.26, r: Math.max(w, h) * 0.5, c: 'rgba(96,74,178,0.13)' },
       { x: w * 0.85, y: h * 0.56, r: Math.max(w, h) * 0.46, c: 'rgba(46,78,160,0.12)' },
       { x: w * 0.5, y: h * 0.94, r: Math.max(w, h) * 0.5, c: 'rgba(112,58,158,0.10)' },
     ];
     for (const b of blobs) {
-      const grad = ctx.createRadialGradient(b.x, b.y, 0, b.x, b.y, b.r);
-      grad.addColorStop(0, b.c);
-      grad.addColorStop(1, 'rgba(0,0,0,0)');
-      ctx.fillStyle = grad;
+      const fog = ctx.createRadialGradient(b.x, b.y, 0, b.x, b.y, b.r);
+      fog.addColorStop(0, b.c);
+      fog.addColorStop(1, 'rgba(0,0,0,0)');
+      ctx.fillStyle = fog;
       ctx.fillRect(0, 0, w, h);
     }
-  });
 
-  // vinheta cacheada como Gradiente (CanvasGradient é reutilizável:
-  // evita criar gradiente radial a cada frame)
-  const vg = g.ctx.createRadialGradient(g.W / 2, g.H / 2, Math.min(g.W, g.H) * 0.42, g.W / 2, g.H / 2, Math.max(g.W, g.H) * 0.75);
-  vg.addColorStop(0, 'rgba(0,0,0,0)');
-  vg.addColorStop(1, 'rgba(0,0,0,0.5)');
-  g.vignette = vg;
+    // vinheta (1x por resize — era o maior custo de raster por quadro)
+    const vg = ctx.createRadialGradient(w / 2, h / 2, Math.min(w, h) * 0.42, w / 2, h / 2, Math.max(w, h) * 0.75);
+    vg.addColorStop(0, 'rgba(0,0,0,0)');
+    vg.addColorStop(1, 'rgba(0,0,0,0.5)');
+    ctx.fillStyle = vg;
+    ctx.fillRect(0, 0, w, h);
+
+    // verticais da grade (estáticas; o boost de energia nelas era imperceptível)
+    const horizon = h * 0.45;
+    const cx = w / 2;
+    ctx.strokeStyle = 'rgba(34,230,255,0.06)';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    const cols = 11;
+    for (let i = 0; i <= cols; i++) {
+      const xb = cx + ((i / cols) - 0.5) * w * 1.7;
+      const xt = cx + (xb - cx) * 0.05;
+      ctx.moveTo(xt, horizon);
+      ctx.lineTo(xb, h);
+    }
+    ctx.stroke();
+  }, g.dpr * g.resScale);
+}
+
+/** Cria um canvas offscreen na escala de pixels pedida e desenha nele. */
+function prerender(paint, px) {
+  const g = game;
+  const c = document.createElement('canvas');
+  if (!c.getContext) return null; // ambiente sem canvas (testes/sem DOM)
+  c.width = Math.max(1, Math.round(g.W * px));
+  c.height = Math.max(1, Math.round(g.H * px));
+  const ctx = c.getContext('2d');
+  ctx.scale(px, px);
+  paint(ctx, g.W, g.H);
+  return c;
 }
 
 // ---------------------------------------------------------
@@ -294,8 +315,36 @@ export function revive() {
 // ---------------------------------------------------------
 //  Atualização (lógica)
 // ---------------------------------------------------------
+/** Resolução mínima da qualidade adaptativa (55% dos pixels). */
+const RES_MIN = 0.55;
+
 export function update(dt) {
   const g = game;
+
+  // qualidade adaptativa (Fase 1): se a duração média dos quadros passar
+  // de ~18 ms por 60 quadros (abaixo de ~55 FPS), reduz a resolução
+  // interna um passo; só volta ao topo depois de ~10 s lisos (~59+ FPS).
+  // Faixa morta [17 ms, 18 ms] evita oscilar entre os passos.
+  // Afeta SÓ os pixels do canvas — lógica, hitbox e pontuação não mudam.
+  g.frameAcc += dt; g.frameN++;
+  if (g.frameN >= 60) {
+    const avg = g.frameAcc / g.frameN;
+    g.frameAcc = 0; g.frameN = 0;
+    if (avg > 0.0180 && g.resScale > RES_MIN) {
+      g.resScale = Math.max(RES_MIN, Math.round((g.resScale - 0.15) * 100) / 100);
+      g.smoothFrames = 0;
+      resize();
+    } else if (avg < 0.0170) {
+      g.smoothFrames += 60;
+      if (g.smoothFrames >= 600 && g.resScale < 1) {
+        g.resScale = Math.min(1, Math.round((g.resScale + 0.15) * 100) / 100);
+        g.smoothFrames = 0;
+        resize();
+      }
+    } else {
+      g.smoothFrames = 0;
+    }
+  }
 
   // fundo e efeitos continuam animando em qualquer tela
   g.bgOffset += dt * 70 * g.S;
@@ -355,20 +404,22 @@ export function update(dt) {
   } else p.trail.length = 0;
 
   // ---------- spawn ----------
+  // Todos os jitters passam pelo rng do spawner (Corrida do Dia
+  // reproduz o timing em qualquer aparelho; sem semente = Math.random)
   g.spawnTimer -= dt;
   if (g.spawnTimer <= 0) {
     spawnObstacles(g, dp);
-    g.spawnTimer = dp.interval * (0.85 + Math.random() * 0.3);
+    g.spawnTimer = nextSpawnTimer(dp.interval);
   }
   g.pickupTimer -= dt;
   if (g.pickupTimer <= 0) {
     spawnPickupWave(g);
-    g.pickupTimer = 1.0 + Math.random() * 0.7;
+    g.pickupTimer = nextPickupTimer(g);
   }
   g.powerTimer -= dt;
   if (g.powerTimer <= 0) {
     spawnPowerup(g);
-    g.powerTimer = 14 + Math.random() * 8;
+    g.powerTimer = nextPowerTimer();
   }
 
   // ---------- mover objetos ----------
@@ -496,8 +547,14 @@ function collectPulse(pk) {
 
   if (g.multiplier > prevMult) {
     sfx('combo');
-    // número grande semitransparente ao centro-alto (pulso + fade)
-    comboText(g.W / 2, g.H * 0.3, `x${g.multiplier}`, COLORS.yellow);
+    // número grande semitransparente ao centro-alto (pulso + fade);
+    // cresce com o multiplicador — x5 muito mais impactante que x2
+    comboText(g.W / 2, g.H * 0.3, `x${g.multiplier}`, COLORS.yellow, 40 + g.multiplier * 7);
+    if (!g.reduceMotion) burst(g.W / 2, g.H * 0.3, COLORS.yellow, 10, 220, 2.4);
+    // vibração sutil de recompensa (mesmo ajuste "Vibração" das opções)
+    if (state.settings.haptics && navigator.vibrate) {
+      try { navigator.vibrate(20); } catch { /* ignore */ }
+    }
   }
   emit('game:score', { score: Math.floor(g.score) });
   emit('game:combo', { combo: g.combo, multiplier: g.multiplier, frac: 1 });
@@ -531,7 +588,7 @@ export function render(time) {
   const ctx = g.ctx;
   if (!ctx) return;
 
-  ctx.setTransform(g.dpr, 0, 0, g.dpr, 0, 0);
+  ctx.setTransform(g.dpr * g.resScale, 0, 0, g.dpr * g.resScale, 0, 0);
   const off = shakeOffset(g.reduceMotion);
   ctx.translate(off.x, off.y);
 
@@ -615,38 +672,40 @@ function drawDangerChevrons(ctx) {
 function drawBackdrop(ctx, time) {
   const g = game;
 
-  // camada estática pré-renderizada (gradiente vertical + horizonte)
+  // fundo estático (gradiente, névoa, vinheta, verticais) com 1 drawImage;
+  // esticado 20px além das bordas para cobrir o deslocamento do shake
   if (g.bgStatic) {
-    ctx.drawImage(g.bgStatic, 0, 0, g.W, g.H);
+    ctx.drawImage(g.bgStatic, -20, -20, g.W + 40, g.H + 40);
   } else {
     ctx.fillStyle = '#05060f';
     ctx.fillRect(-20, -20, g.W + 40, g.H + 40);
   }
 
-  // névoa larga e dessaturada (pré-renderizada no resize).
-  // Fundo reativo: pulsa no ritmo do sequenciador e intensifica com o combo
+  // fundo reativo: pulso do sequenciador + combo como tinta chapada
+  // (calibrada no valor de pico da antiga segunda exposição da névoa)
   let energy = 0;
   if (!g.reduceMotion) {
     energy = Math.min(0.55,
       getMusicPulse() * 0.3 + Math.min(0.28, (g.multiplier - 1) * 0.07 + g.combo * 0.006));
   }
-  if (g.fogLayer) {
-    ctx.drawImage(g.fogLayer, 0, 0, g.W, g.H);
-    if (energy > 0.02) {
-      ctx.globalAlpha = energy * 0.55;         // segunda exposição no pulso
-      ctx.drawImage(g.fogLayer, 0, 0, g.W, g.H);
-      ctx.globalAlpha = 1;
-    }
+  if (energy > 0.02) {
+    ctx.fillStyle = `rgba(96,74,178,${(energy * 0.11).toFixed(3)})`;
+    ctx.fillRect(-20, -20, g.W + 40, g.H + 40);
   }
 
-  // grade em perspectiva convergindo ao horizonte (rola devagar)
+  // grade em perspectiva: só as horizontais rolam aqui (verticais assadas)
   drawPerspectiveGrid(ctx, energy);
 
-  // estrelas em 2 profundidades (paralaxe)
+  // estrelas em 2 profundidades (paralaxe) — 2 passes para trocar o
+  // globalAlpha só 2x por quadro em vez de 1x por estrela
   ctx.fillStyle = '#ffffff';
+  ctx.globalAlpha = 0.26;
   for (const s of g.stars) {
-    ctx.globalAlpha = s.a;
-    ctx.fillRect(s.x, s.y, s.r, s.r);
+    if (!s.near) ctx.fillRect(s.x, s.y, s.r, s.r);
+  }
+  ctx.globalAlpha = 0.55;
+  for (const s of g.stars) {
+    if (s.near) ctx.fillRect(s.x, s.y, s.r, s.r);
   }
   ctx.globalAlpha = 1;
 
@@ -656,34 +715,19 @@ function drawBackdrop(ctx, time) {
     ctx.fillRect(0, 0, g.W, g.H);
   }
 
-  // vinheta (gradiente cacheado no resize)
-  if (g.vignette) {
-    ctx.fillStyle = g.vignette;
-    ctx.fillRect(0, 0, g.W, g.H);
-  }
+  // (a vinheta saiu daqui: assada na camada estática — era o maior
+  // custo de raster por quadro, ~7,8 ms em software)
 }
 
-/** Grade em perspectiva: linhas verticais convergem ao horizonte e as
- *  horizontais rolam devagar (fase do fundo; congelada com movimento reduzido).
+/** Grade em perspectiva: só as horizontais rolam (as verticais convergentes
+ *  são estáticas e vivem na camada #bg-canvas desde o Fase 1 de performance).
+ *  Congelada com movimento reduzido.
  *  @param {number} energy 0..0.55 — pulso da música/combinação (fundo reativo) */
 function drawPerspectiveGrid(ctx, energy = 0) {
   const g = game;
   const horizon = g.H * 0.45;
-  const cx = g.W / 2;
   const boost = 1 + energy * 0.9;
   ctx.lineWidth = 1;
-
-  // verticais convergentes (um único path)
-  ctx.strokeStyle = `rgba(34,230,255,${(0.06 * boost).toFixed(3)})`;
-  ctx.beginPath();
-  const cols = 11;
-  for (let i = 0; i <= cols; i++) {
-    const xb = cx + ((i / cols) - 0.5) * g.W * 1.7;
-    const xt = cx + (xb - cx) * 0.05;
-    ctx.moveTo(xt, horizon);
-    ctx.lineTo(xb, g.H);
-  }
-  ctx.stroke();
 
   // horizontais com perspectiva, rolando para baixo
   const rows = 10;

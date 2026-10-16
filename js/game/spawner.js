@@ -24,17 +24,21 @@ const rand = (a, b) => a + rng() * (b - a);
 
 /**
  * Parâmetros de dificuldade conforme o tempo de jogo.
- * Curva testada para partidas de 1–3 minutos:
- *  - 0s:   tranquilo (tutorial-friendly)
- *  - 30s:  ritmo médio
- *  - 60s+: intenso, mas sempre com espaço para desviar
+ * Curva em 2 fases (ritmo desde o 1º minuto, sem sobressalto):
+ *  - 0→15s:  rampa ACELERADA (0,95→0,64s entre obstáculos; aos 10 s
+ *            já está em ≤0,75 s — a partida "pega o groove" cedo)
+ *  - 15→75s: progressão longa até o platô intenso (0,42s)
+ * O resultado é contínuo na virada (pa=1 e pb=0 se encontram) e
+ * monotônico — testado em smoke.mjs (Etapa F).
  * @param {number} elapsed segundos de partida
  * @param {boolean} easy modo tutorial
  */
 export function difficultyParams(elapsed, easy = false) {
-  const p = Math.min(elapsed / 75, 1);                 // progresso 0→1 em 75s
-  let speedMul = lerp(1, 1.9, p);                      // velocidade 100% → 190%
-  let interval = lerp(0.95, 0.42, p);                  // 1 obstáculo/0,95s → /0,42s
+  const A = 15;                                       // ponto de virada da rampa
+  const pa = Math.min(elapsed / A, 1);                // fase rápida 0→1
+  const pb = Math.max(0, Math.min((elapsed - A) / (75 - A), 1)); // fase longa 0→1
+  let speedMul = lerp(lerp(1, 1.38, pa), 1.9, pb);    // 100% → 138% em 15s → 190%
+  let interval = lerp(lerp(0.95, 0.64, pa), 0.42, pb);// 0,95s → 0,64s → 0,42s
   let doubleChance = lerp(0, 0.45, Math.max(0, (elapsed - 25) / 60));
   if (easy) {                                          // tutorial: bem mais leve
     speedMul *= 0.8;
@@ -109,9 +113,40 @@ export function spawnPowerup(g) {
   g.powerups.push(createPowerup(kind, rand(margin, W - margin), -46 * S, S));
 }
 
+/* ---------------------------------------------------------
+   Próximos intervalos de spawn — TODOS pelo rng do spawner.
+   Assim a Corrida do Dia (semente) também reproduz o TIMING
+   em qualquer aparelho; sem semente continua Math.random.
+--------------------------------------------------------- */
+/** Jitter do obstáculo (±15% do intervalo da curva). */
+export function nextSpawnTimer(interval) {
+  return interval * rand(0.85, 1.15);
+}
+
+/**
+ * Cadência dos pulsos: 0,7–1,0 s nos 10 s iniciais (ritmo imediato),
+ * depois 1,0–1,7 s. A densidade se ajusta à ÁREA da tela (tela grande
+ * ganha mais pulsos, tela pequena respira) — EXCETO na Corrida do Dia,
+ * onde o fator de área fica em 1 para valer a regra sagrada:
+ * mesma semente ⇒ mesma cadência em qualquer aparelho.
+ * @param {any} g estado do jogo (lê elapsed, W, H e runSeed)
+ */
+export function nextPickupTimer(g) {
+  const base = g.elapsed < 10 ? rand(0.7, 1.0) : rand(1.0, 1.7);
+  if (g.runSeed) return base;
+  // referência 390x844 = 1,0; clamp 0,85–1,3 (nunca vira nem deserto nem tempestade)
+  const area = Math.sqrt(g.W * g.H) / 574;
+  return base / Math.max(0.85, Math.min(1.3, area));
+}
+
+/** Power-up: 14–22 s (mesmo comportamento antigo, agora com o rng da semente). */
+export function nextPowerTimer() {
+  return rand(14, 22);
+}
+
 export function resetSpawner(g) {
   g.lastSpawnX = null;
-  g.spawnTimer = 0.8;
-  g.pickupTimer = 0.6;
+  g.spawnTimer = 1.4;               // 1ª barreira respira (antes era 0,8s — sobressalto)
+  g.pickupTimer = 0.4;              // 1º pulsos chegam logo (feedback rápido)
   g.powerTimer = rand(10, 14);
 }
