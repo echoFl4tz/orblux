@@ -45,6 +45,16 @@ const SEED = `try {
   localStorage.setItem('pn_consent','true');
   localStorage.setItem('pn_tutorial_done','true');
   localStorage.setItem('pn_profile', JSON.stringify({ nickname:'NeoPilot', createdAt:'2026-01-01T00:00:00.000Z', asked:true }));
+  // Missões do dia FIXAS: o conjunto real gira por data (pickDaily em missions.js)
+  // e mudaria o visual do menu de um dia para o outro. Metas gigantes para que a
+  // partida semeada não preencha barras — a suíte testa navegação, não missões.
+  var d = new Date();
+  var k = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+  localStorage.setItem('pn_missions', JSON.stringify({ date: k, list: [
+    { id:'seedA', icon:'ic-pulse', text:'Missao de teste A', target:99999, field:'pickups', mode:'sum', d:'facil', progress:0, done:false },
+    { id:'seedB', icon:'ic-bolt', text:'Missao de teste B', target:99999, field:'score', mode:'max', d:'medio', progress:0, done:false },
+    { id:'seedC', icon:'ic-clock', text:'Missao de teste C', target:99999, field:'elapsed', mode:'max', d:'dificil', progress:0, done:false }
+  ] }));
 } catch(e){}`;
 
 async function ensureServer() {

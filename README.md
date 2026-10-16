@@ -88,15 +88,20 @@ O ranking local (localStorage) já funciona. O ranking global faz parte da camad
 
 ```bash
 node tests/smoke.mjs           # simula o jogo inteiro: 42 testes (lógica, colisões, ranking, missões…)
-node --test tests/*.test.mjs   # testes unitários (skins, billing, estado, personalização…)
-node tests/skins-shop-ui.cjs   # loja de skins no navegador: compra, cancelar, restaurar, vitrine
-node tests/menu-regression.cjs # regressão do menu/navegação de telas
-node tests/nickname-ui.cjs     # interface do apelido (modal, persistência, LGPD)
+node --test tests/*.test.mjs   # testes unitários: 149 (economia, skins, billing, backend-parity…)
 node tools/validate-refs.mjs   # confere imports, IDs do HTML e assets
 node tools/audit-ui.mjs        # QA: sem emojis na interface, aria, tokens, peso < 150 KB
 node tools/gen-icons.mjs       # regenera os PNGs de ícone, maskable, apple-touch e og-image
 node tools/fetch-fonts.mjs     # baixa as fontes (subset latin) e gera css/fonts.css
 ```
+
+Suítes de navegador (12, Playwright — sobem o dev server sozinhas):
+`wallet-ui`, `coins-ui`, `economy-ui`, `skins-shop-ui`, `nickname-ui`,
+`menu-regression`, `social-entry-ui`, `ranking-global-ui`, `chat-ui`,
+`clans-ui`, `tournament-ui`, `sw-update` — rode com `node tests/<suite>.cjs`.
+
+O mapa completo (o que cada teste cobre, resultado da última rodada
+íntegra e o checklist de produção) está em **`AUDITORIA.md`**.
 
 ### QA visual (redesign ORBLUX)
 1. Abra `http://localhost:8080/tools/qa-sizes.html` — o jogo em iframes nos 6 tamanhos alvo
@@ -127,6 +132,7 @@ pulso-neon/
 ├── sw.js · manifest.webmanifest · favicon.svg · icons/ (PNGs da marca)
 ├── privacy.html          # Política de Privacidade (LGPD)
 ├── STYLEGUIDE.md         # tokens, componentes e regras do design system
+├── AUDITORIA.md          # inventário de testes, matriz de conformidade e checklist de produção
 ├── dev-server.mjs        # servidor local sem dependências
 └── tests/ · tools/       # smoke, auditorias, geradores e QA multi-tamanho
 ```

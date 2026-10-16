@@ -1,6 +1,6 @@
 # ORBLUX — Camada SOCIAL ONLINE (Supabase)
 
-> **Documento vivo.** Fases 0 a 7 concluídas em 15/10/2026. Este documento manda sobre
+> **Documento vivo.** Fases 0 a 8 concluídas em 16/10/2026. Este documento manda sobre
 > qualquer instrução avulsa em caso de conflito. Cada fase só começa com a
 > aprovação da anterior. Links consultados com data na seção 9.
 
@@ -35,7 +35,7 @@
 | **5 (concluída)** | Torneios de clãs + **Corrida do Dia** com semente única (`net/rng.js` + `setSpawnerRng`) — ver §10 |
 | **6 (concluída)** | Backend real no Supabase (migrações + Edge Functions + jobs) e integração economia/rede — ver §10 |
 | **7 (concluída)** | Conformidade/loja: `privacy.html` sem CDN e com a camada social, `DATA_SAFETY.md` com UGC, checklist do Play Console — ver §10 |
-| 8 | Testes finais e auditoria |
+| **8 (concluída)** | Testes finais e auditoria: `AUDITORIA.md` (inventário, matriz de conformidade, checklist de produção) + testes de vendor pinado e flags seguras — ver §10 |
 
 ## 2. Arquitetura do cliente (`pulso-neon/net/`)
 
@@ -528,3 +528,32 @@ a camada `net/` está pronta e testada; a interface vem nas fases 1..5).
   `privacy.html` e `termos.html` sem comentários; `src=`/`href=`
   externos em script/stylesheet reprovam; exige `css/fonts.css`,
   cross-links e pré-cache das duas páginas legais).
+
+### Fase 8 — Testes finais e auditoria (16/10/2026)
+
+- **`AUDITORIA.md`** (novo): resultado da rodada final
+  (149/149 unitários, 42/42 smoke, 12/12 suítes, refs/audit OK),
+  inventário completo dos 12 arquivos `*.test.mjs` + 12 suítes
+  Playwright (o que cada um cobre), **matriz de conformidade**
+  (regras inegociáveis do projeto → garantia → teste que trava),
+  pendências conhecidas (§8.1, projeto Supabase, Play Console,
+  e-mail do dono, anúncios, divergências mock ↔ servidor) e
+  checklist de produção em ordem sugerida.
+- **Dois testes novos** em `backend-parity.test.mjs` (21 checagens):
+  vendor `supabase-js` **pinado por SHA256** (arquivo em `vendor/`
+  precisa bater com o hash documentado em §3 — rebaixamento ou troca
+  não autorizada reprovam; `SUPABASE_UMD_PATH` precisa apontar para
+  o mesmo arquivo) e **flags sociais desligadas por padrão**
+  (`FLAG_DEFAULTS` todos `false` + `net/config.js` sem URL/chave).
+- **Achado e correção da auditoria**: `menu-regression.cjs` era
+  **dependente do calendário** — o conjunto real de missões do dia
+  gira por data (`pickDaily`), e no dia 16/10 o run semeado preenchia
+  3 barras no menu (diff ~13 > tolerância ~5.5 só no 390x844). O
+  `SEED` da suíte agora **fixa um conjunto de missões com metas
+  gigantes** (data = hoje, para não resetar): a suíte testa
+  navegação, não o sorteio diário. Diffs caíram para ~1.2.
+  `ranking-global-ui` teve um TimeoutError pontual sob carga
+  (rodar as suítes em paralelo com a bateria pesada) e passou
+  isolada e na rodada final.
+- **`README.md`**: seção de testes reescrita (bateria + lista das
+  12 suítes + ponteiro para `AUDITORIA.md`); árvore ganhou o doc.

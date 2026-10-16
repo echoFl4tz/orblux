@@ -17,6 +17,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync, readdirSync } from 'node:fs';
+import { createHash } from 'node:crypto';
 import { fileURLToPath } from 'node:url';
 
 import { CHAT, CLAN, RUN, QUICK_PHRASES, QUICK_EMOJIS, CLAN_ICONS, CLAN_FRAMES, CLAN_COLORS } from '../net/rules.js';
@@ -25,6 +26,7 @@ import { BADWORDS } from '../js/core/badwords.js';
 import { CAP_POR_PARTIDA, BONUS_RECORDE, BONUS_PRIMEIRA_DIA } from '../js/core/economy.js';
 import { TERMS_VERSION } from '../net/api.js';
 import { SUPABASE_CONFIG, APPEAL, SUPABASE_UMD_PATH } from '../net/config.js';
+import { FLAG_DEFAULTS } from '../net/flags.js';
 
 const root = fileURLToPath(new URL('..', import.meta.url));
 const read = (p) => readFileSync(root + p, 'utf8');
@@ -351,4 +353,28 @@ test('páginas públicas sem CDN em runtime e com páginas legais ligadas', () =
   const sw = read('sw.js');
   assert.ok(sw.includes("'./privacy.html'"), 'sw pré-cacheia privacy.html');
   assert.ok(sw.includes("'./termos.html'"), 'sw pré-cacheia termos.html');
+});
+
+test('vendor supabase-js pinado: SHA256 do arquivo == hash documentado', () => {
+  const hashReal = createHash('sha256')
+    .update(readFileSync(root + 'vendor/supabase-js/supabase-2.117.2.min.js'))
+    .digest('hex');
+  // o hash vive documentado em SOCIAL.md §3 — doc e arquivo precisam bater
+  const doc = read('SOCIAL.md');
+  const m = doc.match(/SHA256 `([0-9a-f]{64})`/);
+  assert.ok(m, 'SOCIAL.md registra o SHA256 do vendor');
+  assert.strictEqual(hashReal, m[1], 'arquivo do vendor != hash documentado em SOCIAL.md');
+  // e o caminho configurado no cliente aponta para esse mesmo arquivo
+  assert.ok(SUPABASE_UMD_PATH.includes('supabase-2.117.2.min.js'),
+    `SUPABASE_UMD_PATH aponta para o arquivo pinado (atual: ${SUPABASE_UMD_PATH})`);
+});
+
+test('flags sociais desligadas por padrão (produção segura)', () => {
+  for (const [nome, valor] of Object.entries(FLAG_DEFAULTS)) {
+    assert.strictEqual(valor, false, `flag ${nome} deve nascer desligada em produção`);
+  }
+  // provedor: sem override, só localhost vira mock (net/flags.js); produção
+  // com config vazia cai em NullProvider e degrada com 'disabled'
+  assert.strictEqual(SUPABASE_CONFIG.url, '', 'net/config.js sem URL real');
+  assert.strictEqual(SUPABASE_CONFIG.anonKey, '', 'net/config.js sem chave real');
 });
