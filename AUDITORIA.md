@@ -11,7 +11,7 @@ verificado, do que ficou pendente e do que fazer antes de publicar.
 | Bateria | Comando | Resultado |
 |---------|---------|-----------|
 | Testes unitários (15 arquivos) | `node --test tests/*.test.mjs` | **163/163** |
-| Simulação do jogo inteiro | `node tests/smoke.mjs` | **59/59** |
+| Simulação do jogo inteiro | `node tests/smoke.mjs` | **62/62** |
 | Referências internas | `node tools/validate-refs.mjs` | OK |
 | Auditoria de UI (tamanho/a11y/idioma) | `node tools/audit-ui.mjs` | OK (< 150 KB, sem inglês) |
 | Suítes Playwright (17) | `node tests/<suite>.cjs` | **17/17** |
@@ -37,11 +37,12 @@ Zero erros de console em todas as suítes (390x844, 1280x720 e 360x640).
 | `social-api.test.mjs` | Contrato da UMA interface (mock/NullProvider) e códigos de erro |
 | `backend-parity.test.mjs` | **21 checagens**: cliente ↔ SQL (RPCs, regras, sementes, fórmula de moedas), varredura de segurança (sem chaves, RLS, SECURITY DEFINER, grants), vendor pinado (SHA256), flags desligadas, páginas legais sem CDN |
 
-### Simulação (`tests/smoke.mjs` — 59)
+### Simulação (`tests/smoke.mjs` — 62)
 
 Lógica do jogo inteiro sem navegador: colisões, spawn, ondas, missões,
 conquistas, ranking local, moedas, reset, ritmo/determinismo do spawner
-(curva por segundo, mesma semente ⇒ mesma cadência — Fase 1).
+(curva por segundo, mesma semente ⇒ mesma cadência — Fase 1) e teto de
+partículas por tier (burst de 100 nasce no teto — A5/§11).
 
 ### Suítes Playwright (`node tests/<suite>.cjs` — 17)
 
@@ -56,12 +57,12 @@ conquistas, ranking local, moedas, reset, ritmo/determinismo do spawner
 | `chat-ui` | Salas, denúncia, bloqueio, mute/ban, **contestação (§8.5)**, modo restrito 13− |
 | `clans-ui` | Criar (500 moedas), entrada, cargos, emblema, offline |
 | `tournament-ui` | Torneios, resgate idempotente, Corrida do Dia |
-| `sw-update` | Service worker (Fase 4): rede-primeiro, versão do cache lida do `sw.js` (`orblux-v5`), offline: HTML + cadeia JS do cache e **partida rodando sem rede** |
-| `perf-ui` | Performance (Fase 1): 55+ FPS com CPU throttle 4x em GPU real, reinício < 400 ms, zero erros |
+| `sw-update` | Service worker (Fase 4): rede-primeiro, versão do cache lida do `sw.js` (`orblux-v8`), offline: HTML + cadeia JS do cache e **partida rodando sem rede** |
+| `perf-ui` | Performance (A5/§11): **FPS por qualidade** — Alto/Médio/Baixo travados (`qualLock`) e medidos um a um com CPU throttle 4x em GPU real, 55+ FPS cada; reinício < 400 ms, zero erros; perda de renderer sob memória (ambiente) refaz a medição UMA vez e relata |
 | `responsive-ui` | Resoluções-alvo (Fase 3): 360x640/390x844/1280x720 × 12 telas (menu, como jogar, ranking, ajustes, loja, social, chat, clãs, torneio, pausa, fim de jogo e HUD da partida) — sem overflow horizontal/vertical, botões dentro da largura, zero erros |
 | `accessibility-ui` | Acessibilidade (Fase 5): 1ª visita nasce com "reduzir movimento" se o sistema pedir (`prefers-reduced-motion`), interruptor liga/desliga na hora e persiste, partida+fim de jogo com menos movimento (pontuação final instantânea), Tab com foco visível, aria no HUD, safe-area no CSS |
 | `style-dev-ui` | Direção de arte (fase A1): página `/dev/style` com o THEME importado (paleta, zonas, escala `unit()`, canvas de objetos pintado, mock do HUD 44 px), reduced-motion congela no 1º frame, 360 px sem overflow, zero erros |
-| `scene-ui` | Direção de arte (fases A2+A3+A4): zonas de cor por nível — boot na zona ciano fria, nível 10 troca para a zona âmbar com crossfade de 1,5 s que libera o fundo anterior, camadas de parallax, movimento reduzido a 30% (não congela) — objetos: barreira em danger com gradiente 100%→60% + hachura animada a 20 px/s e aviso antes da entrada (some em ~350 ms), drone hexagonal listrado, power-ups em hexágono "power", bolha do escudo 0,25/borda 0,7 — HUD/feedback: glow do placar na cor da zona, estilhaço do combo (350 ms), vinheta de dano nas bordas, fundo escurece 15% na quebra do combo, zero erros |
+| `scene-ui` | Direção de arte (fases A2+A3+A4+A5): zonas de cor por nível — boot na zona ciano fria, nível 10 troca para a zona âmbar com crossfade de 1,5 s que libera o fundo anterior, camadas de parallax, movimento reduzido a 30% (não congela) — objetos: barreira em danger com gradiente 100%→60% + hachura animada a 20 px/s e aviso antes da entrada (some em ~350 ms), drone hexagonal listrado, power-ups em hexágono "power", bolha do escudo 0,25/borda 0,7 — HUD/feedback: glow do placar na cor da zona, estilhaço do combo (350 ms), vinheta de dano nas bordas, fundo escurece 15% na quebra do combo — tiers (§11): bloom 1/4 no Alto, 1/6 no Médio, desligado no Baixo, vinheta some no Baixo, teto de 40 partículas respeitado e qualidade que **nunca sobe sozinha na partida**, zero erros |
 
 ## 3. Matriz de conformidade (regras inegociáveis → garantia verificada)
 

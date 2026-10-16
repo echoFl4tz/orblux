@@ -328,6 +328,48 @@ async function newPage(browser, reducedMotion) {
     `fundo escurece ao quebrar o combo (comboBreakT=${comboBreakT.toFixed(2)})`);
   await cp.evaluate(() => { OX.game.comboBreakT = 0; OX.game.combo = 0; OX.game.comboTimer = 0; });
 
+  // ===== TIER DE QUALIDADE (A5) =====
+  // §11: bloom em 1/4 (Alto), 1/6 (Médio), desligado (Baixo)
+  await cp.evaluate(() => { OX.game.qualLock = 0.9; });
+  await cp.waitForTimeout(150);
+  const bloomAlto = await cp.evaluate(() => OX.game.bloomFrac);
+  ok(Math.abs(bloomAlto - 0.25) < 1e-9, `tier Alto com bloom em 1/4 (${bloomAlto})`);
+
+  await cp.evaluate(() => { OX.game.qualLock = 0.7; });
+  await cp.waitForTimeout(150);
+  const bloomMedio = await cp.evaluate(() => OX.game.bloomFrac);
+  ok(Math.abs(bloomMedio - 1 / 6) < 1e-9, `tier Médio com bloom em 1/6 (${bloomMedio.toFixed(3)})`);
+
+  // vinheta some no Baixo (§11) — o canto do fundo estático clareia
+  const cantoAlto = await cp.evaluate(() => window.__LINHA(3, 3, 3)[0]);
+  await cp.evaluate(() => { OX.game.qualLock = 0.55; });
+  await cp.waitForTimeout(180);
+  const bloomBaixo = await cp.evaluate(() => OX.game.bloomFrac);
+  ok(bloomBaixo === 0, `tier Baixo sem bloom (${bloomBaixo})`);
+  const cantoBaixo = await cp.evaluate(() => window.__LINHA(3, 3, 3)[0]);
+  const somaAlto = cantoAlto[0] + cantoAlto[1] + cantoAlto[2];
+  const somaBaixo = cantoBaixo[0] + cantoBaixo[1] + cantoBaixo[2];
+  ok(somaBaixo > somaAlto + 8,
+    `vinheta desligada no Baixo (canto rgb ${cantoAlto.join(',')} -> ${cantoBaixo.join(',')})`);
+
+  // §11: teto de partículas do tier — burst de 100 nasce no teto
+  await cp.evaluate(() => {
+    OX.fx.setPoolMax(40);
+    for (let i = 0; i < 6; i++) OX.fx.burst(120, 120, '#22E4FF', 40);
+  });
+  const vivas = await cp.evaluate(() => OX.fx.countActive());
+  ok(vivas <= 40, `teto de 40 partículas respeitado (${vivas} vivas para 240 pedidas)`);
+
+  // §11: a qualidade nunca sobe sozinha durante a partida
+  await cp.evaluate(() => {
+    OX.game.qualLock = null;
+    OX.game.resScale = 0.55;
+    OX.game.smoothFrames = 600;   // "pronto" para subir — mas está em partida
+  });
+  await cp.waitForTimeout(1300);
+  const escalaDepois = await cp.evaluate(() => OX.game.resScale);
+  ok(escalaDepois === 0.55, `qualidade não sobe na partida (escala segue ${escalaDepois})`);
+
   await c.context.close();
 
   await browser.close();

@@ -156,14 +156,32 @@ function getPickupSprite() {
 // ---------------------------------------------------------
 const ORB_SCALE = 1.25; // visual +25% (a hitbox/colisão continua p.r)
 
+/** Opacidade da orbe: pisca durante invulnerabilidade (piso 0.35). */
+function blinkAlpha(p, time) {
+  if (p.invuln <= 0) return 1;
+  const a = 0.35 + 0.65 * (0.5 + 0.5 * Math.sin(time * 16));
+  return a < 0.35 ? 0.35 : a;
+}
+
+/** Luz projetada da orbe no chão (§6): raio 24u ≈ orbe × 7,5,
+ *  opacidade 0,10, composição "lighter". Quem chama decide onde
+ *  desenhar: no A5 ela entra no offscreen de bloom — §11: Alto em
+ *  1/4 da resolução, Médio em 1/6, Baixo desligado. */
+export function drawOrbLight(ctx, p, look, time) {
+  const L = look || equippedLook();
+  const R = p.r * ORB_SCALE;
+  ctx.globalCompositeOperation = 'lighter';
+  drawGlow(ctx, p.x, p.y, R * 7.5, L.paleta.brilho, 0.10 * blinkAlpha(p, time));
+  ctx.globalCompositeOperation = 'source-over';
+}
+
 /**
  * Orbe do jogador com a skin equipada.
  * A HITBOX NÃO MUDA: todo o raio visual deriva de p.r (raio base),
  * para QUALQUER skin — ver tests/skin-hitbox.test.mjs.
  * @param {object} [look]  look resolvido da skin (fallback: a equipada)
- * @param {boolean} [lux]  luz projetada "lighter" (só tier Alto, §11)
  */
-export function drawPlayer(ctx, p, time, reduceMotion, look, lux = false) {
+export function drawPlayer(ctx, p, time, reduceMotion, look) {
   const L = look || equippedLook();
   const R = p.r * ORB_SCALE;   // visual = raio base * 1.25 (igual em todas as skins)
 
@@ -171,22 +189,7 @@ export function drawPlayer(ctx, p, time, reduceMotion, look, lux = false) {
   drawSkinTrail(ctx, p, L, time, reduceMotion);
 
   // Invulnerabilidade: pisca por opacidade — nunca some por completo (piso 0.35)
-  let alpha = 1;
-  if (p.invuln > 0) {
-    alpha = 0.35 + 0.65 * (0.5 + 0.5 * Math.sin(time * 16));
-    if (alpha < 0.35) alpha = 0.35;
-  }
-
-  // Luz projetada no chão (§6): raio 24u ≈ orbe × 7,5, opacidade 0,10,
-  // composição "lighter" — a orbe ilumina o cenário em volta dela.
-  // Só no tier Alto (§11): o blend aditivo de ~174 px custa ~8 FPS em
-  // máquina fraca; em device lento o adaptativo derruba a escala e a
-  // luz desliga junto, recuperando o quadro.
-  if (lux) {
-    ctx.globalCompositeOperation = 'lighter';
-    drawGlow(ctx, p.x, p.y, R * 7.5, L.paleta.brilho, 0.10 * alpha);
-    ctx.globalCompositeOperation = 'source-over';
-  }
+  const alpha = blinkAlpha(p, time);
 
   // Halo na cor da paleta da skin (sprite offscreen, sem pulso grande)
   drawGlow(ctx, p.x, p.y, R * 2.1, L.paleta.brilho, 0.72 * alpha);

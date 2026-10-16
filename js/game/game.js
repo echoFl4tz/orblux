@@ -8,7 +8,7 @@ import { getAxis, getPointer, resetInput } from '../core/input.js';
 import { sfx, getMusicPulse } from '../core/audio.js';
 import { state } from '../core/state.js';
 import {
-  createPlayer, drawPlayer, drawObstacle, drawPickup, drawPowerup, drawOrbDecor,
+  createPlayer, drawPlayer, drawOrbLight, drawObstacle, drawPickup, drawPowerup, drawOrbDecor,
   circleRectHit, circlesHit, COLORS,
 } from './entities.js';
 import { difficultyParams, spawnObstacles, spawnPickupWave, spawnPowerup, resetSpawner, setSpawnerRng, nextSpawnTimer, nextPickupTimer, nextPowerTimer } from './spawner.js';
@@ -17,7 +17,7 @@ import { SCORE, waveForTime, waveBonus } from '../../net/rules.js';
 import { equippedLook, skinCollectFx } from './skinrender.js';
 import {
   burst, ring, shockwave, floatText, comboText, levelBanner, waveBanner,
-  updateParticles, drawParticles, setPoolReducido,
+  updateParticles, drawParticles, setPoolReducido, setPoolMax,
   updateTexts, drawTexts, addShake, updateShake, shakeOffset, resetFX,
 } from './particles.js';
 import { tutorial, startTutorial, updateTutorial } from './tutorial.js';
@@ -64,6 +64,8 @@ export const game = {
   danoT: 0,                 // vinheta danger nas bordas ao levar dano (s, §9)
   comboBreakT: 0,           // fundo escurece 15% ao quebrar o combo (s, §9)
   resScale: 1,                 // qualidade adaptativa dos pixels (1 → 0,85 → 0,7)
+  qualLock: null,              // trava de qualidade p/ testes (null = adaptativo)
+  bloom: null, bloomFrac: 0,   // offscreen do bloom (§11) e fração vigente
   frameAcc: 0, frameN: 0,      // janela p/ medir a duração média dos quadros
   smoothFrames: 0,             // quadros lisos consecutivos (p/ voltar ao topo)
   reduceMotion: false,
@@ -178,6 +180,21 @@ function buildBackdrop() {
   g.bgStatic = prerender((ctx, w, h) => paintZone(ctx, w, h, zi), g.dpr * g.resScale);
 }
 
+/** Offscreen do bloom (§11): 1/4 (Alto) ou 1/6 (Médio) da resolução
+ *  do canvas principal; recriado só quando o tamanho muda. */
+function ensureBloom(frac) {
+  const g = game;
+  const w = Math.max(2, Math.round(g.canvas.width * frac));
+  const h = Math.max(2, Math.round(g.canvas.height * frac));
+  if (!g.bloom) {
+    const c = document.createElement('canvas');
+    if (!c.getContext) return null;
+    g.bloom = c;
+  }
+  if (g.bloom.width !== w || g.bloom.height !== h) { g.bloom.width = w; g.bloom.height = h; }
+  return g.bloom;
+}
+
 /** Pinta o fundo de uma zona (guia §3): degradê bgTop→bgBottom, glow
  *  do horizonte e névoa na cor da zona, vinheta e verticais da grade.
  *  Opacidades limitadas: cenário nunca passa de 35% da luz dos objetos. */
@@ -216,12 +233,14 @@ function paintZone(ctx, w, h, zi) {
     ctx.fillRect(0, 0, w, h);
   }
 
-  // vinheta
-  const vg = ctx.createRadialGradient(w / 2, h / 2, Math.min(w, h) * 0.42, w / 2, h / 2, Math.max(w, h) * 0.75);
-  vg.addColorStop(0, 'rgba(0,0,0,0)');
-  vg.addColorStop(1, 'rgba(0,0,0,0.5)');
-  ctx.fillStyle = vg;
-  ctx.fillRect(0, 0, w, h);
+  // vinheta — desligada no tier Baixo (§11: vinheta não)
+  if (tierForRes(game.resScale) !== 'low') {
+    const vg = ctx.createRadialGradient(w / 2, h / 2, Math.min(w, h) * 0.42, w / 2, h / 2, Math.max(w, h) * 0.75);
+    vg.addColorStop(0, 'rgba(0,0,0,0)');
+    vg.addColorStop(1, 'rgba(0,0,0,0.5)');
+    ctx.fillStyle = vg;
+    ctx.fillRect(0, 0, w, h);
+  }
 
   // verticais da grade na cor da zona (estáticas; as horizontais rolam)
   const horizon = h * 0.45;
@@ -392,23 +411,30 @@ export function update(dt) {
   // interna um passo; só volta ao topo depois de ~10 s lisos (~59+ FPS).
   // Faixa morta [17 ms, 18 ms] evita oscilar entre os passos.
   // Afeta SÓ os pixels do canvas — lógica, hitbox e pontuação não mudam.
-  g.frameAcc += dt; g.frameN++;
-  if (g.frameN >= 60) {
-    const avg = g.frameAcc / g.frameN;
-    g.frameAcc = 0; g.frameN = 0;
-    if (avg > 0.0180 && g.resScale > RES_MIN) {
-      g.resScale = Math.max(RES_MIN, Math.round((g.resScale - 0.15) * 100) / 100);
-      g.smoothFrames = 0;
-      resize();
-    } else if (avg < 0.0170) {
-      g.smoothFrames += 60;
-      if (g.smoothFrames >= 600 && g.resScale < 1) {
-        g.resScale = Math.min(1, Math.round((g.resScale + 0.15) * 100) / 100);
+  // Trava de qualidade (testes/perf, §11): OX.game.qualLock = escala
+  // fixa desliga a adaptação automática — a suíte mede cada tier isolado.
+  if (g.qualLock != null) {
+    if (g.resScale !== g.qualLock) { g.resScale = g.qualLock; resize(); }
+  } else {
+    g.frameAcc += dt; g.frameN++;
+    if (g.frameN >= 60) {
+      const avg = g.frameAcc / g.frameN;
+      g.frameAcc = 0; g.frameN = 0;
+      if (avg > 0.0180 && g.resScale > RES_MIN) {
+        g.resScale = Math.max(RES_MIN, Math.round((g.resScale - 0.15) * 100) / 100);
         g.smoothFrames = 0;
         resize();
+      } else if (avg < 0.0170 && g.mode !== 'playing') {
+        // §11: a qualidade NUNCA sobe sozinha durante a partida
+        g.smoothFrames += 60;
+        if (g.smoothFrames >= 600 && g.resScale < 1) {
+          g.resScale = Math.min(1, Math.round((g.resScale + 0.15) * 100) / 100);
+          g.smoothFrames = 0;
+          resize();
+        }
+      } else {
+        g.smoothFrames = 0;
       }
-    } else {
-      g.smoothFrames = 0;
     }
   }
 
@@ -437,6 +463,9 @@ export function update(dt) {
   if (g.danoT > 0) g.danoT = Math.max(0, g.danoT - dt);
   if (g.comboBreakT > 0) g.comboBreakT = Math.max(0, g.comboBreakT - dt);
   setPoolReducido(g.reduceMotion);   // teto de partículas com mov. reduzido (§9)
+  // §11: teto de partículas do tier (220/120/40); "reduzir movimento"
+  // mantém o piso de 40 do guia §9
+  setPoolMax(g.reduceMotion ? 40 : THEME.quality[tierForRes(g.resScale)].particles);
   for (const s of g.stars) {
     s.y += s.v * dt * velFator;
     if (s.y > g.H) { s.y = -4; s.x = Math.random() * g.W; }
@@ -743,9 +772,29 @@ export function render(time) {
     const contrast = state.settings.highContrast;
     for (const o of g.obstacles) drawObstacle(ctx, o, { contrast, time, reduceMotion: g.reduceMotion });
     if (g.mode !== 'gameover') drawDangerChevrons(ctx);
-    // luz projetada só no tier Alto (blend "lighter" caro — §11)
-    drawPlayer(ctx, g.player, time, g.reduceMotion, equippedLook(),
-      tierForRes(g.resScale) === 'high');
+    // Bloom da luz projetada (§11): o "lighter" da orbe roda em
+    // resolução fracionária (Alto 1/4, Médio 1/6, Baixo desligado) num
+    // offscreen em cache e é esticado com suavização — custo ~16x
+    // menor que em resolução cheia e o brilho fica mais "bloom".
+    const bloomFrac = THEME.quality[tierForRes(g.resScale)].bloom;
+    g.bloomFrac = bloomFrac;
+    if (bloomFrac > 0) {
+      const bc = ensureBloom(bloomFrac);
+      if (bc) {
+        const bctx = bc.getContext('2d');
+        bctx.setTransform(1, 0, 0, 1, 0, 0);
+        bctx.clearRect(0, 0, bc.width, bc.height);
+        // mesmo alinhamento do mundo (inclui o tremor), em escala fracionária
+        bctx.setTransform(ctx.getTransform());
+        bctx.scale(bloomFrac, bloomFrac);
+        drawOrbLight(bctx, g.player, equippedLook(), time);
+        ctx.imageSmoothingEnabled = true;
+        ctx.globalCompositeOperation = 'lighter';
+        ctx.drawImage(bc, 0, 0, g.W, g.H);
+        ctx.globalCompositeOperation = 'source-over';
+      }
+    }
+    drawPlayer(ctx, g.player, time, g.reduceMotion, equippedLook());
     drawParticles(ctx);
     drawTexts(ctx);
   } else {

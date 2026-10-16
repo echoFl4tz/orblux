@@ -28,7 +28,7 @@ import { initBilling, syncPurchases } from './monetization/billing.js';
 import * as wallet from './core/wallet.js';
 import * as economy from './core/economy.js';
 import { getApi } from '../net/api.js';
-import { burst, ring, shockwave, floatText, comboText, levelBanner } from './game/particles.js';
+import { burst, ring, shockwave, floatText, comboText, levelBanner, setPoolMax, countActive } from './game/particles.js';
 
 function boot() {
   const canvas = document.getElementById('game-canvas');
@@ -182,7 +182,7 @@ function boot() {
       // captura/QA: emitir eventos e disparar FX de cena (sem tocar na lógica)
       emit,
       screen: (name = null) => showScreen(name),
-      fx: { burst, ring, shockwave, floatText, comboText, levelBanner },
+      fx: { burst, ring, shockwave, floatText, comboText, levelBanner, setPoolMax, countActive },
       // QA de layout: OX.auditLayout() no console verifica overflow-x/altura
       // em todas as telas (use nos tamanhos: 360x640, 390x844, 412x915,
       // 768x1024, 1366x768 e 1920x1080, retrato e paisagem)

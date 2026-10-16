@@ -5,7 +5,15 @@
    decide se dispara; o sweep estático é resolvido em levelBanner).
    ========================================================= */
 
-const POOL_SIZE = 140;
+/** §11: pool pré-alocado no teto do tier Alto (220); o tier em uso
+    limita quantas ficam vivas ao mesmo tempo (220/120/40). */
+const POOL_SIZE = 220;
+let poolMax = POOL_SIZE;       // teto do tier vigente (setPoolMax)
+let vivas = 0;                 // partículas ativas agora (gate de spawn)
+/** Aplica o teto de partículas do tier (§11) — game.js chama por frame. */
+export function setPoolMax(n) { poolMax = Math.max(1, Math.min(POOL_SIZE, n | 0)); }
+/** Quantas partículas estão vivas (testes e diagnóstico). */
+export function countActive() { return vivas; }
 /** §9: com movimento reduzido o teto é 40 partículas vivas — limita
     quantas cada explosão pode nascer (o pool continua fixo). */
 let poolReduzido = false;
@@ -22,11 +30,14 @@ let pCursor = 0;
 
 export function burst(x, y, color, count = 12, speed = 220, size = 3) {
   if (poolReduzido) count = Math.min(count, 4);   // §9: explosões curtas
+  count = Math.min(count, poolMax - vivas);       // §11: teto do tier
+  if (count <= 0) return;
   for (let i = 0; i < count; i++) {
     const p = particles[pCursor];
     pCursor = (pCursor + 1) % POOL_SIZE; // round-robin reutiliza as mais antigas
     const ang = Math.random() * Math.PI * 2;
     const spd = speed * (0.35 + Math.random() * 0.75);
+    if (!p.active) vivas++;
     p.active = true;
     p.x = x; p.y = y;
     p.vx = Math.cos(ang) * spd;
@@ -40,10 +51,13 @@ export function burst(x, y, color, count = 12, speed = 220, size = 3) {
 /** Explosão em anel (shield, power-up, reviver). */
 export function ring(x, y, color, count = 18, speed = 300) {
   if (poolReduzido) count = Math.min(count, 6);   // §9: anel curto
+  count = Math.min(count, poolMax - vivas);       // §11: teto do tier
+  if (count <= 0) return;
   for (let i = 0; i < count; i++) {
     const p = particles[pCursor];
     pCursor = (pCursor + 1) % POOL_SIZE;
     const ang = (i / count) * Math.PI * 2;
+    if (!p.active) vivas++;
     p.active = true;
     p.x = x; p.y = y;
     p.vx = Math.cos(ang) * speed;
@@ -75,10 +89,17 @@ export function updateParticles(dt, friction = 1.6) {
   for (const p of particles) {
     if (!p.active) continue;
     p.life -= dt;
-    if (p.life <= 0) { p.active = false; continue; }
+    if (p.life <= 0) { p.active = false; vivas--; continue; }
     p.vx *= damp; p.vy *= damp;
     p.x += p.vx * dt;
     p.y += p.vy * dt;
+  }
+  // queda do tier em partida (§11): desliga o excesso, das mais antigas
+  if (vivas > poolMax) {
+    for (let i = 0; i < POOL_SIZE && vivas > poolMax; i++) {
+      const p = particles[(pCursor + i) % POOL_SIZE];
+      if (p.active) { p.active = false; vivas--; }
+    }
   }
   for (const s of shocks) {
     if (!s.active) continue;
@@ -277,6 +298,7 @@ export function shakeOffset(reduceMotion) {
 
 export function resetFX() {
   particles.forEach((p) => (p.active = false));
+  vivas = 0;
   texts.forEach((t) => (t.active = false));
   shocks.forEach((s) => (s.active = false));
   combo.active = false;

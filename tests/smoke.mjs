@@ -122,12 +122,24 @@ const { game, revive, quitToMenu } = await import('../js/game/game.js');
 const { difficultyParams, nextPickupTimer, nextSpawnTimer, setSpawnerRng } = await import('../js/game/spawner.js');
 const { createPickup, createObstacle } = await import('../js/game/entities.js');
 const events = await import('../js/core/events.js');
+const { burst, countActive, setPoolMax, resetFX } = await import('../js/game/particles.js');
 
 console.log('\n— Etapa A: boot e menu —');
 assert(OX && OX.version, 'main.js inicializou e expôs window.OX');
 assert(game.mode === 'menu', 'jogo começa no menu');
 assert(Array.isArray(state.missions.list) && state.missions.list.length === 3, 'missões do dia geradas (3)');
 assert(state.tutorialDone === false, 'tutorial habilitado na 1ª partida');
+
+// A5 §11: teto de partículas por tier — o burst nasce no teto e nunca passa
+resetFX();
+setPoolMax(40);
+burst(0, 0, '#22E4FF', 100);
+assert(countActive() === 40, 'teto do tier: burst de 100 nasce 40 partículas (§11)');
+burst(0, 0, '#22E4FF', 10);
+assert(countActive() === 40, 'teto do tier: burst extra não passa do teto');
+resetFX();
+assert(countActive() === 0, 'resetFX zera o contador de partículas');
+setPoolMax(220);
 
 console.log('\n— Etapa B: iniciar partida (com tutorial) —');
 let overPayload = null;
