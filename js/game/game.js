@@ -8,7 +8,7 @@ import { getAxis, getPointer, resetInput } from '../core/input.js';
 import { sfx, getMusicPulse } from '../core/audio.js';
 import { state } from '../core/state.js';
 import {
-  createPlayer, drawPlayer, drawOrbLight, drawObstacle, drawPickup, drawPowerup, drawOrbDecor,
+  createPlayer, drawPlayer, drawOrbLight, orbLightRadius, drawObstacle, drawPickup, drawPowerup, drawOrbDecor,
   circleRectHit, circlesHit, COLORS,
 } from './entities.js';
 import { difficultyParams, spawnObstacles, spawnPickupWave, spawnPowerup, resetSpawner, setSpawnerRng, nextSpawnTimer, nextPickupTimer, nextPowerTimer } from './spawner.js';
@@ -788,9 +788,19 @@ export function render(time) {
         bctx.setTransform(ctx.getTransform());
         bctx.scale(bloomFrac, bloomFrac);
         drawOrbLight(bctx, g.player, equippedLook(), time);
+        // blit só da área do brilho (fora do círculo o offscreen é
+        // transparente): mesma imagem, ~20x menos área aditiva copiada —
+        // tier Alto estável em 55+ mesmo em máquina fraca. A origem no
+        // offscreen segue a matriz do bloom (escala fracionária + tremor),
+        // então o recorte fica alinhado ao mundo em qualquer tremor.
+        const tr = ctx.getTransform();
+        const kb = tr.a * bloomFrac;              // lógico -> px do offscreen
+        const lr = orbLightRadius(g.player);
+        const gx = g.player.x - lr, gy = g.player.y - lr, gl = 2 * lr;
         ctx.imageSmoothingEnabled = true;
         ctx.globalCompositeOperation = 'lighter';
-        ctx.drawImage(bc, 0, 0, g.W, g.H);
+        ctx.drawImage(bc, gx * kb + tr.e, gy * kb + tr.f, gl * kb, gl * kb,
+          gx, gy, gl, gl);
         ctx.globalCompositeOperation = 'source-over';
       }
     }

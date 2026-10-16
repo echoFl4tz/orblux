@@ -163,15 +163,18 @@ function blinkAlpha(p, time) {
   return a < 0.35 ? 0.35 : a;
 }
 
+/** Raio da luz projetada: 24u ≈ orbe × 7,5 (§6). Exportado para o
+ *  game.js recortar o blit do bloom só na área do brilho (A6). */
+export function orbLightRadius(p) { return p.r * ORB_SCALE * 7.5; }
+
 /** Luz projetada da orbe no chão (§6): raio 24u ≈ orbe × 7,5,
  *  opacidade 0,10, composição "lighter". Quem chama decide onde
  *  desenhar: no A5 ela entra no offscreen de bloom — §11: Alto em
  *  1/4 da resolução, Médio em 1/6, Baixo desligado. */
 export function drawOrbLight(ctx, p, look, time) {
   const L = look || equippedLook();
-  const R = p.r * ORB_SCALE;
   ctx.globalCompositeOperation = 'lighter';
-  drawGlow(ctx, p.x, p.y, R * 7.5, L.paleta.brilho, 0.10 * blinkAlpha(p, time));
+  drawGlow(ctx, p.x, p.y, orbLightRadius(p), L.paleta.brilho, 0.10 * blinkAlpha(p, time));
   ctx.globalCompositeOperation = 'source-over';
 }
 

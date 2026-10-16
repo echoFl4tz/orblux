@@ -17,10 +17,12 @@
   --primary: #22e6ff;
   --primary-soft: rgba(34, 230, 255, 0.14);
   --secondary: #ff3df0;
+  --secondary-text: #ff6ff5;          /* pink p/ texto: ≥ 7:1 no fundo (§12) */
   --secondary-soft: rgba(255, 61, 240, 0.14);
   --reward: #ffe45e;
   --success: #4dff9e;
   --danger: #ff4d6d;
+  --danger-text: #ff8095;             /* vermelho p/ texto: ≥ 7:1 no fundo (§12) */
   --text-1: #f2f6ff;
   --text-2: #9aa6c8;
 
@@ -239,7 +241,9 @@ a:hover { text-decoration: underline; }
 .btn[disabled] { opacity: 0.5; pointer-events: none; }
 
 .btn-primary {
-  background: linear-gradient(135deg, var(--primary), var(--secondary));
+  /* parada pink na variante de texto (§12): o pior caso do gradiente
+     precisa fechar 7:1 com o texto escuro do botão */
+  background: linear-gradient(135deg, var(--primary), var(--secondary-text));
   color: #051018;
   border: none;
   box-shadow: var(--glow-1), var(--glow-2);
@@ -258,7 +262,7 @@ a:hover { text-decoration: underline; }
 }
 @keyframes btnShine { 0% { left: -60%; } 55% { left: 130%; } 100% { left: 130%; } }
 
-.btn-danger { color: var(--danger); border-color: rgba(255, 77, 109, 0.5); background: rgba(255, 77, 109, 0.08); }
+.btn-danger { color: var(--danger-text); border-color: rgba(255, 77, 109, 0.5); background: rgba(255, 77, 109, 0.08); }
 .btn-danger:hover { background: rgba(255, 77, 109, 0.16); border-color: var(--danger); }
 .btn-success { color: var(--success); border-color: rgba(77, 255, 158, 0.5); background: rgba(77, 255, 158, 0.08); }
 .btn-ghost { background: transparent; border-color: transparent; color: var(--text-2); }
@@ -329,7 +333,7 @@ a:hover { text-decoration: underline; }
 }
 @keyframes orbSpin { to { transform: rotate(360deg); } }
 .logo-a { color: var(--primary); text-shadow: var(--glow-1); }
-.logo-b { color: var(--secondary); text-shadow: var(--glow-pink-1); }
+.logo-b { color: var(--secondary-text); text-shadow: var(--glow-pink-1); }
 @keyframes orbPulse {
   0%, 100% { transform: scale(1); filter: drop-shadow(0 0 8px rgba(34, 230, 255, 0.45)); }
   50% { transform: scale(1.06); filter: drop-shadow(0 0 16px rgba(34, 230, 255, 0.75)); }

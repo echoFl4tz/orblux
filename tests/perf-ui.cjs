@@ -9,7 +9,10 @@
    §11 manda medir cada nível isolado: Alto (220 part., 4 camadas,
    bloom 1/4, vinheta), Médio (120, 3, bloom 1/6, vinheta) e Baixo
    (40, 2, sem bloom, sem vinheta). A trava qualLock congela a
-   escala do tier e desliga a adaptação automática durante a medição.
+   escala do tier e desliga a adaptação automática durante a medição;
+   após cada troca, 1,3 s de assentamento + 1,5 s de descarte (resize,
+   pré-render do fundo e GC) e então 5 s de janela com o arrasto
+   dirigindo — o número publicado é o estado estacionário do tier.
    Ambiente: HEADED (GPU real + Emulation.setCPUThrottlingRate 4) —
    ver cabeçalho da Fase 1: headless = SwiftShader software no main
    thread (arquitetura que nenhum aparelho real usa). Máquina fraca
@@ -129,19 +132,29 @@ const TIERS = [
       for (const [escala, label] of TIERS) {
         await page.evaluate((v) => { window.OX.game.qualLock = v; }, escala);
         await page.waitForTimeout(1300);            // assenta escala + fundo
+        // descarta o pós-troca (resize + pré-render do fundo + GC):
+        // a medição vale o estado estacionário do tier, como manda o §11
+        await page.evaluate(() => new Promise((resolve) => {
+          const t0 = performance.now();
+          const tick = () => {
+            if (performance.now() - t0 < 1500) requestAnimationFrame(tick);
+            else resolve();
+          };
+          requestAnimationFrame(tick);
+        }));
         const fpsP = page.evaluate(() => new Promise((resolve) => {
           let frames = 0;
           const t0 = performance.now();
           const tick = () => {
             frames++;
             const dt = performance.now() - t0;
-            if (dt < 3000) requestAnimationFrame(tick);
+            if (dt < 5000) requestAnimationFrame(tick);   // janela de 5 s (menos ruído)
             else resolve(frames / (dt / 1000));
           };
           requestAnimationFrame(tick);
         }));
         await page.mouse.down();                    // arrasto ativo durante a medição
-        const fim = Date.now() + 3000;
+        const fim = Date.now() + 5000;              // dirige a janela inteira da medição
         let i = 0;
         while (Date.now() < fim) {
           await page.mouse.move(640 + Math.sin(i / 7) * 400, 360 + Math.cos(i / 11) * 140);
