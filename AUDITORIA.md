@@ -10,11 +10,11 @@ verificado, do que ficou pendente e do que fazer antes de publicar.
 
 | Bateria | Comando | Resultado |
 |---------|---------|-----------|
-| Testes unitários (13 arquivos) | `node --test tests/*.test.mjs` | **154/154** |
+| Testes unitários (15 arquivos) | `node --test tests/*.test.mjs` | **163/163** |
 | Simulação do jogo inteiro | `node tests/smoke.mjs` | **59/59** |
 | Referências internas | `node tools/validate-refs.mjs` | OK |
 | Auditoria de UI (tamanho/a11y/idioma) | `node tools/audit-ui.mjs` | OK (< 150 KB, sem inglês) |
-| Suítes Playwright (16) | `node tests/<suite>.cjs` | **16/16** |
+| Suítes Playwright (17) | `node tests/<suite>.cjs` | **17/17** |
 
 Zero erros de console em todas as suítes (390x844, 1280x720 e 360x640).
 
@@ -43,7 +43,7 @@ Lógica do jogo inteiro sem navegador: colisões, spawn, ondas, missões,
 conquistas, ranking local, moedas, reset, ritmo/determinismo do spawner
 (curva por segundo, mesma semente ⇒ mesma cadência — Fase 1).
 
-### Suítes Playwright (`node tests/<suite>.cjs` — 16)
+### Suítes Playwright (`node tests/<suite>.cjs` — 17)
 
 | Suíte | Cobre |
 |-------|-------|
@@ -61,6 +61,7 @@ conquistas, ranking local, moedas, reset, ritmo/determinismo do spawner
 | `responsive-ui` | Resoluções-alvo (Fase 3): 360x640/390x844/1280x720 × 12 telas (menu, como jogar, ranking, ajustes, loja, social, chat, clãs, torneio, pausa, fim de jogo e HUD da partida) — sem overflow horizontal/vertical, botões dentro da largura, zero erros |
 | `accessibility-ui` | Acessibilidade (Fase 5): 1ª visita nasce com "reduzir movimento" se o sistema pedir (`prefers-reduced-motion`), interruptor liga/desliga na hora e persiste, partida+fim de jogo com menos movimento (pontuação final instantânea), Tab com foco visível, aria no HUD, safe-area no CSS |
 | `style-dev-ui` | Direção de arte (fase A1): página `/dev/style` com o THEME importado (paleta, zonas, escala `unit()`, canvas de objetos pintado, mock do HUD 44 px), reduced-motion congela no 1º frame, 360 px sem overflow, zero erros |
+| `scene-ui` | Direção de arte (fase A2): zonas de cor por nível — boot na zona ciano fria, nível 10 troca para a zona âmbar quente com crossfade de 1,5 s que libera o fundo anterior, camadas de parallax (anéis + poeira) construídas, movimento reduzido roda a 30% (não congela), zero erros |
 
 ## 3. Matriz de conformidade (regras inegociáveis → garantia verificada)
 

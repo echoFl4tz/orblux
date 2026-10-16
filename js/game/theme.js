@@ -41,3 +41,34 @@ export const THEME = {
   },
   combo: { tiers: [3, 5, 10, 20, 35, 50] },
 };
+
+/* ---------------------------------------------------------
+   Helpers puros (testados em tests/theme.test.mjs)
+   --------------------------------------------------------- */
+
+/** Zona de cor para um nível — §3 do guia: 1-3, 4-6, 7-9, 10-12;
+ *  depois do nível 12 repete do início com intensidade +15% por
+ *  ciclo (teto 1,6 para o cenário não estourar a luminosidade).
+ *  Sem RNG: mesmo nível ⇒ mesma zona (Corrida do Dia intacta). */
+export function zoneForLevel(level) {
+  const n = (Number.isFinite(level) && level >= 1) ? Math.floor(level) : 1;
+  const index = Math.floor((n - 1) / 3) % 4;
+  const ciclo = Math.floor((n - 1) / 12);
+  return { index, zone: THEME.zones[index], intensity: Math.min(1 + 0.15 * ciclo, 1.6) };
+}
+
+/** Faixa de qualidade pela escala de resolução (A5 formaliza a régua
+ *  de FPS): >= 0,85 Alto (4 camadas), >= 0,65 Médio (3), senão Baixo (2). */
+export function tierForRes(res) {
+  return (Number.isFinite(res) && res >= 0.85) ? 'high'
+    : (Number.isFinite(res) && res >= 0.65) ? 'mid' : 'low';
+}
+
+/** '#RRGGBB' + alfa → 'rgba(...)' (cor pronta; nenhum gradiente por frame). */
+export function rgba(hex, a) {
+  const h = String(hex).replace('#', '');
+  const v = h.length === 3 ? h.split('').map((c) => c + c).join('') : h;
+  const num = parseInt(v, 16);
+  const r = (num >> 16) & 255, g = (num >> 8) & 255, b = num & 255;
+  return `rgba(${r}, ${g}, ${b}, ${Math.round(a * 1000) / 1000})`;
+}

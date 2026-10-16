@@ -8,7 +8,7 @@
    Atualize CACHE_VERSION quando a lista PRECACHE mudar.
    ========================================================= */
 
-const CACHE_VERSION = 'orblux-v5';
+const CACHE_VERSION = 'orblux-v6';
 
 const PRECACHE = [
   './',
@@ -30,6 +30,7 @@ const PRECACHE = [
   './js/core/audio.js',
   './js/core/events.js',
   './js/game/game.js',
+  './js/game/theme.js',
   './js/game/entities.js',
   './js/game/spawner.js',
   './js/game/particles.js',

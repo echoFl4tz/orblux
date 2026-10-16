@@ -21,6 +21,7 @@ import {
   updateTexts, drawTexts, addShake, updateShake, shakeOffset, resetFX,
 } from './particles.js';
 import { tutorial, startTutorial, updateTutorial } from './tutorial.js';
+import { THEME, zoneForLevel, tierForRes, rgba } from './theme.js';
 
 // ---------------------------------------------------------
 //  Constantes de balanceamento
@@ -55,6 +56,10 @@ export const game = {
 
   stars: [], bgOffset: 0,
   bgStatic: null,              // fundo estático offscreen (pintado só no resize)
+  bgPrev: null,                // fundo anterior (só durante a troca de zona, A2)
+  zoneFadeT: -1,               // segundos do crossfade de zona (-1 = parado)
+  zoneIndex: 0, zoneIntensity: 1, gridColor: '#22E4FF',
+  rings: [], dustSprite: null, // camadas 2 (anéis) e 3 (poeira) do parallax
   bgFlash: 0,               // flash sutil do fundo ao subir de nível (s)
   resScale: 1,                 // qualidade adaptativa dos pixels (1 → 0,85 → 0,7)
   frameAcc: 0, frameN: 0,      // janela p/ medir a duração média dos quadros
@@ -102,19 +107,28 @@ export function resize() {
   }
 }
 
+// baldes de alfa das camadas de parallax (guia §5): 3 trocas de
+// globalAlpha por camada em vez de 1 por estrela
+const ALFA_ESTRELA = [0.3, 0.4, 0.5];    // camada 1: 0,3–0,5
+const ALFA_POEIRA = [0.2, 0.28, 0.36];   // camada 3: 0,15–0,40
+
 function buildBackdrop() {
   const g = game;
   const area = g.W * g.H;
   const density = state.settings.reduceMotion ? 0.6 : 1;
 
-  // estrelas em 2 profundidades (paralaxe): perto = maior e rápida,
-  // longe = miúda e lenta. Alpha fixo por profundidade (menos troca de estado)
+  // estrelas da camada 1 (distantes, 1–2 px) e poeira da camada 3
+  // (2–5 px, sprite suave). As posições usam Math.random: sorteio
+  // VISUAL, separado do spawner — nunca toca na semente da Corrida.
+  // Velocidades = base 70 px/s × fator da camada (parallax[i]).
   const mk = (near) => ({
     x: Math.random() * g.W,
     y: Math.random() * g.H,
-    r: near ? 1.5 + Math.random() * 1.1 : 0.7 + Math.random() * 0.6,
-    v: near ? 16 + Math.random() * 18 : 6 + Math.random() * 8,
-    a: near ? 0.55 : 0.26,
+    r: near ? 2 + Math.random() * 3 : 1 + Math.random() * 1,
+    v: near
+      ? 70 * THEME.parallax[3] * (0.8 + Math.random() * 0.4)    // 0,70
+      : 70 * THEME.parallax[1] * (0.75 + Math.random() * 0.5),  // 0,05
+    ab: Math.floor(Math.random() * 3),
     near,
   });
   const nearCount = Math.max(8, Math.min(26, Math.round(area / 52000 * density)));
@@ -123,60 +137,104 @@ function buildBackdrop() {
   for (let i = 0; i < nearCount; i++) g.stars.push(mk(true));
   for (let i = 0; i < farCount; i++) g.stars.push(mk(false));
 
-  // fundo estático offscreen: gradiente + horizonte + névoa + vinheta +
-  // verticais da grade — UMA vez por resize. Por quadro custa só 1
-  // drawImage (a vinheta sozinha custava ~7,8 ms/quadro em software).
-  g.bgStatic = prerender((ctx, w, h) => {
-    const grad = ctx.createLinearGradient(0, 0, 0, h);
-    grad.addColorStop(0, '#070a1c');
-    grad.addColorStop(0.6, '#05060f');
-    grad.addColorStop(1, '#0a0620');
-    ctx.fillStyle = grad;
-    ctx.fillRect(0, 0, w, h);
-    const hz = h * 0.45;
-    const glow = ctx.createLinearGradient(0, hz - h * 0.14, 0, hz + h * 0.12);
-    glow.addColorStop(0, 'rgba(40,70,160,0)');
-    glow.addColorStop(0.5, 'rgba(64,96,200,0.10)');
-    glow.addColorStop(1, 'rgba(40,70,160,0)');
-    ctx.fillStyle = glow;
-    ctx.fillRect(0, hz - h * 0.14, w, h * 0.26);
+  // camada 2 — anéis do túnel / linhas de velocidade (guia §5)
+  g.rings = [];
+  const aneis = 5;
+  for (let i = 0; i < aneis; i++) {
+    g.rings.push({
+      y: (i / aneis) * g.H + Math.random() * (g.H / aneis) * 0.6,
+      rx: g.W * (0.45 + Math.random() * 0.3),
+      ry: 4 + Math.random() * 8,
+      a: 0.10 + Math.random() * 0.15,   // guia: 0,10–0,25
+    });
+  }
 
-    // névoa: manchas largas e muito dessaturadas (roxo/azul-marinho, ≤ 0.15)
-    const blobs = [
-      { x: w * 0.2, y: h * 0.26, r: Math.max(w, h) * 0.5, c: 'rgba(96,74,178,0.13)' },
-      { x: w * 0.85, y: h * 0.56, r: Math.max(w, h) * 0.46, c: 'rgba(46,78,160,0.12)' },
-      { x: w * 0.5, y: h * 0.94, r: Math.max(w, h) * 0.5, c: 'rgba(112,58,158,0.10)' },
-    ];
-    for (const b of blobs) {
-      const fog = ctx.createRadialGradient(b.x, b.y, 0, b.x, b.y, b.r);
-      fog.addColorStop(0, b.c);
-      fog.addColorStop(1, 'rgba(0,0,0,0)');
-      ctx.fillStyle = fog;
-      ctx.fillRect(0, 0, w, h);
+  // sprite suave da poeira (1 drawImage por ponto, sem blur por quadro)
+  if (!g.dustSprite) {
+    const c = document.createElement('canvas');
+    if (c.getContext) {
+      c.width = 16; c.height = 16;
+      const sx = c.getContext('2d');
+      const gr = sx.createRadialGradient(8, 8, 0, 8, 8, 8);
+      gr.addColorStop(0, 'rgba(255,255,255,0.95)');
+      gr.addColorStop(0.45, 'rgba(255,255,255,0.35)');
+      gr.addColorStop(1, 'rgba(255,255,255,0)');
+      sx.fillStyle = gr;
+      sx.fillRect(0, 0, 16, 16);
+      g.dustSprite = c;
     }
+  }
 
-    // vinheta (1x por resize — era o maior custo de raster por quadro)
-    const vg = ctx.createRadialGradient(w / 2, h / 2, Math.min(w, h) * 0.42, w / 2, h / 2, Math.max(w, h) * 0.75);
-    vg.addColorStop(0, 'rgba(0,0,0,0)');
-    vg.addColorStop(1, 'rgba(0,0,0,0.5)');
-    ctx.fillStyle = vg;
+  // zona de cor do nível atual (guia §3): só a zona atual fica em
+  // memória; a anterior só existe durante o crossfade de 1,5 s
+  const zi = zoneForLevel(g.level);
+  g.zoneIndex = zi.index;
+  g.zoneIntensity = zi.intensity;
+  g.gridColor = zi.zone.grid;
+  g.bgPrev = null;
+  g.zoneFadeT = -1;
+  g.bgStatic = prerender((ctx, w, h) => paintZone(ctx, w, h, zi), g.dpr * g.resScale);
+}
+
+/** Pinta o fundo de uma zona (guia §3): degradê bgTop→bgBottom, glow
+ *  do horizonte e névoa na cor da zona, vinheta e verticais da grade.
+ *  Opacidades limitadas: cenário nunca passa de 35% da luz dos objetos. */
+function paintZone(ctx, w, h, zi) {
+  const z = zi.zone;
+  const i = zi.intensity;   // +15% por ciclo após o nível 12 (teto 1,6)
+
+  // degradé do fundo (1x por resize — a vinheta sozinha custava ~7,8 ms/quadro)
+  const grad = ctx.createLinearGradient(0, 0, 0, h);
+  grad.addColorStop(0, z.bgTop);
+  grad.addColorStop(0.6, z.bgBottom);
+  grad.addColorStop(1, z.bgBottom);
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, 0, w, h);
+
+  // glow do horizonte tingido pela névoa da zona
+  const hz = h * 0.45;
+  const glow = ctx.createLinearGradient(0, hz - h * 0.14, 0, hz + h * 0.12);
+  glow.addColorStop(0, rgba(z.nebula, 0));
+  glow.addColorStop(0.5, rgba(z.nebula, Math.min(0.13, 0.10 * i)));
+  glow.addColorStop(1, rgba(z.nebula, 0));
+  ctx.fillStyle = glow;
+  ctx.fillRect(0, hz - h * 0.14, w, h * 0.26);
+
+  // névoa: manchas largas na cor da zona (≤ 0,18 com a intensidade)
+  const blobs = [
+    { x: w * 0.2, y: h * 0.26, r: Math.max(w, h) * 0.5, a: 0.13 },
+    { x: w * 0.85, y: h * 0.56, r: Math.max(w, h) * 0.46, a: 0.12 },
+    { x: w * 0.5, y: h * 0.94, r: Math.max(w, h) * 0.5, a: 0.10 },
+  ];
+  for (const b of blobs) {
+    const fog = ctx.createRadialGradient(b.x, b.y, 0, b.x, b.y, b.r);
+    fog.addColorStop(0, rgba(z.nebula, Math.min(0.18, b.a * i)));
+    fog.addColorStop(1, rgba(z.nebula, 0));
+    ctx.fillStyle = fog;
     ctx.fillRect(0, 0, w, h);
+  }
 
-    // verticais da grade (estáticas; o boost de energia nelas era imperceptível)
-    const horizon = h * 0.45;
-    const cx = w / 2;
-    ctx.strokeStyle = 'rgba(34,230,255,0.06)';
-    ctx.lineWidth = 1;
-    ctx.beginPath();
-    const cols = 11;
-    for (let i = 0; i <= cols; i++) {
-      const xb = cx + ((i / cols) - 0.5) * w * 1.7;
-      const xt = cx + (xb - cx) * 0.05;
-      ctx.moveTo(xt, horizon);
-      ctx.lineTo(xb, h);
-    }
-    ctx.stroke();
-  }, g.dpr * g.resScale);
+  // vinheta
+  const vg = ctx.createRadialGradient(w / 2, h / 2, Math.min(w, h) * 0.42, w / 2, h / 2, Math.max(w, h) * 0.75);
+  vg.addColorStop(0, 'rgba(0,0,0,0)');
+  vg.addColorStop(1, 'rgba(0,0,0,0.5)');
+  ctx.fillStyle = vg;
+  ctx.fillRect(0, 0, w, h);
+
+  // verticais da grade na cor da zona (estáticas; as horizontais rolam)
+  const horizon = h * 0.45;
+  const cx = w / 2;
+  ctx.strokeStyle = rgba(z.grid, Math.min(0.11, 0.08 * i));
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  const cols = 11;
+  for (let k = 0; k <= cols; k++) {
+    const xb = cx + ((k / cols) - 0.5) * w * 1.7;
+    const xt = cx + (xb - cx) * 0.05;
+    ctx.moveTo(xt, horizon);
+    ctx.lineTo(xb, h);
+  }
+  ctx.stroke();
 }
 
 /** Cria um canvas offscreen na escala de pixels pedida e desenha nele. */
@@ -353,12 +411,36 @@ export function update(dt) {
   }
 
   // fundo e efeitos continuam animando em qualquer tela
-  g.bgOffset += dt * 70 * g.S;
+  // zonas de cor por nível (A2): crossfade de 1,5 s sobre o pré-render
+  const zi = zoneForLevel(g.level);
+  if (zi.index !== g.zoneIndex) {
+    g.bgPrev = g.bgStatic;                    // fundo antigo sobe por baixo
+    g.zoneIndex = zi.index;
+    g.zoneIntensity = zi.intensity;
+    g.gridColor = zi.zone.grid;
+    // novo fundo pronto ANTES do fade (sem "piscar" no meio da troca)
+    g.bgStatic = prerender((c, w, h) => paintZone(c, w, h, zi), g.dpr * g.resScale);
+    g.zoneFadeT = 0;
+  }
+  if (g.zoneFadeT >= 0) {
+    g.zoneFadeT += dt;
+    if (g.zoneFadeT >= THEME.time.zone / 1000) { g.zoneFadeT = -1; g.bgPrev = null; }
+  }
+
+  // paralaxe: velFator do nível (guia §5) e 30% da velocidade com
+  // movimento reduzido (o guia manda reduzir, não congelar)
+  const velFator = THEME.speedFactor(g.level) * (g.reduceMotion ? 0.3 : 1);
+  g.bgOffset += dt * 70 * g.S * velFator;
   if (g.bgFlash > 0) g.bgFlash = Math.max(0, g.bgFlash - dt);
-  if (!g.reduceMotion) {
-    for (const s of g.stars) {
-      s.y += s.v * dt;
-      if (s.y > g.H) { s.y = -4; s.x = Math.random() * g.W; }
+  for (const s of g.stars) {
+    s.y += s.v * dt * velFator;
+    if (s.y > g.H) { s.y = -4; s.x = Math.random() * g.W; }
+  }
+  for (const r of g.rings) {
+    r.y += dt * 70 * THEME.parallax[2] * velFator;   // camada 2: 0,25
+    if (r.y - r.ry > g.H) {
+      r.y = -r.ry;
+      r.rx = g.W * (0.45 + Math.random() * 0.3);
     }
   }
   updateParticles(dt);
@@ -713,14 +795,40 @@ function drawDangerChevrons(ctx) {
 
 function drawBackdrop(ctx, time) {
   const g = game;
+  const camadas = THEME.quality[tierForRes(g.resScale)].layers;
 
-  // fundo estático (gradiente, névoa, vinheta, verticais) com 1 drawImage;
-  // esticado 20px além das bordas para cobrir o deslocamento do shake
+  // fundo da zona (gradiente, névoa, vinheta, verticais) com 1
+  // drawImage; esticado 20px além das bordas para cobrir o shake.
+  // Durante a troca de zona, o fundo antigo aparece por baixo e o
+  // novo entra em 1,5 s (crossfade ≈ inOutSine, guia §3)
   if (g.bgStatic) {
-    ctx.drawImage(g.bgStatic, -20, -20, g.W + 40, g.H + 40);
+    if (g.bgPrev && g.zoneFadeT >= 0) {
+      ctx.globalAlpha = 1;
+      ctx.drawImage(g.bgPrev, -20, -20, g.W + 40, g.H + 40);
+      const p = Math.min(1, g.zoneFadeT / (THEME.time.zone / 1000));
+      ctx.globalAlpha = p * p * (3 - 2 * p);
+      ctx.drawImage(g.bgStatic, -20, -20, g.W + 40, g.H + 40);
+      ctx.globalAlpha = 1;
+    } else {
+      ctx.drawImage(g.bgStatic, -20, -20, g.W + 40, g.H + 40);
+    }
   } else {
-    ctx.fillStyle = '#05060f';
+    ctx.fillStyle = THEME.color.bgDeep;
     ctx.fillRect(-20, -20, g.W + 40, g.H + 40);
+  }
+
+  // camada 2 — anéis do túnel descendo, tingidos pela grade da zona
+  // (camada distante: entra antes de energia/grade/estrelas)
+  if (camadas >= 3) {
+    ctx.strokeStyle = g.gridColor;
+    ctx.lineWidth = 1.2;
+    for (const r of g.rings) {
+      ctx.globalAlpha = r.a;
+      ctx.beginPath();
+      ctx.ellipse(g.W / 2, r.y, r.rx, r.ry, 0, 0, Math.PI * 2);
+      ctx.stroke();
+    }
+    ctx.globalAlpha = 1;
   }
 
   // fundo reativo: pulso do sequenciador + combo como tinta chapada
@@ -738,16 +846,25 @@ function drawBackdrop(ctx, time) {
   // grade em perspectiva: só as horizontais rolam aqui (verticais assadas)
   drawPerspectiveGrid(ctx, energy);
 
-  // estrelas em 2 profundidades (paralaxe) — 2 passes para trocar o
-  // globalAlpha só 2x por quadro em vez de 1x por estrela
+  // estrelas (camada 1) em 3 baldes de alfa; poeira próxima (camada 3)
+  // com sprite suave, só na qualidade Alta (guia §5: camadas 4/3/2)
   ctx.fillStyle = '#ffffff';
-  ctx.globalAlpha = 0.26;
-  for (const s of g.stars) {
-    if (!s.near) ctx.fillRect(s.x, s.y, s.r, s.r);
+  for (let b = 0; b < 3; b++) {
+    ctx.globalAlpha = ALFA_ESTRELA[b];
+    for (const s of g.stars) {
+      if (!s.near && s.ab === b) ctx.fillRect(s.x, s.y, s.r, s.r);
+    }
   }
-  ctx.globalAlpha = 0.55;
-  for (const s of g.stars) {
-    if (s.near) ctx.fillRect(s.x, s.y, s.r, s.r);
+  if (camadas >= 4 && g.dustSprite) {
+    for (let b = 0; b < 3; b++) {
+      ctx.globalAlpha = ALFA_POEIRA[b];
+      for (const s of g.stars) {
+        if (s.near && s.ab === b) {
+          const d = s.r * 3;
+          ctx.drawImage(g.dustSprite, s.x - d / 2, s.y - d / 2, d, d);
+        }
+      }
+    }
   }
   ctx.globalAlpha = 1;
 
@@ -763,7 +880,7 @@ function drawBackdrop(ctx, time) {
 
 /** Grade em perspectiva: só as horizontais rolam (as verticais convergentes
  *  são estáticas e vivem na camada #bg-canvas desde o Fase 1 de performance).
- *  Congelada com movimento reduzido.
+ *  Com movimento reduzido rola a 30% da velocidade (guia §9).
  *  @param {number} energy 0..0.55 — pulso da música/combinação (fundo reativo) */
 function drawPerspectiveGrid(ctx, energy = 0) {
   const g = game;
@@ -771,10 +888,11 @@ function drawPerspectiveGrid(ctx, energy = 0) {
   const boost = 1 + energy * 0.9;
   ctx.lineWidth = 1;
 
-  // horizontais com perspectiva, rolando para baixo
+  // horizontais com perspectiva, rolando para baixo (congelar com
+  // movimento reduzido virou 30% da velocidade — guia §9)
   const rows = 10;
-  const phase = g.reduceMotion ? 0 : (g.bgOffset * 0.0045) % 1;
-  ctx.strokeStyle = `rgba(122,96,255,${(0.15 * boost).toFixed(3)})`;
+  const phase = (g.bgOffset * 0.0045) % 1;
+  ctx.strokeStyle = rgba(g.gridColor, Math.min(0.22, 0.15 * boost));
   for (let i = 0; i < rows; i++) {
     const t = (i + phase) / rows;
     if (t <= 0.02) continue;
