@@ -6,6 +6,10 @@
    ========================================================= */
 
 const POOL_SIZE = 140;
+/** §9: com movimento reduzido o teto é 40 partículas vivas — limita
+    quantas cada explosão pode nascer (o pool continua fixo). */
+let poolReduzido = false;
+export function setPoolReducido(v) { poolReduzido = !!v; }
 const TEXT_POOL = 14;
 const COMBO_POOL = 3;
 const SHOCK_POOL = 4;
@@ -17,6 +21,7 @@ const particles = new Array(POOL_SIZE).fill(null).map(() => ({
 let pCursor = 0;
 
 export function burst(x, y, color, count = 12, speed = 220, size = 3) {
+  if (poolReduzido) count = Math.min(count, 4);   // §9: explosões curtas
   for (let i = 0; i < count; i++) {
     const p = particles[pCursor];
     pCursor = (pCursor + 1) % POOL_SIZE; // round-robin reutiliza as mais antigas
@@ -34,6 +39,7 @@ export function burst(x, y, color, count = 12, speed = 220, size = 3) {
 
 /** Explosão em anel (shield, power-up, reviver). */
 export function ring(x, y, color, count = 18, speed = 300) {
+  if (poolReduzido) count = Math.min(count, 6);   // §9: anel curto
   for (let i = 0; i < count; i++) {
     const p = particles[pCursor];
     pCursor = (pCursor + 1) % POOL_SIZE;

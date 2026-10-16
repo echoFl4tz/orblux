@@ -6,16 +6,25 @@
 
 import { on } from '../core/events.js';
 import { game } from '../game/game.js';
+import { zoneForLevel } from '../game/theme.js';
 
 let el = {};
 let last = { score: -1, lives: -1, level: -1, wave: -1, combo: -1, mult: -1, frac: -1 };
 let toastTimer = 0;
 let damageTimer = 0;
+let lastZone = -1;          // zona de cor vigente (glow do placar, §10)
+let danoFlashes = [];       // timestamps dos flashes de dano (teto 3/s, §9)
+let shatterTimer = 0;       // remove a classe de estilhaço do combo
 
 /** Flash vermelho rápido nas bordas ao levar dano (respeita mov. reduzido no CSS). */
 function flashDamage() {
   const d = el.damage;
   if (!d) return;
+  // teto do guia (§9): nunca mais de 3 flashes por segundo
+  const agora = performance.now();
+  danoFlashes = danoFlashes.filter((t) => agora - t < 1000);
+  if (danoFlashes.length >= 3) return;
+  danoFlashes.push(agora);
   d.classList.remove('on');
   void d.offsetWidth;                  // reinicia a animação
   d.classList.add('on');
@@ -82,6 +91,12 @@ export function initHud() {
     if (level === last.level) return;
     last.level = level;
     el.level.textContent = `NÍVEL ${level}`;
+    // glow do placar na cor da zona (§10) — só recalcula na troca de zona
+    const z = zoneForLevel(level);
+    if (z.index !== lastZone) {
+      lastZone = z.index;
+      el.score.style.setProperty('--zona', z.zone.grid);
+    }
   });
 
   on('game:wave', ({ wave }) => {
@@ -96,6 +111,12 @@ export function initHud() {
 
   on('game:combo', ({ multiplier, frac }) => {
     if (multiplier !== last.mult) {
+      // quebra de combo (§9): o contador estilhaça em fragmentos
+      if (last.mult >= 2 && multiplier < last.mult) {
+        el.comboWrap.classList.add('estilhaco');
+        clearTimeout(shatterTimer);
+        shatterTimer = setTimeout(() => el.comboWrap.classList.remove('estilhaco'), 350);
+      }
       last.mult = multiplier;
       el.combo.textContent = `x${multiplier}`;
       el.comboWrap.classList.toggle('hot', multiplier >= 2);
@@ -198,6 +219,8 @@ export function resetHud() {
   el.comboFill.style.transform = 'scaleX(1)';
   el.comboWrap.style.opacity = '1';
   el.comboWrap.classList.remove('hot');
+  el.comboWrap.classList.remove('estilhaco');
+  clearTimeout(shatterTimer);
   el.combo.textContent = 'x1';
   el.score.textContent = '0';
   el.level.textContent = 'NÍVEL 1';

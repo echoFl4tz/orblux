@@ -1,4 +1,5 @@
 import { equippedLook, drawSkinTrail, drawSkinAura, getBodySprite } from './skinrender.js';
+import { THEME, rgba } from './theme.js';
 
 /* =========================================================
    Entidades — criação e desenho das coisas do jogo
@@ -21,7 +22,7 @@ export const COLORS = {
   cyan: '#22e6ff',
   magenta: '#ff3df0',
   yellow: '#ffe45e',
-  green: '#4dff9e',
+  green: '#3DFFA2',   // token "power" do guia (escudos e power-ups)
   red: '#ff4d6d',
   orange: '#ff8a4d',
   white: '#ffffff',
@@ -160,8 +161,9 @@ const ORB_SCALE = 1.25; // visual +25% (a hitbox/colisão continua p.r)
  * A HITBOX NÃO MUDA: todo o raio visual deriva de p.r (raio base),
  * para QUALQUER skin — ver tests/skin-hitbox.test.mjs.
  * @param {object} [look]  look resolvido da skin (fallback: a equipada)
+ * @param {boolean} [lux]  luz projetada "lighter" (só tier Alto, §11)
  */
-export function drawPlayer(ctx, p, time, reduceMotion, look) {
+export function drawPlayer(ctx, p, time, reduceMotion, look, lux = false) {
   const L = look || equippedLook();
   const R = p.r * ORB_SCALE;   // visual = raio base * 1.25 (igual em todas as skins)
 
@@ -175,14 +177,29 @@ export function drawPlayer(ctx, p, time, reduceMotion, look) {
     if (alpha < 0.35) alpha = 0.35;
   }
 
+  // Luz projetada no chão (§6): raio 24u ≈ orbe × 7,5, opacidade 0,10,
+  // composição "lighter" — a orbe ilumina o cenário em volta dela.
+  // Só no tier Alto (§11): o blend aditivo de ~174 px custa ~8 FPS em
+  // máquina fraca; em device lento o adaptativo derruba a escala e a
+  // luz desliga junto, recuperando o quadro.
+  if (lux) {
+    ctx.globalCompositeOperation = 'lighter';
+    drawGlow(ctx, p.x, p.y, R * 7.5, L.paleta.brilho, 0.10 * alpha);
+    ctx.globalCompositeOperation = 'source-over';
+  }
+
   // Halo na cor da paleta da skin (sprite offscreen, sem pulso grande)
   drawGlow(ctx, p.x, p.y, R * 2.1, L.paleta.brilho, 0.72 * alpha);
 
   // Aura atrás do corpo (anel/pulsante/órbitas)
   drawSkinAura(ctx, p.x, p.y, R, L, time, reduceMotion, alpha);
 
+  // Respiração 1 ± 0,03 em 1,6 s (seno, §6) — sem movimento reduzido
+  const respira = reduceMotion ? 1 : 1 + Math.sin(time * (Math.PI * 2 / 1.6)) * 0.03;
+
   // Corpo pré-renderizado da skin (mesma caixa de SEMPRE — só muda a arte)
-  // Squash & stretch: estica na direção do movimento (direção = rastro)
+  // Squash & stretch: estica na direção do movimento (direção = rastro),
+  // teto de 1.15 no eixo do movimento (§6)
   const box = R / ORB_CIRCLE;
   let ang = 0, stretch = 0;
   if (!reduceMotion && p.trail.length >= 2) {
@@ -198,7 +215,13 @@ export function drawPlayer(ctx, p, time, reduceMotion, look) {
     ctx.save();
     ctx.translate(p.x, p.y);
     ctx.rotate(ang);
-    ctx.scale(1 + 0.16 * stretch, 1 / (1 + 0.10 * stretch));
+    ctx.scale(respira * (1 + 0.15 * stretch), respira / (1 + 0.10 * stretch));
+    ctx.drawImage(getBodySprite(L), -box / 2, -box / 2, box, box);
+    ctx.restore();
+  } else if (respira !== 1) {
+    ctx.save();
+    ctx.translate(p.x, p.y);
+    ctx.scale(respira, respira);
     ctx.drawImage(getBodySprite(L), -box / 2, -box / 2, box, box);
     ctx.restore();
   } else {
@@ -206,12 +229,17 @@ export function drawPlayer(ctx, p, time, reduceMotion, look) {
   }
   ctx.globalAlpha = 1;
 
-  // Anel externo sutil na cor da paleta
+  // Anel externo girando a 0,6 volta/s (§6): dois arcos com vão — sem
+  // movimento reduzido o anel fica parado (mas continua visível)
+  const ra = reduceMotion ? 0 : time * 0.6 * Math.PI * 2;
   ctx.globalAlpha = 0.5 * alpha;
   ctx.strokeStyle = L.paleta.brilho;
-  ctx.lineWidth = 2;
+  ctx.lineWidth = Math.max(1.5, R * 0.11);
   ctx.beginPath();
-  ctx.arc(p.x, p.y, R + 2.5, 0, Math.PI * 2);
+  ctx.arc(p.x, p.y, R + 2.5, ra, ra + Math.PI * 0.85);
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.arc(p.x, p.y, R + 2.5, ra + Math.PI, ra + Math.PI * 1.85);
   ctx.stroke();
   ctx.globalAlpha = 1;
 
@@ -226,35 +254,72 @@ export function drawPlayer(ctx, p, time, reduceMotion, look) {
     ctx.globalAlpha = 1;
   }
 
-  // Anel de escudo
+  // Escudo (§7): bolha "power" opacidade 0,25 com borda 0,7; treme
+  // sutilmente (decorativo). A resistência é binária (1 golpe) — não
+  // existe estado parcial, então a bolha é sempre desenhada cheia.
   if (p.shield) {
-    drawGlow(ctx, p.x, p.y, R * 2.6, COLORS.green, 0.6);
-    ctx.strokeStyle = COLORS.green;
-    ctx.lineWidth = 3;
+    const tremor = reduceMotion ? 0 : Math.sin(time * 31) * 0.8;
+    const rs = R + 8 + tremor;
+    drawGlow(ctx, p.x, p.y, R * 2.4, COLORS.green, 0.42);
+    ctx.globalAlpha = 0.25;
+    ctx.fillStyle = COLORS.green;
     ctx.beginPath();
-    ctx.arc(p.x, p.y, R + 9 + (reduceMotion ? 0 : Math.sin(time * 6) * 2), 0, Math.PI * 2);
+    ctx.arc(p.x, p.y, rs, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.globalAlpha = 0.7;
+    ctx.strokeStyle = COLORS.green;
+    ctx.lineWidth = 2.5;
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, rs, 0, Math.PI * 2);
     ctx.stroke();
+    ctx.globalAlpha = 1;
   }
 }
 
 // ---------------------------------------------------------
 //  Desenho — obstáculos (hitbox inalterada)
 // ---------------------------------------------------------
-const BAR_VIS_H = 21;    // altura visual do tubo (unidades lógicas)
+const BAR_VIS_H = 21;    // altura visual da barreira (unidades lógicas)
 const barGradCache = new Map();
 
-/** Gradiente horizontal do tubo (#ff4d6d → #ff8a4d), cacheado por largura lógica. */
-function getBarGradient(ctx, w, S) {
-  const key = Math.round(w / S);
+/** Gradiente interno vertical da barreira (danger 100% → 60%, §7),
+ *  definido em coordenadas 0→vh (posições independentes, cacheável). */
+function getBarGradient(vh) {
+  const key = Math.max(4, Math.round(vh));
   let grad = barGradCache.get(key);
   if (!grad) {
-    grad = ctx.createLinearGradient(0, 0, key * S, 0);
-    grad.addColorStop(0, COLORS.red);
-    grad.addColorStop(0.5, COLORS.orange);
-    grad.addColorStop(1, COLORS.red);
+    grad = barGradTemplate(key);
     barGradCache.set(key, grad);
   }
   return grad;
+}
+
+/** Cria (uma vez) um gradiente vertical reutilizável no contexto do jogo.
+ *  Cores prontas via rgba(): nenhum gradiente é criado por quadro. */
+let _gradCtx = null;
+function barGradTemplate(h) {
+  if (!_gradCtx) {
+    const c = document.createElement('canvas');
+    if (!c.getContext) return null;
+    _gradCtx = c.getContext('2d');
+  }
+  const grad = _gradCtx.createLinearGradient(0, 0, 0, h);
+  grad.addColorStop(0, rgba(THEME.color.danger, 1));
+  grad.addColorStop(1, rgba(THEME.color.danger, 0.6));
+  return grad;
+}
+
+/** Hachura diagonal (perigo = danger + hachura, §2): desenhada sobre o
+ *  corpo já preenchido, dentro do clip, deslizando a 20 px/s. */
+function hatchRect(ctx, x, y, w, h, off, passo, larg) {
+  ctx.strokeStyle = 'rgba(0,0,0,0.35)';
+  ctx.lineWidth = larg;
+  ctx.beginPath();
+  for (let i = -h - passo; i < w + h; i += passo) {
+    ctx.moveTo(x + i - off, y + h);
+    ctx.lineTo(x + i + h - off, y);
+  }
+  ctx.stroke();
 }
 
 function hexPath(ctx, cx, cy, r, rot = 0) {
@@ -270,59 +335,127 @@ function hexPath(ctx, cx, cy, r, rot = 0) {
 }
 
 /**
- * @param {{contrast?: boolean}} opts  alto contraste = contorno branco extra
+ * @param {{contrast?: boolean, time?: number, reduceMotion?: boolean}} opts
+ *   contrast = contorno branco extra (alto contraste); time/reduceMotion
+ *   animam a hachura e o aviso de barreira. Só desenho: hitbox, velocidade
+ *   e cadência do spawner ficam intactas.
  */
 export function drawObstacle(ctx, o, opts = {}) {
+  const t = opts.time || 0;
   if (o.type === 'bar') {
     const S = o.h / 13;                    // escala lógica do objeto
     const vh = BAR_VIS_H * S;              // visual: ~21 unidades
     const cy = o.y + o.h / 2;              // centro = centro da hitbox
     const yTop = cy - vh / 2;
+    const raio = vh * 0.35;
 
-    // brilho curto do tubo (sprite offscreen — sem halo grande borrado)
-    drawGlow(ctx, o.x + o.w / 2, cy, vh * 1.2, COLORS.red, 0.24);
-
-    // tubo translúcido com contorno nítido de 3px (pontas arredondadas)
-    const paint = (fill, stroke, lw) => {
-      ctx.beginPath();
-      roundRect(ctx, o.x, yTop, o.w, vh, vh / 2);
-      if (fill) { ctx.fillStyle = fill; ctx.fill(); }
-      if (stroke) { ctx.strokeStyle = stroke; ctx.lineWidth = lw; ctx.stroke(); }
-    };
-    paint('rgba(255,77,109,0.30)', null, 0);
-    if (opts.contrast) paint(null, '#ffffff', 6);            // contorno branco extra
-    paint(null, getBarGradient(ctx, o.w, S), 3);             // contorno neon do tubo
-
-    // núcleo interno claro — alinhado À HITBOX (13 unidades): é ele que "lê" como corpo sólido
+    // sombra projetada leve (retângulo escuro deslocado — sem shadowBlur
+    // por quadro)
+    ctx.fillStyle = 'rgba(0,0,0,0.28)';
     ctx.beginPath();
-    ctx.fillStyle = 'rgba(255,226,220,0.85)';
-    roundRect(ctx, o.x + vh * 0.4, cy - 1.75 * S, Math.max(4, o.w - vh * 0.8), 3.5 * S, 1.75 * S);
+    roundRect(ctx, o.x + 2, yTop + 4, o.w, vh, raio);
     ctx.fill();
+
+    // corpo: danger com gradiente interno 100% → 60% (§7). translate
+    // mantém o gradiente 0→vh alinhado à barreira em qualquer posição.
+    ctx.save();
+    ctx.translate(o.x, yTop);
+    ctx.beginPath();
+    roundRect(ctx, 0, 0, o.w, vh, raio);
+    ctx.fillStyle = getBarGradient(vh);
+    ctx.fill();
+
+    // hachura diagonal animada a 20 px/s (perigo é sempre danger + hachura)
+    ctx.save();
+    ctx.beginPath();
+    roundRect(ctx, 0, 0, o.w, vh, raio);
+    ctx.clip();
+    const passo = Math.max(8, 10 * S);
+    hatchRect(ctx, 0, 0, o.w, vh,
+      opts.reduceMotion ? 0 : (t * 20) % passo, passo, Math.max(2, 3 * S));
+    ctx.restore();
+    ctx.restore();
+
+    // alto contraste (contorno branco extra) e borda #FF9AAE 1,5px (§7)
+    if (opts.contrast) {
+      ctx.beginPath();
+      roundRect(ctx, o.x, yTop, o.w, vh, raio);
+      ctx.strokeStyle = '#ffffff';
+      ctx.lineWidth = 6;
+      ctx.stroke();
+    }
+    ctx.beginPath();
+    roundRect(ctx, o.x, yTop, o.w, vh, raio);
+    ctx.strokeStyle = '#FF9AAE';
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+
+    // aviso de barreira (§7): linha danger no topo com opacidade 0 → 0,6
+    // enquanto a barreira ainda está acima da tela, sumindo em ~350 ms
+    // após entrar. Posicional — sem estado novo e sem tocar no spawner.
+    const tE = o.vy > 0 ? (0 - (o.y + vh)) / o.vy : 0;
+    let av = 0;
+    if (tE > 0) av = 0.6 * Math.max(0, Math.min(1, 1 - tE / 0.08));
+    else if (tE > -0.35) av = 0.6 * (1 + tE / 0.35);
+    if (av > 0.02) {
+      ctx.globalAlpha = av;
+      ctx.strokeStyle = THEME.color.danger;
+      ctx.lineWidth = Math.max(2.5, 3 * S);
+      ctx.lineCap = 'round';
+      ctx.beginPath();
+      ctx.moveTo(o.x + 5, 8);
+      ctx.lineTo(o.x + o.w - 5, 8);
+      ctx.stroke();
+      // pontas verticais marcam a extensão exata da barreira
+      ctx.beginPath();
+      ctx.moveTo(o.x + 3, 5);
+      ctx.lineTo(o.x + 3, 12);
+      ctx.moveTo(o.x + o.w - 3, 5);
+      ctx.lineTo(o.x + o.w - 3, 12);
+      ctx.stroke();
+      ctx.lineCap = 'butt';
+      ctx.globalAlpha = 1;
+    }
   } else {
-    // drone: HEXÁGONO magenta com núcleo claro girando devagar
-    // (hexágono: contorno nítido, angular — nunca confundido com coletável)
+    // drone: HEXÁGONO perigoso — danger + hachura que gira junto (§2:
+    // perigo é sempre danger + hachura; o hexágono distingue da barreira
+    // retangular e o hachura distingue dos power-ups hexagonais)
     const rot = (o.phase || 0) + (o.t || 0) * 0.7;
     const R = o.r * 1.15;   // visual um pouco maior que a hitbox (perdão justo)
 
-    drawGlow(ctx, o.x, o.y, R * 1.9, COLORS.magenta, 0.38);
+    drawGlow(ctx, o.x, o.y, R * 1.9, THEME.color.danger, 0.38);
 
-    hexPath(ctx, o.x, o.y, R, rot);
-    ctx.fillStyle = 'rgba(28,7,34,0.88)';
-    ctx.fill();
-    if (opts.contrast) { ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 5.5; ctx.stroke(); }
-    ctx.strokeStyle = COLORS.magenta;
-    ctx.lineWidth = 3;
-    ctx.stroke();
-
-    // núcleo claro (gira junto com o hexágono)
     ctx.save();
     ctx.translate(o.x, o.y);
     ctx.rotate(rot);
+
+    hexPath(ctx, 0, 0, R, 0);
+    ctx.fillStyle = rgba(THEME.color.danger, 0.88);
+    ctx.fill();
+    // hachura acompanhando a rotação (mesmo deslize de 20 px/s)
+    ctx.save();
+    hexPath(ctx, 0, 0, R, 0);
+    ctx.clip();
+    hatchRect(ctx, -R, -R, R * 2, R * 2,
+      opts.reduceMotion ? 0 : (t * 20) % 9, 9, Math.max(1.5, R * 0.12));
+    ctx.restore();
+    if (opts.contrast) {
+      hexPath(ctx, 0, 0, R, 0);
+      ctx.strokeStyle = '#ffffff';
+      ctx.lineWidth = 5.5;
+      ctx.stroke();
+    }
+    hexPath(ctx, 0, 0, R, 0);
+    ctx.strokeStyle = '#FF9AAE';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+
+    // núcleo claro (gira junto com o hexágono)
     ctx.fillStyle = 'rgba(255,255,255,0.92)';
     ctx.beginPath();
     ctx.arc(0, 0, R * 0.3, 0, Math.PI * 2);
     ctx.fill();
-    ctx.fillStyle = COLORS.magenta;
+    ctx.fillStyle = THEME.color.danger;
     ctx.beginPath();
     ctx.arc(R * 0.16, 0, R * 0.12, 0, Math.PI * 2);
     ctx.fill();
@@ -337,42 +470,39 @@ const PICKUP_SCALE = 1.2;   // +20%
 const POWER_SCALE = 1.3;    // +30%
 
 export function drawPickup(ctx, pk, time, reduceMotion) {
-  const pulse = reduceMotion ? 1 : 1 + Math.sin(time * 6 + pk.t) * 0.15;
+  // pulso de brilho de 1,2 s (§7); sem movimento reduzido fica fixo
+  const pulse = reduceMotion ? 1 : 1 + Math.sin(time * (Math.PI * 2 / 1.2) + pk.t) * 0.15;
   const twinkle = reduceMotion ? 1 : 0.78 + 0.22 * Math.sin(time * 9 + pk.t * 2); // cintilar
   const wv = pk.r * PICKUP_SCALE * pulse;   // meia-largura visual
 
   drawGlow(ctx, pk.x, pk.y, wv * 2.7, COLORS.cyan, 0.85 * twinkle);
 
+  // losango girando a 0,25 volta/s (§7 e §12: recompensa é losango que
+  // gira — com movimento reduzido para, mas a forma continua legível)
   const box = wv / PICK_CIRCLE;
+  const rot = reduceMotion ? 0 : time * (Math.PI * 2 * 0.25) + pk.t;
+  ctx.save();
+  ctx.translate(pk.x, pk.y);
+  ctx.rotate(rot);
   ctx.globalAlpha = twinkle;
-  ctx.drawImage(getPickupSprite(), pk.x - box / 2, pk.y - box / 2, box, box);
+  ctx.drawImage(getPickupSprite(), -box / 2, -box / 2, box, box);
+  ctx.restore();
   ctx.globalAlpha = 1;
 }
 
 // ---------------------------------------------------------
 //  Desenho — power-ups
 // ---------------------------------------------------------
-function starPath(ctx, cx, cy, outer, inner, points = 5) {
-  ctx.beginPath();
-  for (let i = 0; i < points * 2; i++) {
-    const r = i % 2 === 0 ? outer : inner;
-    const a = (Math.PI / points) * i - Math.PI / 2;
-    const px = cx + Math.cos(a) * r;
-    const py = cy + Math.sin(a) * r;
-    if (i === 0) ctx.moveTo(px, py);
-    else ctx.lineTo(px, py);
-  }
-  ctx.closePath();
-}
-
 export function drawPowerup(ctx, pw, time, reduceMotion) {
   const pulse = reduceMotion ? 1 : 1 + Math.sin(time * 5) * 0.14;
   const R = pw.r * POWER_SCALE * pulse;
-  const color = pw.kind === 'shield' ? COLORS.green : COLORS.yellow;
+  // §7: TODO power-up é hexágono "power" com ícone interno e aura
+  // pulsante — escudo ou raio (x2) se distinguem pelo ícone
+  const color = COLORS.green;
 
   drawGlow(ctx, pw.x, pw.y, R * 2.3, color, 0.7);
 
-  // anel pulsante ao redor
+  // aura pulsante ao redor
   if (!reduceMotion) {
     ctx.globalAlpha = 0.35 + 0.3 * Math.sin(time * 4 + (pw.kind === 'shield' ? 0 : 1.4));
     ctx.strokeStyle = color;
@@ -383,31 +513,19 @@ export function drawPowerup(ctx, pw, time, reduceMotion) {
     ctx.globalAlpha = 1;
   }
 
-  if (pw.kind === 'shield') {
-    // HEXÁGONO verde com ícone de escudo
-    hexPath(ctx, pw.x, pw.y, R, 0);
-    ctx.fillStyle = 'rgba(10,26,18,0.92)';
-    ctx.fill();
-    ctx.strokeStyle = color;
-    ctx.lineWidth = 3;
-    ctx.stroke();
-    ctx.strokeStyle = color;
-    ctx.fillStyle = color;
-    ctx.lineWidth = Math.max(1.8, R * 0.15);
-    ctx.lineJoin = 'round';
-    drawShieldGlyph(ctx, pw.x, pw.y, R);
-  } else {
-    // ESTRELA dourada com raio — silhueta própria do x2
-    starPath(ctx, pw.x, pw.y, R, R * 0.46, 5);
-    ctx.fillStyle = 'rgba(38,30,4,0.92)';
-    ctx.fill();
-    ctx.strokeStyle = color;
-    ctx.lineWidth = 3;
-    ctx.lineJoin = 'round';
-    ctx.stroke();
-    ctx.fillStyle = color;
-    drawBoltGlyph(ctx, pw.x, pw.y, R * 0.96);
-  }
+  // HEXÁGONO power com ícone interno
+  hexPath(ctx, pw.x, pw.y, R, 0);
+  ctx.fillStyle = 'rgba(8,26,18,0.92)';
+  ctx.fill();
+  ctx.strokeStyle = color;
+  ctx.lineWidth = 3;
+  ctx.stroke();
+  ctx.strokeStyle = color;
+  ctx.fillStyle = color;
+  ctx.lineWidth = Math.max(1.8, R * 0.15);
+  ctx.lineJoin = 'round';
+  if (pw.kind === 'shield') drawShieldGlyph(ctx, pw.x, pw.y, R);
+  else drawBoltGlyph(ctx, pw.x, pw.y, R * 0.96);
 }
 
 /** Escudo (contorno). */

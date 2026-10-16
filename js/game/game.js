@@ -17,7 +17,7 @@ import { SCORE, waveForTime, waveBonus } from '../../net/rules.js';
 import { equippedLook, skinCollectFx } from './skinrender.js';
 import {
   burst, ring, shockwave, floatText, comboText, levelBanner, waveBanner,
-  updateParticles, drawParticles,
+  updateParticles, drawParticles, setPoolReducido,
   updateTexts, drawTexts, addShake, updateShake, shakeOffset, resetFX,
 } from './particles.js';
 import { tutorial, startTutorial, updateTutorial } from './tutorial.js';
@@ -61,6 +61,8 @@ export const game = {
   zoneIndex: 0, zoneIntensity: 1, gridColor: '#22E4FF',
   rings: [], dustSprite: null, // camadas 2 (anéis) e 3 (poeira) do parallax
   bgFlash: 0,               // flash sutil do fundo ao subir de nível (s)
+  danoT: 0,                 // vinheta danger nas bordas ao levar dano (s, §9)
+  comboBreakT: 0,           // fundo escurece 15% ao quebrar o combo (s, §9)
   resScale: 1,                 // qualidade adaptativa dos pixels (1 → 0,85 → 0,7)
   frameAcc: 0, frameN: 0,      // janela p/ medir a duração média dos quadros
   smoothFrames: 0,             // quadros lisos consecutivos (p/ voltar ao topo)
@@ -432,6 +434,9 @@ export function update(dt) {
   const velFator = THEME.speedFactor(g.level) * (g.reduceMotion ? 0.3 : 1);
   g.bgOffset += dt * 70 * g.S * velFator;
   if (g.bgFlash > 0) g.bgFlash = Math.max(0, g.bgFlash - dt);
+  if (g.danoT > 0) g.danoT = Math.max(0, g.danoT - dt);
+  if (g.comboBreakT > 0) g.comboBreakT = Math.max(0, g.comboBreakT - dt);
+  setPoolReducido(g.reduceMotion);   // teto de partículas com mov. reduzido (§9)
   for (const s of g.stars) {
     s.y += s.v * dt * velFator;
     if (s.y > g.H) { s.y = -4; s.x = Math.random() * g.W; }
@@ -592,6 +597,7 @@ export function update(dt) {
   if (g.comboTimer > 0) {
     g.comboTimer -= dt;
     if (g.comboTimer <= 0) {
+      if (g.combo >= 3) g.comboBreakT = 0.35;  // fundo escurece 350 ms (§9)
       g.combo = 0;
       g.multiplier = 1;
       emit('game:combo', { combo: 0, multiplier: 1, frac: 0 });
@@ -608,7 +614,7 @@ export function update(dt) {
     emit('game:level', { level: g.level });
     // juice: faixa "NÍVEL N" cruzando a tela + flash discreto do fundo
     levelBanner(g.level, g.W, g.H, g.reduceMotion);
-    g.bgFlash = 0.8;
+    if (podeFlash(g)) g.bgFlash = 0.8;   // teto de 3 flashes/s (§9)
     burst(p.x, p.y, COLORS.yellow, 18, 260, 3);
   }
 
@@ -628,9 +634,18 @@ function nearMiss(o) {
   g.runStats.nearMiss += 1;
   g.score += SCORE.NEAR_MISS;
   sfx('pickup', { combo: 0 });            // som discreto (pitch baixo do arco)
-  floatText(o.x, o.y - 10 * g.S, `QUASE! +${SCORE.NEAR_MISS}`, COLORS.green, 14);
-  if (!g.reduceMotion) ring(o.x, o.y, COLORS.green, 8, 130);
+  floatText(o.x, o.y - 10 * g.S, `QUASE! +${SCORE.NEAR_MISS}`, COLORS.yellow, 14);
+  if (!g.reduceMotion) ring(o.x, o.y, COLORS.yellow, 8, 130);   // lampejo gold (§9)
   emit('game:score', { score: Math.floor(g.score) });
+}
+
+/** Teto de flashes do guia (§9): nunca mais de 3 flashes por segundo. */
+function podeFlash(g) {
+  const agora = performance.now();
+  g.flashes = (g.flashes || []).filter((t) => agora - t < 1000);
+  if (g.flashes.length >= 3) return false;
+  g.flashes.push(agora);
+  return true;
 }
 
 function onHit() {
@@ -638,10 +653,12 @@ function onHit() {
   const p = g.player;
   p.invuln = INVULN_TIME;
   g.lives -= 1;
+  if (g.combo >= 3) g.comboBreakT = 0.35; // fundo escurece ao quebrar (§9)
   g.combo = 0; g.comboTimer = 0; g.multiplier = 1;
   g.sinceHit = 0;
   sfx('hit');
   addShake(16);                         // tremor mais forte (sensível a mov. reduzido)
+  g.danoT = 0.35;                       // vinheta danger nas bordas 350 ms (§9)
   burst(p.x, p.y, COLORS.red, 20, 300, 3.4);
   if (state.settings.haptics && navigator.vibrate) {
     try { navigator.vibrate(60); } catch { /* ignore */ }
@@ -668,6 +685,7 @@ function collectPulse(pk) {
   // coleta: efeito da skin equipada (pool fixo de partículas; menos com mov. reduzido)
   skinCollectFx(pk.x, pk.y, equippedLook(), g.reduceMotion);
   floatText(pk.x, pk.y - 14 * S, `+${points}`, g.x2Timer > 0 ? COLORS.yellow : COLORS.cyan, 15 + g.multiplier);
+  if (!g.reduceMotion) ring(pk.x, pk.y, COLORS.cyan, 10, 150);   // anel de onda (§9)
 
   if (g.multiplier > prevMult) {
     sfx('combo');
@@ -723,9 +741,11 @@ export function render(time) {
     for (const pk of g.pickups) drawPickup(ctx, pk, time, g.reduceMotion);
     for (const pw of g.powerups) drawPowerup(ctx, pw, time, g.reduceMotion);
     const contrast = state.settings.highContrast;
-    for (const o of g.obstacles) drawObstacle(ctx, o, { contrast });
+    for (const o of g.obstacles) drawObstacle(ctx, o, { contrast, time, reduceMotion: g.reduceMotion });
     if (g.mode !== 'gameover') drawDangerChevrons(ctx);
-    drawPlayer(ctx, g.player, time, g.reduceMotion, equippedLook());
+    // luz projetada só no tier Alto (blend "lighter" caro — §11)
+    drawPlayer(ctx, g.player, time, g.reduceMotion, equippedLook(),
+      tierForRes(g.resScale) === 'high');
     drawParticles(ctx);
     drawTexts(ctx);
   } else {
@@ -869,6 +889,23 @@ function drawBackdrop(ctx, time) {
   ctx.globalAlpha = 1;
 
   // flash sutil do fundo ao subir de nível
+  // vinheta de dano (§9): borda danger 0,35 por 350 ms, decai suave
+  if (g.danoT > 0) {
+    const a = 0.35 * (g.danoT / 0.35);
+    const grad = ctx.createRadialGradient(
+      g.W / 2, g.H / 2, Math.min(g.W, g.H) * 0.45,
+      g.W / 2, g.H / 2, Math.min(g.W, g.H) * 0.8);
+    grad.addColorStop(0, rgba(THEME.color.danger, 0));
+    grad.addColorStop(1, rgba(THEME.color.danger, a));
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, g.W, g.H);
+  }
+  // fundo escurece 15% por 350 ms ao quebrar o combo (§9)
+  if (g.comboBreakT > 0) {
+    ctx.fillStyle = `rgba(0,0,0,${(0.15 * (g.comboBreakT / 0.35)).toFixed(3)})`;
+    ctx.fillRect(0, 0, g.W, g.H);
+  }
+
   if (g.bgFlash > 0) {
     ctx.fillStyle = `rgba(255,244,214,${(g.bgFlash * 0.07).toFixed(3)})`;
     ctx.fillRect(0, 0, g.W, g.H);

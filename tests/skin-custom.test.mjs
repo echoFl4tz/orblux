@@ -3,7 +3,7 @@
    • vocabulário curado integro (nada de entrada livre)
    • contraste mínimo (núcleo sempre mais claro que meio/borda)
    • nenhuma paleta usa exatamente as cores dos obstáculos
-     (barras: #ff4d6d / #ff8a4d — evita confundir com perigo)
+     (danger + borda — evita confundir skin com perigo)
    • resolveLook só produz chaves visuais (nunca gameplay)
    Runner: node:test. Uso: node --test tests/skin-custom.test.mjs
    ========================================================= */
@@ -14,8 +14,10 @@ import assert from 'node:assert/strict';
 const { SKINS, PALETAS, RASTROS, AURAS, COLETA_FX, resolveLook } =
   await import('../js/game/skins.js');
 
-/** Paradas do gradiente das barras de obstáculo (perigo). */
-const CORES_OBSTACULO = ['#ff4d6d', '#ff8a4d'];
+/** Cores de obstáculo (perigo): danger + borda (guia §2/§7 da direção
+ *  "Corrida de luz num túnel cósmico") — nenhuma paleta de skin pode
+ *  usá-las exatamente (evita confundir skin com perigo). */
+const CORES_OBSTACULO = ['#ff3b5c', '#ff9aae'];
 
 /** Luminância relativa (WCAG) de uma cor hex de 6 dígitos. */
 function lum(hex) {

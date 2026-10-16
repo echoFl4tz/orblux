@@ -162,6 +162,174 @@ async function newPage(browser, reducedMotion) {
     `paralaxe roda a 30% (não congela): +${(off2 - off1).toFixed(0)} px em 1 s`);
   await b.context.close();
 
+  /* ============ objetos (A3): barreira/drone danger+hachura, aviso, power-ups ============ */
+  console.log('===== OBJETOS — perigo e recompensa (A3) =====');
+  const c = await newPage(browser, false);
+  const cp = c.page;
+
+  // leitura de linha no lado da página (uma vez); media() fica no Node
+  await cp.evaluate(() => {
+    window.__LINHA = (x, y, larg) => {
+      const cv = document.getElementById('game-canvas');
+      const ctx = cv.getContext('2d');
+      const g = window.OX.game;
+      const kx = cv.width / g.W, ky = cv.height / g.H;
+      const d = ctx.getImageData(Math.round(x * kx), Math.round(y * ky),
+        Math.max(1, Math.round(larg * kx)), Math.max(1, Math.round(2 * ky))).data;
+      const lin = [];
+      for (let i = 0; i < d.length; i += 4) lin.push([d[i], d[i + 1], d[i + 2]]);
+      return lin;
+    };
+  });
+  const media = (lin) => {
+    const n = lin.length || 1;
+    return lin.reduce((s, p) => [s[0] + p[0], s[1] + p[1], s[2] + p[2]], [0, 0, 0])
+      .map((v) => Math.round(v / n));
+  };
+
+  // barreira parada no caminho (vy 0) para amostrar o corpo
+  await cp.evaluate(() => {
+    OX.start({ tutorial: false });
+    OX.game.player.invuln = 9999;
+    const S = OX.game.S, W = OX.game.W;
+    OX.game.obstacles.length = 0;
+    OX.game.obstacles.push({ type: 'bar', x: W / 2 - 110, y: 60, w: 220, h: 13 * S, vy: 0, halfW: 110 });
+  });
+  await cp.waitForTimeout(150);
+
+  const bar = await cp.evaluate(() => {
+    const b = OX.game.obstacles[0];
+    return { x: b.x, y: b.y, w: b.w, vh: (b.h / 13) * 21 };
+  });
+  const corpo = media(await cp.evaluate(({ x, y, w, vh }) =>
+    window.__LINHA(x + 12, y + vh * 0.35, w - 24), bar));
+  ok(corpo[0] > 140 && corpo[1] < 110 && corpo[2] < 140,
+    `barreira em danger (rgb ${corpo.join(',')} — não o laranja antigo)`);
+
+  const escuro = await cp.evaluate(({ x, y, w, vh }) => {
+    const lin = window.__LINHA(x + 12, y + vh * 0.35, w - 24);
+    const corpo = lin.reduce((s, p) => Math.max(s, p[1]), 0);   // nível do corpo
+    return lin.filter((p) => p[1] < corpo - 12).length;          // hachura escura
+  }, bar);
+  ok(escuro >= 2, `hachura diagonal no corpo (${escuro} pixels escuros na linha)`);
+
+  const antes1 = await cp.evaluate(({ x, y, w, vh }) =>
+    JSON.stringify(window.__LINHA(x + 12, y + vh * 0.35, w - 24).map((p) => p[0])), bar);
+  await cp.waitForTimeout(250);   // hachura desliza 20 px/s; gap longe do
+  const depois1 = await cp.evaluate(({ x, y, w, vh }) =>   // período de 400 ms
+    JSON.stringify(window.__LINHA(x + 12, y + vh * 0.35, w - 24).map((p) => p[0])), bar);
+  ok(antes1 !== depois1, 'hachura anima (20 px/s) — corpo muda entre quadros');
+
+  // aviso de barreira: aparece quando ela ainda está acima da tela…
+  // (limpa antes: a barreira estática de cima tem vy 0 e "avisa" direto)
+  await cp.evaluate(() => { OX.game.obstacles.length = 0; });
+  await cp.waitForTimeout(80);
+  const linhaBase = media(await cp.evaluate(() => window.__LINHA(OX.game.W / 2 - 40, 8, 80)));
+  await cp.evaluate(() => {
+    const S = OX.game.S, W = OX.game.W;
+    OX.game.obstacles.length = 0;
+    OX.game.obstacles.push({ type: 'bar', x: W / 2 - 80, y: -20, w: 160, h: 13 * S, vy: 260 * S, halfW: 80 });
+  });
+  await cp.waitForTimeout(60);
+  const linhaAviso = media(await cp.evaluate(() => window.__LINHA(OX.game.W / 2 - 40, 8, 80)));
+  ok(linhaBase[0] < 30 && linhaAviso[0] > 40,
+    `aviso danger no topo antes de entrar (r ${linhaBase[0]} → ${linhaAviso[0]})`);
+
+  // …e some depois que ela entra (~350 ms)
+  await cp.evaluate(() => { OX.game.obstacles.length = 0; OX.advance(0.6); });
+  await cp.waitForTimeout(60);
+  const linhaDepois = media(await cp.evaluate(() => window.__LINHA(OX.game.W / 2 - 40, 8, 80)));
+  ok(linhaDepois[0] < 35, `aviso some após a entrada (r ${linhaDepois[0]} < 35)`);
+
+  // power-ups: hexágono "power" (não mais estrela dourada no x2) —
+  // empurra, espera um quadro do rAF e varre a linha central pegando
+  // o pixel mais verde (borda/ícone)
+  for (const kind of ['x2', 'shield']) {
+    await cp.evaluate((k) => {
+      const S = OX.game.S, W = OX.game.W, H = OX.game.H;
+      OX.game.powerups.length = 0;
+      OX.game.powerups.push({ kind: k, x: W / 2, y: H / 2, r: 14 * S, vy: 0, t: 0 });
+    }, kind);
+    await cp.waitForTimeout(80);            // um rAF desenha o power-up
+    const melhor = await cp.evaluate(() => {
+      const S = OX.game.S, W = OX.game.W, H = OX.game.H;
+      const R = 14 * S * 1.3;
+      const lin = window.__LINHA(W / 2 - R - 3, H / 2 - 1, R * 2 + 6);
+      return lin.reduce((melhor, p) => (p[1] > melhor[1] ? p : melhor), [0, 0, 0]);
+    });
+    ok(melhor[1] > 150 && melhor[0] < 130,
+      `power-up ${kind} em hexágono "power" (rgb ${melhor.join(',')})`);
+  }
+
+  // escudo do orbe: bolha 0,25 + borda 0,7 acendem na hora. Amostra o
+  // ponto ESQUERDO do anel (banda fora do corpo) e discrimina pelo
+  // EXCESSO DE VERDE (g − r): o traço power (61,255,162) mantém a
+  // diferença contra qualquer fundo, ao contrário de um limiar fixo.
+  // Aura branca (g − r ≈ 6) e halo ciano (b ≈ 255) ficam de fora.
+  await cp.evaluate(() => { OX.game.player.shield = false; });
+  await cp.waitForTimeout(60);
+  const anelBase = await cp.evaluate(() => {
+    const p = OX.game.player;
+    const rs = p.r * 1.25 + 8;
+    return window.__LINHA(p.x - rs - 2, p.y - 1, 6)
+      .filter((q) => q[1] - q[0] > 75 && q[1] > 95 && q[2] < 225).length;
+  });
+  await cp.evaluate(() => { OX.game.player.shield = true; });
+  await cp.waitForTimeout(60);
+  const anelEscudo = await cp.evaluate(() => {
+    const p = OX.game.player;
+    const rs = p.r * 1.25 + 8;
+    return window.__LINHA(p.x - rs - 2, p.y - 1, 6)
+      .filter((q) => q[1] - q[0] > 75 && q[1] > 95 && q[2] < 225).length;
+  });
+  ok(anelBase <= 2 && anelEscudo >= 3,
+    `bolha do escudo acende (pixels do power: ${anelBase} -> ${anelEscudo})`);
+
+  // ===== HUD + FEEDBACK (A4) =====
+  // sem interferência do jogo: sem coletas, combo zerado, sem dano
+  await cp.evaluate(() => {
+    OX.game.pickups.length = 0;
+    OX.game.combo = 0; OX.game.comboTimer = 0; OX.game.multiplier = 1;
+    OX.game.player.invuln = 9999;
+  });
+
+  // glow do placar na cor da zona (§10) aplicado pelo hud.js
+  const zonaCss = await cp.evaluate(() =>
+    document.getElementById('hud-score').style.getPropertyValue('--zona').trim());
+  ok(/^#[0-9a-fA-F]{6}$/.test(zonaCss), `placar com glow da zona (${zonaCss || 'vazio'})`);
+
+  // quebra de combo: contador estilhaça em fragmentos por 350 ms (§9)
+  await cp.evaluate(() => OX.emit('game:combo', { combo: 3, multiplier: 3, frac: 1 }));
+  await cp.waitForTimeout(60);
+  await cp.evaluate(() => OX.emit('game:combo', { combo: 0, multiplier: 1, frac: 0 }));
+  await cp.waitForTimeout(60);
+  const estilhaco = await cp.evaluate(() =>
+    document.getElementById('hud-combo-wrap').classList.contains('estilhaco'));
+  ok(estilhaco, 'quebra de combo estilhaça o contador (classe estilhaco)');
+  await cp.waitForTimeout(400);
+  const estilhacoFora = await cp.evaluate(() =>
+    !document.getElementById('hud-combo-wrap').classList.contains('estilhaco'));
+  ok(estilhacoFora, 'estilhaço do combo some em ~350 ms');
+
+  // vinheta de dano: borda danger acende no canto e some (§9)
+  const cantoNormal = await cp.evaluate(() => window.__LINHA(3, 3, 5)[0]);
+  await cp.evaluate(() => { OX.game.danoT = 0.35; });
+  await cp.waitForTimeout(80);
+  const cantoDano = await cp.evaluate(() => window.__LINHA(3, 3, 5)[0]);
+  await cp.evaluate(() => { OX.game.danoT = 0; });
+  ok(cantoDano[0] > cantoNormal[0] + 30,
+    `vinheta de dano nas bordas (r ${cantoNormal[0]} -> ${cantoDano[0]})`);
+
+  // combo quebrado por tempo: fundo escurece 15% por 350 ms (§9)
+  await cp.evaluate(() => { OX.game.combo = 3; OX.game.comboTimer = 0.02; });
+  await cp.waitForTimeout(60);
+  const comboBreakT = await cp.evaluate(() => OX.game.comboBreakT);
+  ok(comboBreakT > 0.15 && comboBreakT <= 0.35,
+    `fundo escurece ao quebrar o combo (comboBreakT=${comboBreakT.toFixed(2)})`);
+  await cp.evaluate(() => { OX.game.comboBreakT = 0; OX.game.combo = 0; OX.game.comboTimer = 0; });
+
+  await c.context.close();
+
   await browser.close();
 
   console.log('===== CONSOLE =====');
