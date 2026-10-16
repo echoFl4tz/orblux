@@ -10,7 +10,7 @@ verificado, do que ficou pendente e do que fazer antes de publicar.
 
 | Bateria | Comando | Resultado |
 |---------|---------|-----------|
-| Testes unitários (12 arquivos) | `node --test tests/*.test.mjs` | **149/149** |
+| Testes unitários (12 arquivos) | `node --test tests/*.test.mjs` | **150/150** |
 | Simulação do jogo inteiro | `node tests/smoke.mjs` | **42/42** |
 | Referências internas | `node tools/validate-refs.mjs` | OK |
 | Auditoria de UI (tamanho/a11y) | `node tools/audit-ui.mjs` | OK (< 150 KB) |
@@ -26,7 +26,7 @@ Zero erros de console em todas as suítes (390x844, 1280x720 e 360x640).
 |---------|-------|
 | `wallet.test.mjs` | Carteira local: saldo, ledger de 50, checksum FNV-1a, cap por partida, prêmios de skin |
 | `economy.test.mjs` | Fórmula de ganho (cap 120, mínimos, bônus), reset padrão vs `keepCoins` |
-| `billing.test.mjs` | Digital Goods/Play Billing: posse de skin, restaurar, revogação |
+| `billing.test.mjs` | Digital Goods/Play Billing: posse de skin, restaurar, revogação, mock honesto (sem preço fixo por padrão; `?precosdemo=1` só em dev) |
 | `skins.test.mjs` / `skins-state.test.mjs` | Loja: compra, preço nunca fixo em reais, persistência |
 | `skin-hitbox.test.mjs` | **Skin equipada NUNCA muda hitbox/dificuldade/ganhos** |
 | `skin-custom.test.mjs` | Personalização de cor/contorno sem efeito em jogabilidade |

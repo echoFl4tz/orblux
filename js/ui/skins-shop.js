@@ -110,7 +110,7 @@ function stateText(s) {
   if (ownsSkin(s.id)) return 'Comprada · Equipar';
   const p = priceOf(s.sku);
   if (p) return p;
-  return isStoreAvailable() ? '—' : 'Indisponível';
+  return 'Indisponível'; // sem preço vindo da Play: nunca um valor fixo
 }
 
 function visibleSkins() {
@@ -180,11 +180,11 @@ function renderGrid() {
     btn.appendChild(t);
     const d = document.createElement('span');
     d.className = 'skin-card-tier';
-    d.textContent = '20 skins com desconto';
+    d.textContent = '20 skins em um pacote';
     btn.appendChild(d);
     const e = document.createElement('span');
     e.className = 'skin-card-state';
-    e.textContent = allOwned ? '✓ Completa' : (bPrice || (isStoreAvailable() ? '—' : 'Indisponível'));
+    e.textContent = allOwned ? '✓ Completa' : (bPrice || 'Indisponível');
     btn.appendChild(e);
     li.appendChild(btn);
     grid.appendChild(li);

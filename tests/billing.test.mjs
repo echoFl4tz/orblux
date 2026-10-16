@@ -38,15 +38,27 @@ test('initBilling em localhost usa o MockProvider (disponível)', async () => {
   assert.equal(B.isStoreAvailable(), true);
 });
 
-test('fetchPrices devolve preço localizado para TODOS os SKUs (nunca vazio)', async () => {
+test('mock honesto: fetchPrices NUNCA devolve valor fixo por padrão', async () => {
   const prices = await B.fetchPrices();
   assert.equal(Object.keys(prices).length, ALL_SKUS.length);
   for (const sku of ALL_SKUS) {
-    assert.ok(prices[sku], `sem preço: ${sku}`);
-    assert.match(prices[sku].localizedPrice, /^R\$\s?\d+,\d{2}$/, `preço fora do formato pt-BR: ${sku}`);
+    assert.ok(prices[sku], `sku ausente: ${sku}`);
+    assert.equal(prices[sku].localizedPrice, '', `${sku} não pode ter preço de mentira por padrão`);
   }
-  // pacote completo tem preço próprio
-  assert.equal(prices[BUNDLE_SKU].localizedPrice, 'R$ 39,90');
+});
+
+test('?precosdemo=1 (só dev) devolve preços de vitrine no formato pt-BR', async () => {
+  globalThis.location = { search: '?debug=1&precosdemo=1' };
+  try {
+    const prices = await B.fetchPrices();
+    // só skins pagas por dinheiro têm preço de demo; as de moedas continuam vazias
+    for (const s of SKINS.filter((x) => ['A', 'B', 'C'].includes(x.tier))) {
+      assert.match(prices[s.sku].localizedPrice, /^R\$\s?\d+,\d{2}$/, `preço fora do formato pt-BR: ${s.sku}`);
+    }
+    assert.equal(prices[BUNDLE_SKU].localizedPrice, 'R$ 39,90');
+  } finally {
+    delete globalThis.location;
+  }
 });
 
 test('compra OK libera a skin E grava em state.skins.owned', async () => {

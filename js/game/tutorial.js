@@ -22,7 +22,7 @@ const STEPS = [
   },
   {
     id: 'avoid',
-    text: `${icon('ic-close')}<span>Desvie das <b>barras vermelhas</b>! Sobreviva 5 segundos para começar.</span>`,
+    text: `${icon('ic-close')}<span>Desvie das <b>barras vermelhas</b>! Você tem <b>3 vidas</b> — cada batida zera o combo. Sobreviva 5 segundos para começar.</span>`,
     done: (g) => g.sinceHit >= 5 && g.elapsed >= 8,
   },
 ];

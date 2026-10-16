@@ -85,10 +85,10 @@ async function newPage(browser, size, query) {
   fs.mkdirSync(SHOTS, { recursive: true });
   const chromium = loadChromium();
   const browser = await chromium.launch();
-  const tag = `?debug=1&t=${Date.now()}`;
+  const tag = `?debug=1&precosdemo=1&t=${Date.now()}`;
 
   /* ============ 390x844 (mobile) ============ */
-  console.log('===== MOEDAS UI — 390x844 (?debug=1) =====');
+  console.log('===== MOEDAS UI — 390x844 (?debug=1&precosdemo=1) =====');
   const mobile = await newPage(browser, { w: 390, h: 844 }, tag);
   const mp = mobile.page;
 
@@ -214,7 +214,7 @@ async function newPage(browser, size, query) {
   await mobile.context.close();
 
   /* ============ 1280x720 (desktop) ============ */
-  console.log('===== MOEDAS UI — 1280x720 (?debug=1) =====');
+  console.log('===== MOEDAS UI — 1280x720 (?debug=1&precosdemo=1) =====');
   const desk = await newPage(browser, { w: 1280, h: 720 }, tag);
   const dp = desk.page;
   ok(await dp.isVisible('#coin-chip'), 'chip no desktop');

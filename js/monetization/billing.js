@@ -152,8 +152,16 @@ function playProvider() {
 /* ---------------------------------------------------------
    Provedor MOCK (localhost / ?debug=1) — simula a loja p/ testar a UI
    Controlável por query: ?mock=fail | ?mock=cancel
+   PREÇOS: o mock NUNCA inventa valor em reais (regra da UI: só o
+   preço vindo da Play Store; sem provedor real = "Indisponível").
+   Para vitrine com preços de mentira em dev/capturas: ?precosdemo=1
 --------------------------------------------------------- */
+function mockPricesEnabled() {
+  return typeof location !== 'undefined' && /[?&]precosdemo=1/.test(location.search);
+}
+
 function mockPriceFor(sku) {
+  if (!mockPricesEnabled()) return '';
   if (sku === BUNDLE_SKU) return 'R$ 39,90';
   const s = getSkinBySku(sku);
   if (!s) return '';

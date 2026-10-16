@@ -11,6 +11,7 @@
      (8) loja indisponível (vitrine): sem preço, compra desabilitada
      (9) loja NUNCA aparece durante a partida
      (10) 360x640 e 390x844 sem overflow; zero erros de console
+     (11) mock sem ?precosdemo=1 nunca mostra valor fixo em reais
    Pré-requisito: dev server em http://localhost:8080 (sobe se preciso).
    Uso: node tests/skins-shop-ui.cjs
    Requer: playwright-chromium (npm i -D playwright-chromium)
@@ -100,7 +101,7 @@ const skinsState = (page) =>
 
   // ===== Fluxo principal (390x844, mock da Play) =====
   console.log('\n===== LOJA — fluxo principal (390x844) =====');
-  const { context: ctx1, page } = await newPage(browser, { w: 390, h: 844 });
+  const { context: ctx1, page } = await newPage(browser, { w: 390, h: 844 }, '&precosdemo=1');
   await page.waitForSelector('#screen-menu.active');
   ok(await page.locator('#skins-badge').isVisible(), '(1) selo "Novo" aparece antes da 1ª visita');
 
@@ -180,7 +181,7 @@ const skinsState = (page) =>
 
   // ===== Cancelamento silencioso =====
   console.log('\n===== LOJA — cancelamento (mock=cancel) =====');
-  const { context: ctx2, page: p2 } = await newPage(browser, { w: 390, h: 844 }, '&mock=cancel');
+  const { context: ctx2, page: p2 } = await newPage(browser, { w: 390, h: 844 }, '&mock=cancel&precosdemo=1');
   await p2.waitForSelector('#screen-menu.active');
   await p2.click('#btn-skins');
   await p2.waitForSelector('#shop-grid .skin-card');
@@ -226,6 +227,19 @@ const skinsState = (page) =>
   await p4.waitForSelector('#shop-detail:not([hidden])');
   ok(await noOverflow(p4), '(10) 360x640 sem overflow no detalhe');
   await ctx4.close();
+
+  // ===== Mock honesto: sem ?precosdemo=1 nunca há valor fixo =====
+  console.log('\n===== LOJA — mock sem preços (?debug=1 puro) =====');
+  const { context: ctx5, page: p5 } = await newPage(browser, { w: 390, h: 844 });
+  await p5.waitForSelector('#screen-menu.active');
+  await p5.click('#btn-skins');
+  await p5.waitForSelector('#shop-grid .skin-card');
+  ok((await p5.locator('[data-id="supernova"] .skin-card-state').textContent()) === 'Indisponível',
+    '(11) mock sem preços mostra "Indisponível" (nunca valor fixo em reais)');
+  const textoGrade = await p5.locator('#shop-grid').innerText();
+  ok(!/R\$\s*\d/.test(textoGrade), '(11) nenhum "R$ + número" na grade');
+  ok(!/desconto|urgente|últim/i.test(textoGrade), '(11) card do pacote sem linguagem de desconto/urgência');
+  await ctx5.close();
 
   ok(ALL_ERRORS.length === 0, `(10) zero erros de console (${ALL_ERRORS.length ? ALL_ERRORS.join(' | ') : 'nenhum'})`);
 
