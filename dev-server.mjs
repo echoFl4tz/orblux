@@ -31,10 +31,18 @@ createServer(async (req, res) => {
   try {
     let path = decodeURIComponent((req.url || '/').split('?')[0]);
     if (path === '/') path = '/index.html';
-    const filePath = normalize(join(ROOT, path));
+    let filePath = normalize(join(ROOT, path));
     if (!filePath.startsWith(ROOT)) { res.writeHead(403); res.end('403'); return; }
 
-    const data = await readFile(filePath);
+    let data;
+    try {
+      data = await readFile(filePath);
+    } catch {
+      // sem extensão: tenta .html (ex.: /dev/style → /dev/style.html)
+      if (extname(filePath)) throw new Error('404');
+      filePath += '.html';
+      data = await readFile(filePath);
+    }
     res.writeHead(200, {
       'Content-Type': MIME[extname(filePath).toLowerCase()] || 'application/octet-stream',
       'Cache-Control': 'no-cache',

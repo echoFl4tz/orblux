@@ -88,17 +88,18 @@ O ranking local (localStorage) já funciona. O ranking global faz parte da camad
 
 ```bash
 node tests/smoke.mjs           # simula o jogo inteiro: 59 testes (lógica, colisões, ranking, ritmo, ondas…)
-node --test tests/*.test.mjs   # testes unitários: 154 (economia, skins, billing, backend-parity, score…)
+node --test tests/*.test.mjs   # testes unitários: 156 (economia, skins, billing, backend-parity, score, migração…)
 node tools/validate-refs.mjs   # confere imports, IDs do HTML e assets
-node tools/audit-ui.mjs        # QA: sem emojis na interface, aria, tokens, peso < 150 KB
+node tools/audit-ui.mjs        # QA: sem emojis/inglês na interface, aria, tokens, peso < 150 KB
 node tools/gen-icons.mjs       # regenera os PNGs de ícone, maskable, apple-touch e og-image
 node tools/fetch-fonts.mjs     # baixa as fontes (subset latin) e gera css/fonts.css
 ```
 
-Suítes de navegador (13, Playwright — sobem o dev server sozinhas):
+Suítes de navegador (16, Playwright — sobem o dev server sozinhas):
 `wallet-ui`, `coins-ui`, `economy-ui`, `skins-shop-ui`, `nickname-ui`,
 `menu-regression`, `social-entry-ui`, `ranking-global-ui`, `chat-ui`,
-`clans-ui`, `tournament-ui`, `sw-update`, `perf-ui` — rode com `node tests/<suite>.cjs`.
+`clans-ui`, `tournament-ui`, `sw-update`, `responsive-ui`,
+`accessibility-ui`, `style-dev-ui`, `perf-ui` — rode com `node tests/<suite>.cjs`.
 A `perf-ui` abre janela (headed) de propósito: mede 55+ FPS com CPU
 throttle 4x em GPU real, o cenário de celular de entrada.
 

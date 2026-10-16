@@ -1,0 +1,550 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="dark">
+<title>ORBLUX — /dev/style (referência visual)</title>
+<style>
+  /* todas as cores vêm do THEME (js/game/theme.js) via JS — sem hex duplicado */
+  :root {
+    --deep: #05060F; --mid: #0B0E24; --text: #EAF6FF; --dim: #9FB3CC;
+    --cyan: #22E4FF; --magenta: #FF3DDC; --gold: #FFD84A;
+    --danger: #FF3B5C; --power: #3DFFA2; --violet: #8A5CFF;
+    --linha: #1B2340;
+  }
+  * { box-sizing: border-box; }
+  html, body { height: 100%; }
+  body {
+    margin: 0;
+    padding: max(16px, env(safe-area-inset-top)) max(16px, env(safe-area-inset-right))
+             max(16px, env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left));
+    background: radial-gradient(140% 70% at 50% 0%, var(--mid) 0%, var(--deep) 65%), var(--deep);
+    color: var(--text);
+    font-family: system-ui, "Segoe UI", Roboto, sans-serif;
+    line-height: 1.45;
+  }
+  main { max-width: 1100px; margin: 0 auto; }
+  h1 { font-size: clamp(20px, 4vw, 28px); margin: 6px 0 2px; text-shadow: 0 0 18px rgba(34, 228, 255, .45); }
+  .sub { color: var(--dim); font-size: 13px; margin: 0 0 6px; max-width: 68ch; }
+  .aviso { font-size: 12px; color: var(--power); border: 1px solid var(--linha); border-left: 3px solid var(--power);
+           background: var(--mid); border-radius: 8px; padding: 8px 10px; margin: 12px 0 0; }
+  h2 { font-size: 14px; letter-spacing: .14em; text-transform: uppercase; color: var(--cyan);
+       margin: 30px 0 10px; border-bottom: 1px solid var(--linha); padding-bottom: 6px; }
+  .grid { display: grid; gap: 10px; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); }
+  .card { background: var(--mid); border: 1px solid var(--linha); border-radius: 10px; padding: 12px; overflow-x: auto; }
+  .card h3 { margin: 0 0 6px; font-size: 13px; }
+  .nota { color: var(--dim); font-size: 12px; margin: 8px 0 0; }
+
+  /* paleta */
+  .swatch { display: flex; gap: 10px; align-items: center; background: var(--mid);
+            border: 1px solid var(--linha); border-radius: 10px; padding: 8px 10px; }
+  .swatch .cor { width: 44px; height: 44px; border-radius: 8px; border: 1px solid rgba(234, 246, 255, .25); flex: none; }
+  .swatch .meta { min-width: 0; }
+  .swatch .nome { font-weight: 700; font-size: 13px; }
+  .swatch .hex { color: var(--dim); font-size: 12px; font-variant-numeric: tabular-nums; }
+  .swatch .uso { color: var(--dim); font-size: 11px; }
+
+  /* zonas */
+  .zona { border-radius: 10px; border: 1px solid var(--linha); padding: 12px; min-height: 118px;
+          display: flex; flex-direction: column; justify-content: space-between; }
+  .zona .faixa { font-weight: 800; font-size: 15px; }
+  .zona .chips { display: flex; gap: 6px; flex-wrap: wrap; }
+  .zona .chip { font-size: 11px; padding: 2px 7px; border-radius: 999px; background: rgba(5, 6, 15, .55);
+                border: 1px solid rgba(234, 246, 255, .2); font-variant-numeric: tabular-nums; }
+
+  /* tabelas */
+  table { border-collapse: collapse; width: 100%; font-size: 12.5px; }
+  th, td { text-align: left; padding: 5px 8px; border-bottom: 1px solid var(--linha); }
+  th { color: var(--dim); font-weight: 600; }
+  td b { color: var(--cyan); font-weight: 700; }
+  .mono { font-variant-numeric: tabular-nums; }
+
+  /* objetos */
+  #objetos { display: block; width: 100%; height: 170px; }
+
+  /* HUD mock */
+  .hud-wrap { padding: 0; overflow: hidden; }
+  .hud-mock { position: relative; height: 190px; background:
+      radial-gradient(120% 90% at 50% 0%, #101633 0%, var(--deep) 80%); }
+  .hm-hearts { position: absolute; top: 14px; left: 14px; display: flex; gap: 5px; }
+  .hm-hearts svg { width: 22px; height: 22px; filter: drop-shadow(0 2px 3px rgba(0, 0, 0, .6)); }
+  .hm-hearts .quebrado { opacity: .28; transform: rotate(14deg); }
+  .hm-center { position: absolute; top: 12px; left: 50%; transform: translateX(-50%);
+               text-align: center; width: min(72%, 340px); }
+  .hm-score { font-size: clamp(30px, 7vw, 44px); font-weight: 800; letter-spacing: .02em;
+              font-variant-numeric: tabular-nums; text-shadow: 0 0 16px rgba(34, 228, 255, .55); }
+  .hm-combo { color: var(--magenta); font-weight: 800; font-size: clamp(16px, 4vw, 24px);
+              text-shadow: 0 0 12px rgba(255, 61, 220, .5); margin-top: -2px; }
+  .hm-bar { height: 8px; border-radius: 999px; background: rgba(234, 246, 255, .12);
+            border: 1px solid var(--linha); margin-top: 8px; overflow: hidden; }
+  .hm-bar span { display: block; height: 100%; width: 62%;
+                 background: linear-gradient(90deg, var(--cyan), var(--magenta)); }
+  .hm-wave { display: inline-block; margin-top: 7px; font-size: 11px; letter-spacing: .12em;
+             color: var(--cyan); border: 1px solid rgba(34, 228, 255, .5); border-radius: 999px;
+             padding: 2px 9px; background: rgba(5, 6, 15, .5); }
+  .hm-pause { position: absolute; top: 10px; right: 10px; width: 44px; height: 44px;
+              border-radius: 10px; border: 1px solid var(--linha); background: rgba(11, 14, 36, .8);
+              color: var(--text); display: grid; place-items: center; cursor: pointer; }
+  .hm-pause svg { width: 20px; height: 20px; fill: currentColor; }
+  .hud-wrap .nota { padding: 0 12px 12px; }
+
+  .rotulos { display: flex; flex-wrap: wrap; gap: 8px; font-size: 11.5px; color: var(--dim); }
+  .rotulos span::before { content: "•"; color: var(--cyan); margin-right: 4px; }
+  footer { color: var(--dim); font-size: 11.5px; margin: 30px 0 8px; border-top: 1px solid var(--linha); padding-top: 10px; }
+</style>
+</head>
+<body>
+<main>
+  <h1>ORBLUX — /dev/style</h1>
+  <p class="sub">Referência visual da direção <b>“Corrida de luz num túnel cósmico”</b>.
+     Todos os números vêm de <span class="mono">js/game/theme.js</span> (espelho do
+     orblux-style-guide.md). Todos os elementos lado a lado para ajustar e comparar.</p>
+  <p class="aviso">Só desenho: nada nesta página nem no tema altera hitbox, velocidade,
+     pontuação, RNG do spawner ou dificuldade.</p>
+
+  <h2>Paleta</h2>
+  <div id="paleta" class="grid"></div>
+
+  <h2>Zonas de cor por nível</h2>
+  <div id="zonas" class="grid"></div>
+  <p class="nota">Troca suave em 1,5 s (interpolar cores). Depois do nível 12, repete com
+     intensidade +15%. Opacidades: névoa 0,20–0,35 · grade 0,10–0,18 · estrelas 0,3–0,9.
+     O cenário nunca passa de 35% da luminosidade dos objetos.</p>
+
+  <h2>Escala responsiva — u = clamp(min(W,H), 360, 560) / 100</h2>
+  <div class="card" id="escala"></div>
+
+  <h2>Objetos de jogo</h2>
+  <div class="card">
+    <canvas id="objetos" height="170"></canvas>
+    <div class="rotulos" id="rotulos"></div>
+    <p class="nota">Perigo é sempre <b style="color: var(--danger)">danger + hachura</b>;
+       recompensa é sempre ciano/dourado + losango. O cenário nunca usa danger nem gold.</p>
+  </div>
+
+  <h2>HUD — mock do layout alvo (implementação na fase A4)</h2>
+  <div class="card hud-wrap">
+    <div class="hud-mock">
+      <div class="hm-hearts" id="hm-hearts" aria-hidden="true"></div>
+      <div class="hm-center">
+        <div class="hm-score" id="hm-score">12.340</div>
+        <div class="hm-combo" id="hm-combo">COMBO x7</div>
+        <div class="hm-bar"><span id="hm-bar"></span></div>
+        <div class="hm-wave" id="hm-wave">ONDA 4</div>
+      </div>
+      <button class="hm-pause" type="button" aria-label="Pausar (mock do HUD)">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="6" y="5" width="4" height="14" rx="1"/><rect x="14" y="5" width="4" height="14" rx="1"/></svg>
+      </button>
+    </div>
+    <p class="nota">Pontuação topo central (7u, glow ciano) · combo magenta abaixo (some com
+       combo &lt; 3) · vidas topo esquerdo (3u, quebram ao dano) · barra de nível 0,6u
+       (ciano→magenta) · chip de onda mantido · pausa topo direito, alvo 44 px ·
+       margens max(safe-area, 2u). A área central de jogo nunca é coberta pelo HUD.</p>
+  </div>
+
+  <h2>Tempos, easings e qualidade</h2>
+  <div id="tokens" class="grid"></div>
+
+  <h2>Parallax e velocidade</h2>
+  <div class="card" id="parallax"></div>
+
+  <footer>Fonte da verdade: orblux-style-guide.md + orblux-theme.js · tokens em
+    js/game/theme.js · página de desenvolvimento (fora do precache do service worker).</footer>
+</main>
+
+<script type="module">
+import { THEME } from '../js/game/theme.js';
+
+window.THEME_REF = THEME;
+const C = THEME.color;
+
+// --- cores da página vêm do THEME (centralização) ---
+const raiz = document.documentElement.style;
+const mapaCss = {
+  deep: C.bgDeep, mid: C.bgMid, text: C.text, dim: C.textDim,
+  cyan: C.cyan, magenta: C.magenta, gold: C.gold,
+  danger: C.danger, power: C.power, violet: C.violet,
+};
+for (const [k, v] of Object.entries(mapaCss)) raiz.setProperty(`--${k}`, v);
+
+const el = (id) => document.getElementById(id);
+const esc = (s) => String(s).replace(/[&<>]/g, (m) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[m]));
+
+// ---------------------------------------------------------
+// Paleta
+// ---------------------------------------------------------
+const PALETA = [
+  ['bg.deep', C.bgDeep, 'fundo mais escuro'],
+  ['bg.mid', C.bgMid, 'degradê do fundo'],
+  ['text.main', C.text, 'pontuação e textos'],
+  ['text.dim', C.textDim, 'textos secundários'],
+  ['cyan', C.cyan, 'orbe, pulsos comuns, identidade'],
+  ['magenta', C.magenta, 'identidade, acentos, combo'],
+  ['gold', C.gold, 'pulso raro, recorde, zona dourada'],
+  ['danger', C.danger, 'barreiras, dano'],
+  ['power', C.power, 'power-ups, escudo'],
+  ['violet', C.violet, 'cenário, acento secundário'],
+];
+el('paleta').innerHTML = PALETA.map(([nome, hex, uso]) => `
+  <div class="swatch"><div class="cor" style="background:${hex}"></div>
+    <div class="meta"><div class="nome">${esc(nome)}</div>
+    <div class="hex">${esc(hex)}</div><div class="uso">${esc(uso)}</div></div></div>`).join('');
+
+// ---------------------------------------------------------
+// Zonas
+// ---------------------------------------------------------
+const NOMES_ZONA = ['Ciano', 'Violeta', 'Magenta', 'Âmbar'];
+el('zonas').innerHTML = THEME.zones.map((z, i) => {
+  const ate = (THEME.zones[i + 1] ? THEME.zones[i + 1].from : 13) - 1;
+  return `<div class="zona" style="background:linear-gradient(180deg, ${z.bgTop} 0%, ${z.bgBottom} 100%)">
+    <div class="faixa">Níveis ${z.from}–${ate} · ${NOMES_ZONA[i]}</div>
+    <div class="chips"><span class="chip">névoa ${z.nebula}</span>
+      <span class="chip">grade ${z.grid}</span></div></div>`;
+}).join('');
+
+// ---------------------------------------------------------
+// Escala (u)
+// ---------------------------------------------------------
+const u = THEME.unit(window.innerWidth, window.innerHeight);
+const px = (n) => (n * u).toFixed(1);
+el('escala').innerHTML = `
+  <div class="mono">u neste viewport (${window.innerWidth}×${window.innerHeight}) = <b>${u.toFixed(2)} px</b>
+    · 360×640 → u = 3,60 · 1280×720 → u = 5,60</div>
+  <table><tr><th>Elemento</th><th>Tamanho</th><th>Aqui</th></tr>
+    <tr><td>Orbe (raio)</td><td>3,2u</td><td class="mono">${px(3.2)} px</td></tr>
+    <tr><td>Pulso (meia-diagonal)</td><td>2,2u</td><td class="mono">${px(2.2)} px</td></tr>
+    <tr><td>Barreira (espessura)</td><td>1,8u (mín. 5 px)</td><td class="mono">${Math.max(5, px(1.8))} px</td></tr>
+    <tr><td>Rastro (comprimento)</td><td>14u</td><td class="mono">${px(14)} px</td></tr>
+    <tr><td>Halo do orbe</td><td>10u</td><td class="mono">${px(10)} px</td></tr>
+    <tr><td>Partícula</td><td>0,5–1,2u</td><td class="mono">${px(0.5)}–${px(1.2)} px</td></tr>
+    <tr><td>Número flutuante “+1”</td><td>3,2u</td><td class="mono">${px(3.2)} px</td></tr>
+  </table>
+  <p class="nota">Isso muda só o desenho: hitbox e lógica não mudam de comportamento.</p>`;
+
+// ---------------------------------------------------------
+// Objetos (canvas animado; respeita “Reduzir movimento”)
+// ---------------------------------------------------------
+const cv = el('objetos');
+const ctx = cv.getContext('2d');
+const ROTULOS = [
+  ['Orbe', 'núcleo branco, anel 0,6 volta/s, rastro fita 14u'],
+  ['Pulso comum', 'losango cyan, rotação 0,25 volta/s'],
+  ['Pulso raro', 'losango gold em estrela, brilho 1,5x'],
+  ['Barreira', 'danger + hachura 20 px/s, borda #FF9AAE'],
+  ['Aviso', 'entra 500 ms antes, opacidade 0→0,6'],
+  ['Power-up', 'hexágono power com aura pulsante'],
+  ['Escudo', 'bolha power 0,25, borda 0,7'],
+];
+el('rotulos').innerHTML = ROTULOS
+  .map(([t, d]) => `<span><b style="color:var(--text)">${esc(t)}</b> — ${esc(d)}</span>`).join('');
+
+const reduz = window.matchMedia('(prefers-reduced-motion: reduce)');
+
+function losango(g, x, y, r, cor, borda, rot, escala) {
+  g.save();
+  g.translate(x, y);
+  g.rotate(rot);
+  g.scale(1, escala || 1);
+  g.beginPath();
+  g.moveTo(0, -r); g.lineTo(r, 0); g.lineTo(0, r); g.lineTo(-r, 0);
+  g.closePath();
+  g.fillStyle = cor; g.fill();
+  g.lineWidth = Math.max(1, r * 0.12); g.strokeStyle = borda; g.stroke();
+  g.restore();
+}
+
+function estrela(g, x, y, r, cor, rot) {
+  g.save();
+  g.translate(x, y);
+  g.rotate(rot);
+  g.beginPath();
+  for (let i = 0; i < 8; i++) {
+    const a = (i * Math.PI) / 4;
+    const rr = i % 2 === 0 ? r : r * 0.55;
+    g[i === 0 ? 'moveTo' : 'lineTo'](Math.cos(a) * rr, Math.sin(a) * rr);
+  }
+  g.closePath();
+  g.fillStyle = cor; g.fill();
+  g.lineWidth = Math.max(1, r * 0.1); g.strokeStyle = 'rgba(255,255,255,.75)'; g.stroke();
+  g.restore();
+}
+
+function barreira(g, x, y, w, h, t) {
+  const r = Math.min(6, h / 2);
+  g.save();
+  g.translate(x, y);
+  // sombra projetada leve
+  g.shadowColor = 'rgba(255, 59, 92, .5)'; g.shadowBlur = 8; g.shadowOffsetY = 3;
+  const grad = g.createLinearGradient(0, -h / 2, 0, h / 2);
+  grad.addColorStop(0, 'rgba(255, 59, 92, 1)');
+  grad.addColorStop(1, 'rgba(255, 59, 92, .6)');
+  g.beginPath();
+  g.roundRect(-w / 2, -h / 2, w, h, r);
+  g.fillStyle = grad; g.fill();
+  g.shadowColor = 'transparent';
+  // hachura diagonal animada a 20 px/s
+  g.clip();
+  const passo = 14;
+  const off = reduz.matches ? 0 : ((t / 1000) * 20) % passo;
+  g.strokeStyle = 'rgba(0, 0, 0, .35)';
+  g.lineWidth = 4;
+  for (let i = -h - passo; i < w + h; i += passo) {
+    g.beginPath();
+    g.moveTo(-w / 2 + i - off, h / 2);
+    g.lineTo(-w / 2 + i + h - off, -h / 2);
+    g.stroke();
+  }
+  g.restore();
+  // borda
+  g.save();
+  g.translate(x, y);
+  g.beginPath();
+  g.roundRect(-w / 2, -h / 2, w, h, r);
+  g.lineWidth = 1.5;
+  g.strokeStyle = '#FF9AAE';
+  g.stroke();
+  g.restore();
+}
+
+function desenhar(t) {
+  const larg = cv.clientWidth || cv.parentElement.clientWidth;
+  const dpr = Math.min(2, window.devicePixelRatio || 1);
+  const L = Math.max(280, Math.round(larg));
+  if (cv.width !== Math.round(L * dpr)) { cv.width = Math.round(L * dpr); cv.height = Math.round(170 * dpr); }
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  ctx.clearRect(0, 0, L, 170);
+  const uu = THEME.unit(L, 170);
+  const n = ROTULOS.length;
+  const cel = L / n;
+  const cy = 74;
+  const pausado = reduz.matches;
+  const tt = pausado ? 0 : t;
+  const respira = 1 + (pausado ? 0 : 0.03 * Math.sin((tt / 1600) * Math.PI * 2));
+
+  // 1) orbe
+  {
+    const x = cel * 0.5;
+    ctx.save();
+    ctx.globalCompositeOperation = 'lighter';
+    const halo = ctx.createRadialGradient(x, cy, 0, x, cy, THEME.size.halo * uu);
+    halo.addColorStop(0, 'rgba(34, 228, 255, .30)');
+    halo.addColorStop(1, 'rgba(34, 228, 255, 0)');
+    ctx.fillStyle = halo;
+    ctx.beginPath(); ctx.arc(x, cy, THEME.size.halo * uu, 0, Math.PI * 2); ctx.fill();
+    ctx.restore();
+    // rastro fita (14 segmentos, 0,6→0 de opacidade, 100%→15% de largura)
+    for (let s = 0; s < 14; s++) {
+      const a = 0.6 * (1 - s / 14);
+      const largura = THEME.size.orb * uu * 2 * (1 - 0.85 * (s / 14));
+      ctx.fillStyle = `rgba(34, 228, 255, ${a.toFixed(3)})`;
+      ctx.beginPath();
+      ctx.ellipse(x + s * uu * 1.6, cy, largura / 2, Math.max(1, largura / 2.4), 0, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    // núcleo gradiente branco → ciano
+    const r = THEME.size.orb * uu * respira;
+    const core = ctx.createRadialGradient(x, cy, 0, x, cy, r);
+    core.addColorStop(0, '#FFFFFF');
+    core.addColorStop(0.55, C.cyan);
+    core.addColorStop(1, 'rgba(34, 228, 255, .35)');
+    ctx.fillStyle = core;
+    ctx.beginPath(); ctx.arc(x, cy, r, 0, Math.PI * 2); ctx.fill();
+    // anel girando 0,6 volta/s
+    ctx.strokeStyle = 'rgba(255, 255, 255, .85)';
+    ctx.lineWidth = Math.max(1, 0.35 * uu);
+    ctx.beginPath();
+    ctx.ellipse(x, cy, r * 1.35, r * 1.35, (tt / 1000) * 0.6 * Math.PI * 2, 0, Math.PI * 2);
+    ctx.stroke();
+  }
+
+  // 2) pulso comum
+  {
+    const x = cel * 1.5;
+    const pulso = pausado ? 1 : 1 + 0.08 * Math.sin((tt / 1200) * Math.PI * 2);
+    ctx.save();
+    ctx.globalCompositeOperation = 'lighter';
+    const g = ctx.createRadialGradient(x, cy, 0, x, cy, THEME.size.pulse * uu * 2.2 * pulso);
+    g.addColorStop(0, 'rgba(34, 228, 255, .5)');
+    g.addColorStop(1, 'rgba(34, 228, 255, 0)');
+    ctx.fillStyle = g;
+    ctx.beginPath(); ctx.arc(x, cy, THEME.size.pulse * uu * 2.2 * pulso, 0, Math.PI * 2); ctx.fill();
+    ctx.restore();
+    losango(ctx, x, cy, THEME.size.pulse * uu * pulso, C.cyan, '#BFF6FF',
+      (tt / 1000) * 0.25 * Math.PI * 2, 1);
+  }
+
+  // 3) pulso raro (estrela dourada, brilho 1,5x)
+  {
+    const x = cel * 2.5;
+    const pulso = pausado ? 1 : 1 + 0.1 * Math.sin((tt / 900) * Math.PI * 2);
+    ctx.save();
+    ctx.globalCompositeOperation = 'lighter';
+    const g = ctx.createRadialGradient(x, cy, 0, x, cy, THEME.size.pulse * uu * 3.2 * pulso);
+    g.addColorStop(0, 'rgba(255, 216, 74, .55)');
+    g.addColorStop(1, 'rgba(255, 216, 74, 0)');
+    ctx.fillStyle = g;
+    ctx.beginPath(); ctx.arc(x, cy, THEME.size.pulse * uu * 3.2 * pulso, 0, Math.PI * 2); ctx.fill();
+    ctx.restore();
+    estrela(ctx, x, cy, THEME.size.pulse * uu * 1.35 * pulso, C.gold,
+      (tt / 1000) * 0.25 * Math.PI * 2);
+  }
+
+  // 4) barreira
+  barreira(ctx, cel * 3.5, cy, cel * 0.72, Math.max(5, THEME.size.barrier * uu), tt);
+
+  // 5) aviso de barreira (opacidade 0→0,6 oscilando)
+  {
+    const x = cel * 4.5;
+    const a = pausado ? 0.45 : 0.3 + 0.3 * Math.sin((tt / 500) * Math.PI * 2);
+    ctx.save();
+    ctx.strokeStyle = `rgba(255, 59, 92, ${Math.max(0, Math.min(0.6, a)).toFixed(3)})`;
+    ctx.lineWidth = Math.max(2, THEME.size.barrier * uu * 0.7);
+    ctx.setLineDash([8, 6]);
+    ctx.beginPath();
+    ctx.roundRect(x - cel * 0.36, cy - Math.max(5, THEME.size.barrier * uu) / 2,
+      cel * 0.72, Math.max(5, THEME.size.barrier * uu), 4);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    // linha/anel de aviso acima
+    ctx.globalAlpha = Math.max(0, Math.min(0.6, a)) / 0.6;
+    ctx.beginPath();
+    ctx.moveTo(x - cel * 0.3, cy - 26);
+    ctx.lineTo(x + cel * 0.3, cy - 26);
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  // 6) power-up hexágono
+  {
+    const x = cel * 5.5;
+    const r = 2.6 * uu;
+    const aura = pausado ? 1 : 1 + 0.12 * Math.sin((tt / 1100) * Math.PI * 2);
+    ctx.save();
+    ctx.beginPath();
+    for (let i = 0; i < 6; i++) {
+      const a = (i * Math.PI) / 3 - Math.PI / 2;
+      ctx[i === 0 ? 'moveTo' : 'lineTo'](x + Math.cos(a) * r * aura, cy + Math.sin(a) * r * aura);
+    }
+    ctx.closePath();
+    ctx.fillStyle = 'rgba(61, 255, 162, .18)';
+    ctx.fill();
+    ctx.strokeStyle = C.power;
+    ctx.lineWidth = 2;
+    ctx.stroke();
+    // ícone interno (losango de energia)
+    losango(ctx, x, cy, r * 0.4, C.power, 'rgba(255,255,255,.8)', 0, 1);
+    ctx.restore();
+  }
+
+  // 7) escudo (bolha)
+  {
+    const x = cel * 6.5;
+    const r = 4.2 * uu;
+    ctx.save();
+    ctx.beginPath(); ctx.arc(x, cy, r, 0, Math.PI * 2);
+    ctx.fillStyle = 'rgba(61, 255, 162, .25)';
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(61, 255, 162, .7)';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+    ctx.beginPath(); ctx.arc(x - r * 0.3, cy - r * 0.3, r * 0.25, 0, Math.PI * 2);
+    ctx.fillStyle = 'rgba(255, 255, 255, .45)';
+    ctx.fill();
+    ctx.restore();
+  }
+
+  // rótulos
+  ctx.font = '10px system-ui, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillStyle = '#9FB3CC';
+  for (let i = 0; i < n; i++) ctx.fillText(ROTULOS[i][0], cel * (i + 0.5), 158);
+}
+
+function loop(t) {
+  window.STYLE_FRAMES = (window.STYLE_FRAMES || 0) + 1;
+  desenhar(t);
+  if (!reduz.matches) requestAnimationFrame(loop);
+}
+requestAnimationFrame(loop);
+reduz.addEventListener('change', () => requestAnimationFrame(loop));
+window.addEventListener('resize', () => requestAnimationFrame(loop));
+
+// ---------------------------------------------------------
+// HUD mock — corações
+// ---------------------------------------------------------
+const CORACAO = (classe) => `<svg viewBox="0 0 24 24" class="${classe}" aria-hidden="true">
+  <path fill="#FF3B5C" d="M12 21s-7.5-4.9-9.6-9.2C.7 8.4 2.6 4.5 6.2 4c2.2-.3 4.2.8 5.8 2.6C13.6 4.8 15.6 3.7 17.8 4c3.6.5 5.5 4.4 3.8 7.8C19.5 16.1 12 21 12 21z"/></svg>`;
+el('hm-hearts').innerHTML = CORACAO('') + CORACAO('') + CORACAO('quebrado');
+
+// ---------------------------------------------------------
+// Tempos, easings, qualidade
+// ---------------------------------------------------------
+const TEMPOS = [
+  ['t.micro', THEME.time.micro, 'flash de coleta, hover'],
+  ['t.short', THEME.time.short, 'squash, brilho, botões'],
+  ['t.medium', THEME.time.medium, 'transição de telas'],
+  ['t.long', THEME.time.long, 'entrada da tela de fim'],
+  ['t.zone', THEME.time.zone, 'troca de zona de cor'],
+  ['t.countUp', THEME.time.countUp, 'contagem da pontuação'],
+];
+const EASES = [
+  ['outCubic', THEME.ease.outCubic, 'entradas, números subindo'],
+  ['inOutSine', THEME.ease.inOutSine, 'respiração, pulsos'],
+  ['backOut', THEME.ease.backOut, 'selo de recorde, contador de combo'],
+  ['linear', THEME.ease.linear, 'parallax, rotações'],
+];
+const Q = THEME.quality;
+const QUALIDADE = [
+  ['Alto', Q.high], ['Médio', Q.mid], ['Baixo', Q.low],
+];
+el('tokens').innerHTML = `
+  <div class="card"><h3>Durações</h3>
+    <table>${TEMPOS.map(([k, ms, uso]) =>
+      `<tr><td class="mono"><b>${k}</b></td><td class="mono">${ms} ms</td><td>${esc(uso)}</td></tr>`).join('')}</table></div>
+  <div class="card"><h3>Easings</h3>
+    <table>${EASES.map(([k, curva, uso]) =>
+      `<tr><td class="mono"><b>${k}</b></td><td class="mono">${curva.join(', ')}</td><td>${esc(uso)}</td></tr>`).join('')}</table></div>
+  <div class="card"><h3>Qualidade</h3>
+    <table><tr><th>Nível</th><th>Part.</th><th>Camadas</th><th>Bloom</th><th>Vinheta</th></tr>
+    ${QUALIDADE.map(([nome, q], i) =>
+      `<tr><td><b>${nome}</b></td><td class="mono">${q.particles}</td><td class="mono">${q.layers}</td>
+       <td class="mono">${q.bloom ? `1/${Math.round(1 / q.bloom)}` : 'não'}</td>
+       <td>${i < 2 ? 'sim' : 'não'}</td></tr>`).join('')}</table>
+    <p class="nota">Regra automática: FPS &lt; 50 por 3 s desce um nível; nunca sobe
+      automaticamente durante a partida. Pool pré-alocado, sem gradiente por frame.</p></div>
+  <div class="card"><h3>Combo (marcos)</h3>
+    <div class="mono" style="font-size:15px; color: var(--magenta); font-weight:800">
+      ${THEME.combo.tiers.join(' · ')}</div>
+    <p class="nota">Contador pulsa 1,0→1,35; marcos 10+ aceleram o cenário em 10%.
+      Combo &lt; 3 esconde o contador. Quebra: estilhaça em 8 fragmentos.</p>
+    <h3 style="margin-top:10px">Reduzir movimento</h3>
+    <p class="nota">Sem shake, sem slow-motion, sem flash de bordas; parallax a 30%;
+      máx. 40 partículas; rastro reduzido; no máximo 3 flashes por segundo.</p></div>`;
+
+// ---------------------------------------------------------
+// Parallax
+// ---------------------------------------------------------
+const CAMADAS = [
+  ['0', 'Névoa/nebulosa', 0.02, '0,20–0,35', 'grande, borrada'],
+  ['1', 'Estrelas distantes', 0.05, '0,3–0,5', '1–2 px'],
+  ['2', 'Linhas de velocidade e anéis do túnel', 0.25, '0,10–0,25', 'alongadas'],
+  ['3', 'Poeira próxima', 0.70, '0,15–0,40', '2–5 px, leve blur'],
+];
+el('parallax').innerHTML = `
+  <div class="mono"><b>velFator</b> = min(1 + 0,04 × nível, 1,6) — ex.: nível 15 →
+    ${THEME.speedFactor(15).toFixed(2)} · nível 30 → ${THEME.speedFactor(30).toFixed(2)}</div>
+  <table style="margin-top:8px">
+    <tr><th>Camada</th><th>Conteúdo</th><th>Vel.</th><th>Opacidade</th><th>Tamanho</th></tr>
+    ${CAMADAS.map(([i, nome, v, op, tam]) =>
+      `<tr><td class="mono"><b>${i}</b></td><td>${esc(nome)}</td>
+       <td class="mono">${String(v).replace('.', ',')}</td><td class="mono">${op}</td><td>${esc(tam)}</td></tr>`).join('')}
+  </table>
+  <p class="nota">Camadas por qualidade: Alto 4 · Médio 3 (sem a 3) · Baixo 2 (0 e 1).
+    Com “Reduzir movimento”, velocidade a 30%.</p>`;
+
+// página pronta (a suíte de teste espera este sinal)
+window.STYLE_OK = true;
+</script>
+</body>
+</html>

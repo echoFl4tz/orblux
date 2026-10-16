@@ -14,7 +14,7 @@ verificado, do que ficou pendente e do que fazer antes de publicar.
 | Simulação do jogo inteiro | `node tests/smoke.mjs` | **59/59** |
 | Referências internas | `node tools/validate-refs.mjs` | OK |
 | Auditoria de UI (tamanho/a11y/idioma) | `node tools/audit-ui.mjs` | OK (< 150 KB, sem inglês) |
-| Suítes Playwright (15) | `node tests/<suite>.cjs` | **15/15** |
+| Suítes Playwright (16) | `node tests/<suite>.cjs` | **16/16** |
 
 Zero erros de console em todas as suítes (390x844, 1280x720 e 360x640).
 
@@ -43,7 +43,7 @@ Lógica do jogo inteiro sem navegador: colisões, spawn, ondas, missões,
 conquistas, ranking local, moedas, reset, ritmo/determinismo do spawner
 (curva por segundo, mesma semente ⇒ mesma cadência — Fase 1).
 
-### Suítes Playwright (`node tests/<suite>.cjs` — 15)
+### Suítes Playwright (`node tests/<suite>.cjs` — 16)
 
 | Suíte | Cobre |
 |-------|-------|
@@ -60,6 +60,7 @@ conquistas, ranking local, moedas, reset, ritmo/determinismo do spawner
 | `perf-ui` | Performance (Fase 1): 55+ FPS com CPU throttle 4x em GPU real, reinício < 400 ms, zero erros |
 | `responsive-ui` | Resoluções-alvo (Fase 3): 360x640/390x844/1280x720 × 12 telas (menu, como jogar, ranking, ajustes, loja, social, chat, clãs, torneio, pausa, fim de jogo e HUD da partida) — sem overflow horizontal/vertical, botões dentro da largura, zero erros |
 | `accessibility-ui` | Acessibilidade (Fase 5): 1ª visita nasce com "reduzir movimento" se o sistema pedir (`prefers-reduced-motion`), interruptor liga/desliga na hora e persiste, partida+fim de jogo com menos movimento (pontuação final instantânea), Tab com foco visível, aria no HUD, safe-area no CSS |
+| `style-dev-ui` | Direção de arte (fase A1): página `/dev/style` com o THEME importado (paleta, zonas, escala `unit()`, canvas de objetos pintado, mock do HUD 44 px), reduced-motion congela no 1º frame, 360 px sem overflow, zero erros |
 
 ## 3. Matriz de conformidade (regras inegociáveis → garantia verificada)
 
