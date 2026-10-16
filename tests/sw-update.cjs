@@ -3,15 +3,21 @@
    • o service worker registra e assume a página
    • navegação vem da REDE mesmo com uma cópia velha de
      index.html no cache (regressão do bug: menu sem Chat)
-   • offline: a navegação cai no cache e o jogo carrega
+   • offline: a navegação cai no cache, o JS inteiro é servido
+     do cache e uma PARTIDA roda sem rede (Fase 4)
+   • a versão esperada é lida do sw.js (bump automático)
    ========================================================= */
 'use strict';
 
 const { spawn } = require('node:child_process');
 const path = require('node:path');
+const fs = require('node:fs');
 
 const ROOT = path.resolve(__dirname, '..');
 const URL = 'http://localhost:8080';
+// versão do cache lida do sw.js — bumpar CACHE_VERSION não quebra a suíte
+const SW_SRC = fs.readFileSync(path.join(ROOT, 'sw.js'), 'utf8');
+const VER_ESPERADA = (/(?:const|let|var)\s+CACHE_VERSION\s*=\s*'([^']+)'/.exec(SW_SRC) || [])[1];
 
 function loadChromium() {
   const candidates = [
@@ -58,7 +64,7 @@ const ok = (cond, msg) => {
   );
   ok(true, 'service worker registra e assume a página');
   const ver = await page.evaluate(async () => (await caches.keys()).find((k) => k.startsWith('orblux-')) || null);
-  ok(ver === 'orblux-v4', `cache de versão atual (${ver})`);
+  ok(ver === VER_ESPERADA, `cache de versão atual (${ver}, esperada ${VER_ESPERADA})`);
 
   console.log('===== SW — navegação é rede-primeiro =====');
   // injeta uma cópia "antiga" no cache: a recarga NÃO pode servi-la
@@ -84,6 +90,20 @@ const ok = (cond, msg) => {
   await page.reload({ waitUntil: 'domcontentloaded' });
   await page.waitForFunction(() => document.body && document.body.dataset.screen !== undefined, null, { timeout: 15000 });
   ok(await page.evaluate(() => !!document.getElementById('btn-chat')), 'offline: página carrega do cache (jogo segue de pé)');
+  // Fase 4: o JS INTEIRO vem do cache — o jogo dá boot e roda uma
+  // partida offline, sem nenhuma requisição à rede.
+  await page.waitForFunction(() => !!(window.OX && window.OX.game), null, { timeout: 15000 });
+  ok(await page.evaluate(() => !!window.OX), 'offline: cadeia de módulos JS servida do cache (OX no ar)');
+  const offlineRun = await page.evaluate(() => {
+    try {
+      OX.start({ tutorial: false });
+      OX.game.player.invuln = 9999;
+      OX.advance(2);
+      return { ok: true, mode: OX.game.mode, elapsed: OX.game.elapsed };
+    } catch (e) { return { ok: false, erro: e.message }; }
+  });
+  ok(offlineRun.ok && offlineRun.mode === 'playing' && offlineRun.elapsed >= 1.9,
+    `offline: partida roda do cache (modo=${offlineRun.mode}, t=${(offlineRun.elapsed || 0).toFixed(1)}s${offlineRun.erro ? `, ERRO: ${offlineRun.erro}` : ''})`);
   await context.setOffline(false);
 
   console.log('===== CONSOLE =====');

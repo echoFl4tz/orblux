@@ -30,7 +30,7 @@ Zero erros de console em todas as suítes (390x844, 1280x720 e 360x640).
 | `skins.test.mjs` / `skins-state.test.mjs` | Loja: compra, preço nunca fixo em reais, persistência |
 | `skin-hitbox.test.mjs` | **Skin equipada NUNCA muda hitbox/dificuldade/ganhos** |
 | `skin-custom.test.mjs` | Personalização de cor/contorno sem efeito em jogabilidade |
-| `state-migration.test.mjs` | Migrações de `localStorage` (`pn_*`, versões) |
+| `state-migration.test.mjs` | Migrações de `localStorage` (`pn_*`, versões) — Fase 4: v3→v4 sem perda (ranking/skins/saldo), checksum forjado zera carteira |
 | `rng.test.mjs` | RNG determinístico (Corrida do Dia com semente única) |
 | `score.test.mjs` | Pontuação (Fase 2): ondas determinísticas pelo tempo (limite de 20 s, clamp anti-valor-ruim, teto do bônus), constantes finitas/positivas — mesmos números do `app_rules` |
 | `nickname.test.mjs` | Validação de apelido (3–12, reservados, ofensas) |
@@ -56,7 +56,7 @@ conquistas, ranking local, moedas, reset, ritmo/determinismo do spawner
 | `chat-ui` | Salas, denúncia, bloqueio, mute/ban, **contestação (§8.5)**, modo restrito 13− |
 | `clans-ui` | Criar (500 moedas), entrada, cargos, emblema, offline |
 | `tournament-ui` | Torneios, resgate idempotente, Corrida do Dia |
-| `sw-update` | Service worker: rede-primeiro, offline do cache, atualização (`orblux-v4`) |
+| `sw-update` | Service worker (Fase 4): rede-primeiro, versão do cache lida do `sw.js` (`orblux-v5`), offline: HTML + cadeia JS do cache e **partida rodando sem rede** |
 | `perf-ui` | Performance (Fase 1): 55+ FPS com CPU throttle 4x em GPU real, reinício < 400 ms, zero erros |
 | `responsive-ui` | Resoluções-alvo (Fase 3): 360x640/390x844/1280x720 × 12 telas (menu, como jogar, ranking, ajustes, loja, social, chat, clãs, torneio, pausa, fim de jogo e HUD da partida) — sem overflow horizontal/vertical, botões dentro da largura, zero erros |
 
