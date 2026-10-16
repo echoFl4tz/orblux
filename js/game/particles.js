@@ -157,13 +157,23 @@ export function comboText(x, y, str, color = '#ffe45e', size = 46) {
   combo.maxLife = combo.life = 1.0;
 }
 
-// ---- Faixa de nível ("NÍVEL 3" cruzando a tela em ~0.8s) ----
-const banner = { active: false, level: 1, life: 0, maxLife: 0.8, W: 0, H: 0, still: false };
+// ---- Faixa de nível/onda ("NÍVEL 3" ou "ONDA 5" cruzando a tela em ~0.8s) ----
+const banner = { active: false, text: '', life: 0, maxLife: 0.8, W: 0, H: 0, still: false };
 
 export function levelBanner(level, W, H, still = false) {
   banner.active = true;
-  banner.level = level; banner.W = W; banner.H = H;
+  banner.text = `NÍVEL ${level}`;
+  banner.W = W; banner.H = H;
   banner.still = still;                       // "Reduzir movimento": sem varredura
+  banner.maxLife = banner.life = 0.8;
+}
+
+/** Faixa "ONDA N" — mesma linguagem visual da faixa de nível (Fase 2). */
+export function waveBanner(wave, W, H, still = false) {
+  banner.active = true;
+  banner.text = `ONDA ${wave}`;
+  banner.W = W; banner.H = H;
+  banner.still = still;
   banner.maxLife = banner.life = 0.8;
 }
 
@@ -232,7 +242,7 @@ export function drawTexts(ctx) {
     ctx.fillStyle = '#ffe45e';
     ctx.shadowColor = '#ffe45e';
     ctx.shadowBlur = 16;
-    ctx.fillText(`NÍVEL ${banner.level}`, cx, y + 2);
+    ctx.fillText(banner.text, cx, y + 2);
     ctx.shadowBlur = 0;
   }
 

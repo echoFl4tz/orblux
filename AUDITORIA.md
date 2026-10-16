@@ -10,8 +10,8 @@ verificado, do que ficou pendente e do que fazer antes de publicar.
 
 | Bateria | Comando | Resultado |
 |---------|---------|-----------|
-| Testes unitários (12 arquivos) | `node --test tests/*.test.mjs` | **150/150** |
-| Simulação do jogo inteiro | `node tests/smoke.mjs` | **49/49** |
+| Testes unitários (13 arquivos) | `node --test tests/*.test.mjs` | **154/154** |
+| Simulação do jogo inteiro | `node tests/smoke.mjs` | **59/59** |
 | Referências internas | `node tools/validate-refs.mjs` | OK |
 | Auditoria de UI (tamanho/a11y) | `node tools/audit-ui.mjs` | OK (< 150 KB) |
 | Suítes Playwright (13) | `node tests/<suite>.cjs` | **13/13** |

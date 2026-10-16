@@ -172,7 +172,7 @@ export function returnToMenu() {
 }
 
 /** Tela de fim de jogo com contagem animada do placar. */
-export function showGameOver({ score, best, isRecord, position, elapsed, pickups, maxCombo, level, revived }) {
+export function showGameOver({ score, best, isRecord, position, elapsed, pickups, maxCombo, level, wave, nearMiss, revived }) {
   const scoreEl = document.getElementById('go-score');
   document.getElementById('go-best').textContent = (best || 0).toLocaleString('pt-BR');
   document.getElementById('go-record').hidden = !isRecord;
@@ -193,6 +193,8 @@ export function showGameOver({ score, best, isRecord, position, elapsed, pickups
     <div class="go-stat">${icon('ic-pulse')}<b>${pickups}</b> pulsos</div>
     <div class="go-stat">${icon('ic-flame')}máx <b>x${maxCombo}</b></div>
     <div class="go-stat">${icon('ic-bolt')}<b>Nv ${level}</b></div>
+    <div class="go-stat">${icon('ic-mission')}<b>Onda ${wave || 1}</b></div>
+    ${nearMiss ? `<div class="go-stat">${icon('ic-shield')}<b>${nearMiss}</b> ${nearMiss === 1 ? 'desvio' : 'desvios'}</div>` : ''}
     ${position && position <= 5 ? `<div class="go-stat go-rank">${icon('ic-trophy')}<b>${position}º</b> lugar</div>` : ''}`;
 
   // botão de reviver: só na primeira derrota da sessão

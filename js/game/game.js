@@ -13,9 +13,10 @@ import {
 } from './entities.js';
 import { difficultyParams, spawnObstacles, spawnPickupWave, spawnPowerup, resetSpawner, setSpawnerRng, nextSpawnTimer, nextPickupTimer, nextPowerTimer } from './spawner.js';
 import { hashSeed, mulberry32 } from '../../net/rng.js';
+import { SCORE, waveForTime, waveBonus } from '../../net/rules.js';
 import { equippedLook, skinCollectFx } from './skinrender.js';
 import {
-  burst, ring, shockwave, floatText, comboText, levelBanner,
+  burst, ring, shockwave, floatText, comboText, levelBanner, waveBanner,
   updateParticles, drawParticles,
   updateTexts, drawTexts, addShake, updateShake, shakeOffset, resetFX,
 } from './particles.js';
@@ -30,7 +31,7 @@ const INVULN_TIME = 1.6;        // s de invulnerabilidade após levar dano
 const PLAYER_SPEED = 470;       // px/s (antes da escala S)
 const POINTS_PER_LEVEL = 1000;
 const X2_DURATION = 8;          // s do power-up dobra-pontos
-const MAX_MULT = 5;
+const MAX_MULT = SCORE.MAX_MULT; // teto do multiplicador (regra espelhada, Fase 2)
 
 // ---------------------------------------------------------
 //  Estado do jogo (singleton)
@@ -47,10 +48,10 @@ export const game = {
 
   score: 0,
   combo: 0, comboTimer: 0, multiplier: 1,
-  lives: LIVES_START, level: 1,
+  lives: LIVES_START, level: 1, wave: 1,
   elapsed: 0, sinceHit: 0,
   x2Timer: 0, reviveUsed: false, moved: false,
-  runStats: { pickups: 0, maxCombo: 1, powerups: 0 },
+  runStats: { pickups: 0, maxCombo: 1, powerups: 0, nearMiss: 0 },
 
   stars: [], bgOffset: 0,
   bgStatic: null,              // fundo estático offscreen (pintado só no resize)
@@ -207,9 +208,10 @@ export function startGame(opts = {}) {
   g.combo = 0; g.comboTimer = 0; g.multiplier = 1;
   g.lives = LIVES_START;
   g.level = Math.floor(g.score / POINTS_PER_LEVEL) + 1;
+  g.wave = 1;
   g.elapsed = 0; g.sinceHit = 0;
   g.x2Timer = 0; g.reviveUsed = false; g.moved = false;
-  g.runStats = { pickups: 0, maxCombo: 1, powerups: 0 };
+  g.runStats = { pickups: 0, maxCombo: 1, powerups: 0, nearMiss: 0 };
   // Corrida do Dia: mesma semente ⇒ MESMA sequência de obstáculos para
   // todo mundo (net/rng.js). Sem semente = Math.random (partida normal).
   g.runSeed = opts.seed != null ? String(opts.seed).slice(0, 40) : null;
@@ -226,6 +228,7 @@ export function startGame(opts = {}) {
   emit('game:lives', { lives: g.lives });
   emit('game:combo', { combo: 0, multiplier: 1, frac: 0 });
   emit('game:level', { level: g.level });
+  emit('game:wave', { wave: g.wave, bonus: 0 });
 }
 
 export function pauseGame() {
@@ -257,6 +260,7 @@ export function quitToMenu() {
   g.player = null;                 // garante que render() nunca redesenhe a partida no menu
   g.combo = 0; g.comboTimer = 0; g.multiplier = 1;
   g.x2Timer = 0;
+  g.wave = 1;
   g.reviveUsed = false;
   g.bgFlash = 0;
   g.runSeed = null;               // esquece a semente da corrida do dia
@@ -285,6 +289,8 @@ function gameOver() {
     pickups: g.runStats.pickups,
     maxCombo: g.runStats.maxCombo,
     level: g.level,
+    wave: g.wave,
+    nearMiss: g.runStats.nearMiss,
     powerups: g.runStats.powerups,
     revived: g.reviveUsed,
     seed: g.runSeed || null,          // Corrida do Dia: semente usada (null = normal)
@@ -366,6 +372,19 @@ export function update(dt) {
   g.sinceHit += dt;
   updateTutorial(g);
 
+  // ---------- ondas (Fase 2: determinísticas, só pelo tempo decorrido) ----------
+  const wv = waveForTime(g.elapsed);
+  if (wv > g.wave) {
+    g.wave = wv;
+    const bonus = waveBonus(wv);
+    g.score += bonus;
+    sfx('level');
+    waveBanner(wv, g.W, g.H, g.reduceMotion);
+    if (bonus > 0) floatText(g.W / 2, g.H * 0.24, `+${bonus} ONDA`, COLORS.cyan, 17);
+    emit('game:wave', { wave: wv, bonus });
+    emit('game:score', { score: Math.floor(g.score) });
+  }
+
   // ---------- dificuldade ----------
   const dp = difficultyParams(g.elapsed, tutorial.active);
 
@@ -442,6 +461,17 @@ export function update(dt) {
     const hit = o.type === 'bar'
       ? circleRectHit(p.x, p.y, pr, o.x, o.y, o.w, o.h)
       : circlesHit(p.x, p.y, pr, o.x, o.y, o.r * 0.85);
+
+    // ---------- quase-colidir (near miss, Fase 2) ----------
+    // Desvio apertado paga um bônus fixo, 1× por obstáculo, só por
+    // PROXIMIDADE — não mexe em hitbox nem em cadência, só soma pontos.
+    if (!hit && !o.nearDone) {
+      const or = o.type === 'bar' ? Math.hypot(o.w, o.h) / 2 : o.r;
+      if (Math.hypot(p.x - o.x, p.y - o.y) <= p.r + or + SCORE.NEAR_GAP * S) {
+        nearMiss(o);
+      }
+    }
+
     if (!hit || p.invuln > 0) continue;
 
     if (p.shield) {
@@ -509,6 +539,18 @@ export function update(dt) {
   }
 }
 
+/** Near miss (Fase 2): bônus por passar colado sem bater — 1× por obstáculo. */
+function nearMiss(o) {
+  const g = game;
+  o.nearDone = true;
+  g.runStats.nearMiss += 1;
+  g.score += SCORE.NEAR_MISS;
+  sfx('pickup', { combo: 0 });            // som discreto (pitch baixo do arco)
+  floatText(o.x, o.y - 10 * g.S, `QUASE! +${SCORE.NEAR_MISS}`, COLORS.green, 14);
+  if (!g.reduceMotion) ring(o.x, o.y, COLORS.green, 8, 130);
+  emit('game:score', { score: Math.floor(g.score) });
+}
+
 function onHit() {
   const g = game;
   const p = g.player;
@@ -535,7 +577,7 @@ function collectPulse(pk) {
   g.comboTimer = COMBO_WINDOW;
   const prevMult = g.multiplier;
   g.multiplier = Math.min(MAX_MULT, 1 + Math.floor(g.combo / 4));
-  const points = 10 * g.multiplier * (g.x2Timer > 0 ? 2 : 1);
+  const points = SCORE.PICKUP * g.multiplier * (g.x2Timer > 0 ? SCORE.X2_FACTOR : 1);
   g.score += points;
   g.runStats.pickups += 1;
   g.runStats.maxCombo = Math.max(g.runStats.maxCombo, g.multiplier);

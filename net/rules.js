@@ -45,6 +45,45 @@ export const RUN = {
   MAX_SECONDS: 7200,   // 2 h: acima disso é dado corrompido/adulterado
 };
 
+/* ---------------- pontuação da partida (Fase 2) ---------------- */
+// Espelho cliente/mock do que o servidor considera plausível — o jogo
+// soma pontos só por essas fontes; nada aqui mexe em hitbox ou cadência.
+export const SCORE = {
+  PICKUP: 10,          // base por coleta (× multiplicador de combo × x2)
+  NEAR_MISS: 15,       // bônus por "quase" — desvio apertado, 1× por obstáculo
+  NEAR_GAP: 34,        // folga (px) fora da hitbox que ainda vale como quase
+  WAVE_SECONDS: 20,    // duração de cada onda (só pelo tempo decorrido)
+  WAVE_BONUS: 10,      // bônus × número da onda ao entrar em cada onda (≥ 2)
+  WAVE_BONUS_MAX: 30,  // teto do multiplicador do bônus de onda
+  MAX_MULT: 5,         // teto do multiplicador de combo
+  X2_FACTOR: 2,        // fator do power-up dobra-pontos
+};
+
+/**
+ * Número da onda a partir do tempo decorrido — 100% determinístico
+ * (sem RNG): a mesma partida de sempre cai na mesma onda no mesmo
+ * segundo, em qualquer aparelho (Corrida do Dia intacta).
+ * @param {number} seconds tempo decorrido da partida
+ * @returns {number} onda atual (1-based)
+ */
+export function waveForTime(seconds) {
+  const t = Number(seconds);
+  return Math.floor((Number.isFinite(t) && t > 0 ? t : 0) / SCORE.WAVE_SECONDS) + 1;
+}
+
+/**
+ * Bônus de pontuação pago ao entrar na onda `wave` (1ª onda não paga;
+ * cresce com a onda e tem teto para a pontuação não divergir do
+ * plausível no servidor).
+ * @param {number} wave
+ * @returns {number}
+ */
+export function waveBonus(wave) {
+  const w = Math.floor(Number(wave) || 0);
+  if (w < 2) return 0;
+  return SCORE.WAVE_BONUS * Math.min(w, SCORE.WAVE_BONUS_MAX);
+}
+
 /**
  * Régua de plausibilidade de partida — ESPELHO da validação do servidor
  * (`submit_run` no SQL). O cliente usa para nem tentar enviar o impossível;

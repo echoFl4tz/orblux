@@ -1070,6 +1070,14 @@ body[data-screen="gameover"] .toasts {
   white-space: nowrap;
 }
 
+/* chip de onda (Fase 2) — mesma forma do chip de nível, tom ciano */
+.hud-wave {
+  color: var(--cyan, #22e6ff);
+  background: rgba(34, 230, 255, 0.1);
+  border-color: rgba(34, 230, 255, 0.35);
+}
+.hud-wave.pop { animation: scorePop 0.22s var(--ease); }
+
 .hud-powerups {
   position: absolute;
   /* abaixo do cluster do topo (placar + chips) — nunca sobrepõe a linha de combo */

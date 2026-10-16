@@ -8,7 +8,7 @@ import { on } from '../core/events.js';
 import { game } from '../game/game.js';
 
 let el = {};
-let last = { score: -1, lives: -1, level: -1, combo: -1, mult: -1, frac: -1 };
+let last = { score: -1, lives: -1, level: -1, wave: -1, combo: -1, mult: -1, frac: -1 };
 let toastTimer = 0;
 let damageTimer = 0;
 
@@ -29,6 +29,7 @@ export function initHud() {
     score: document.getElementById('hud-score'),
     lives: document.getElementById('hud-lives'),
     level: document.getElementById('hud-level'),
+    wave: document.getElementById('hud-wave'),
     comboWrap: document.getElementById('hud-combo-wrap'),
     combo: document.getElementById('hud-combo'),
     comboFill: document.getElementById('combo-fill'),
@@ -40,11 +41,12 @@ export function initHud() {
   };
 
   on('game:start', () => {
-    last = { score: -1, lives: -1, level: -1, combo: -1, mult: -1, frac: -1 };
+    last = { score: -1, lives: -1, level: -1, wave: -1, combo: -1, mult: -1, frac: -1 };
     el.powerups.innerHTML = '';
     el.damage?.classList.remove('on');
     el.hud.hidden = false;
     el.tutorial.hidden = true;
+    if (el.wave) el.wave.textContent = `ONDA ${game.wave}`;
   });
 
   on('game:score', ({ score }) => {
@@ -80,6 +82,16 @@ export function initHud() {
     if (level === last.level) return;
     last.level = level;
     el.level.textContent = `NÍVEL ${level}`;
+  });
+
+  on('game:wave', ({ wave }) => {
+    if (wave === last.wave || !el.wave) return;
+    last.wave = wave;
+    el.wave.textContent = `ONDA ${wave}`;
+    // "pop" ao virar a onda (mesma animação do placar)
+    el.wave.classList.remove('pop');
+    void el.wave.offsetWidth;
+    el.wave.classList.add('pop');
   });
 
   on('game:combo', ({ multiplier, frac }) => {

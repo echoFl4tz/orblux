@@ -20,7 +20,7 @@ import { readFileSync, readdirSync } from 'node:fs';
 import { createHash } from 'node:crypto';
 import { fileURLToPath } from 'node:url';
 
-import { CHAT, CLAN, RUN, QUICK_PHRASES, QUICK_EMOJIS, CLAN_ICONS, CLAN_FRAMES, CLAN_COLORS } from '../net/rules.js';
+import { CHAT, CLAN, RUN, SCORE, QUICK_PHRASES, QUICK_EMOJIS, CLAN_ICONS, CLAN_FRAMES, CLAN_COLORS } from '../net/rules.js';
 import { NICK_MIN, NICK_MAX } from '../js/core/nickname.js';
 import { BADWORDS } from '../js/core/badwords.js';
 import { CAP_POR_PARTIDA, BONUS_RECORDE, BONUS_PRIMEIRA_DIA } from '../js/core/economy.js';
@@ -33,6 +33,7 @@ const read = (p) => readFileSync(root + p, 'utf8');
 const SQL_SCHEMA = read('supabase/migrations/20261015030000_orblux_schema.sql');
 const SQL_FUNCS = read('supabase/migrations/20261015030100_orblux_functions.sql');
 const SQL_JOBS = read('supabase/migrations/20261015030200_orblux_jobs.sql');
+const SQL_SCORE = read('supabase/migrations/20261016040000_orblux_score_rules.sql');
 const API_JS = read('net/api.js');
 const EDGE_MOD = read('supabase/functions/chat-moderation/index.ts');
 const EDGE_ROLL = read('supabase/functions/tournament-rollover/index.ts');
@@ -83,7 +84,10 @@ test('toda RPC do cliente está nas listas de grant/revoke (bloco final do SQL)'
 
 function appRules() {
   const m = new Map();
-  for (const [, k, v] of blocoValues(SQL_SCHEMA, 'app_rules').matchAll(/\('([a-z_0-9]+)',\s*'([^']*)'\)/g)) m.set(k, v);
+  // migrações em ordem: a última sobrescreve (padrão "on conflict do update")
+  for (const sql of [SQL_SCHEMA, SQL_SCORE]) {
+    for (const [, k, v] of blocoValues(sql, 'app_rules').matchAll(/\('([a-z_0-9]+)',\s*'([^']*)'\)/g)) m.set(k, v);
+  }
   return m;
 }
 
@@ -101,6 +105,10 @@ test('app_rules espelham net/rules.js (chat/clã/partida)', () => {
     clan_create_cost: CLAN.CREATE_COST_COINS,
     run_max_score: RUN.MAX_SCORE, run_min_seconds: RUN.MIN_SECONDS,
     run_max_seconds: RUN.MAX_SECONDS,
+    score_pickup: SCORE.PICKUP, score_near_miss: SCORE.NEAR_MISS,
+    wave_seconds: SCORE.WAVE_SECONDS, wave_bonus: SCORE.WAVE_BONUS,
+    wave_bonus_max: SCORE.WAVE_BONUS_MAX,
+    score_max_mult: SCORE.MAX_MULT, score_x2_factor: SCORE.X2_FACTOR,
     nick_min: NICK_MIN, nick_max: NICK_MAX,
     coin_run_cap: CAP_POR_PARTIDA, bonus_record: BONUS_RECORDE,
     bonus_first_day: BONUS_PRIMEIRA_DIA,

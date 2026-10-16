@@ -209,6 +209,41 @@ const jt = nextSpawnTimer(0.7);
 assert(jt >= 0.59 && jt <= 0.81, `jitter de obstáculo pelo rng da semente (±15% = ${jt.toFixed(2)} s)`);
 setSpawnerRng(null);
 
+console.log('\n— Etapa F2b: near miss e ondas (Fase 2) —');
+const { SCORE, waveForTime, waveBonus } = await import('../net/rules.js');
+OX.start();
+game.player.invuln = 9999;               // não morre durante a etapa
+game.spawnTimer = 999;                  // sem spawns distraindo o asserts
+const nmBase = game.score;
+const nmObs = createObstacle('drone', game.player.x, game.player.y, game.S, 0);
+// fora da hitbox, mas dentro da folga do "quase" (drone ancora o sway em baseX)
+nmObs.x = nmObs.baseX = game.player.x + game.player.r + nmObs.r * 0.85 + 8 * game.S;
+game.obstacles.push(nmObs);
+OX.advance(0.1);
+assert(game.runStats.nearMiss === 1, 'near miss contabilizado');
+assert(game.score === nmBase + SCORE.NEAR_MISS,
+  `bônus de near miss pago (+${SCORE.NEAR_MISS}, score=${game.score})`);
+OX.advance(0.5);
+assert(game.runStats.nearMiss === 1, 'mesmo obstáculo não paga duas vezes');
+game.obstacles.length = 0;
+const nmFar = createObstacle('drone', game.W / 2, 40, game.S, 0);
+game.obstacles.push(nmFar);
+OX.advance(0.1);
+assert(game.runStats.nearMiss === 1, 'obstáculo distante não paga near miss');
+game.obstacles.length = 0;
+// ondas: determinísticas pelo tempo, com bônus na virada
+game.elapsed = SCORE.WAVE_SECONDS - 0.15;
+const wvBase = game.score;
+OX.advance(0.3);
+assert(game.wave === 2, `onda avança pelo tempo (onda=${game.wave})`);
+assert(game.score >= wvBase + waveBonus(2), `bônus de onda 2 pago (+${waveBonus(2)})`);
+assert(waveForTime(0) === 1 && waveForTime(SCORE.WAVE_SECONDS) === 2,
+  'waveForTime determinístico nos limites');
+assert(waveBonus(1) === 0 && waveBonus(2) === 2 * SCORE.WAVE_BONUS
+  && waveBonus(SCORE.WAVE_BONUS_MAX + 1) === SCORE.WAVE_BONUS * SCORE.WAVE_BONUS_MAX,
+  'bônus de onda com teto');
+setSpawnerRng(null);
+
 console.log('\n— Etapa G: game over, ranking e estatísticas —');
 overPayload = null;
 game.player.invuln = 0;
@@ -218,6 +253,8 @@ game.obstacles.push(createObstacle('drone', game.player.x, game.player.y, game.S
 OX.advance(0.2);
 assert(game.mode === 'gameover', 'modo gameover ao zerar vidas');
 assert(overPayload && typeof overPayload.score === 'number', 'evento game:over emitido com resumo');
+assert(typeof overPayload.wave === 'number' && overPayload.wave >= 1, 'game:over inclui a onda da partida');
+assert(typeof overPayload.nearMiss === 'number' && overPayload.nearMiss >= 0, 'game:over inclui os desvios (near miss)');
 assert(state.stats.runs === 1, 'estatística de partidas incrementada');
 assert(state.ranking.length === 1, 'partida salva no ranking local');
 assert(state.achievements.first_run !== undefined, 'conquista "Primeiro pulso" desbloqueada');
