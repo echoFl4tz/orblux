@@ -31,12 +31,22 @@ const KEY_VERSION = 'pn_version';
 // v4 = carteira de moedas (pn_wallet) + skins.owned com origem { at, source }
 const STORAGE_VERSION = 4;
 
+/** Preferência do sistema "reduzir movimento" (a11y). Sem DOM no Node. */
+function prefersReducedMotion() {
+  try {
+    return typeof matchMedia === 'function'
+      && matchMedia('(prefers-reduced-motion: reduce)').matches === true;
+  } catch { return false; }
+}
+
 const DEFAULT_SETTINGS = {
   sound: true,
   music: true,
   volume: 0.7,
   haptics: true,
-  reduceMotion: false,
+  // 1ª visita: respeita o que o usuário pediu no sistema operacional;
+  // a escolha salva nos ajustes sempre sobrescreve este default.
+  reduceMotion: prefersReducedMotion(),
   highContrast: false,   // obstáculos com contorno branco extra (a11y)
 };
 
