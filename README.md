@@ -88,7 +88,7 @@ O ranking local (localStorage) já funciona. O ranking global faz parte da camad
 
 ```bash
 node tests/smoke.mjs           # simula o jogo inteiro: 62 testes (lógica, colisões, ranking, ritmo, ondas…)
-node --test tests/*.test.mjs   # testes unitários: 163 (economia, skins, billing, backend-parity, score, migração, tema…)
+node --test tests/*.test.mjs   # testes unitários: 164 (economia, skins, billing, backend-parity, score, migração, tema…)
 node tools/validate-refs.mjs   # confere imports, IDs do HTML e assets
 node tools/audit-ui.mjs        # QA: sem emojis/inglês na interface, aria, tokens, peso < 150 KB
 node tools/gen-icons.mjs       # regenera os PNGs de ícone, maskable, apple-touch e og-image

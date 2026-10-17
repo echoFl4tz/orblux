@@ -638,6 +638,22 @@ a:hover { text-decoration: underline; }
 .setting-row .label { display: flex; align-items: center; gap: var(--s2); }
 .setting-row .ic { color: var(--primary); }
 
+/* Select da qualidade de imagem (A7/HD) */
+.select {
+  color-scheme: dark;            // dropdown nativo escuro combina com o tema
+  font: inherit;
+  font-size: 14px;
+  color: var(--text-1);
+  background: rgba(13, 20, 38, 0.9);
+  border: 1px solid rgba(154, 166, 200, 0.35);
+  border-radius: var(--r-full);
+  padding: 8px 14px;
+  min-height: 38px;
+  max-width: 60%;
+  cursor: pointer;
+}
+.select:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+
 /* Switch customizado */
 .switch {
   appearance: none;

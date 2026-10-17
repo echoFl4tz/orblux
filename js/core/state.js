@@ -48,6 +48,7 @@ const DEFAULT_SETTINGS = {
   // a escolha salva nos ajustes sempre sobrescreve este default.
   reduceMotion: prefersReducedMotion(),
   highContrast: false,   // obstáculos com contorno branco extra (a11y)
+  imageQuality: 'auto',  // qualidade de imagem: auto | alta | media | baixa (A7/HD)
 };
 
 const DEFAULT_STATS = {

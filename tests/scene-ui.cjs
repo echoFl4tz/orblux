@@ -370,6 +370,23 @@ async function newPage(browser, reducedMotion) {
   const escalaDepois = await cp.evaluate(() => OX.game.resScale);
   ok(escalaDepois === 0.55, `qualidade não sobe na partida (escala segue ${escalaDepois})`);
 
+  // ===== QUALIDADE MANUAL (A7/HD) =====
+  // Configurações → Imagem: o jogador escolhe e a escala trava no
+  // valor escolhido, mesmo em partida (é decisão do usuário, não a
+  // adaptação automática que o §11 regula).
+  await cp.evaluate(() => { OX.state.settings.imageQuality = 'alta'; });
+  await cp.waitForTimeout(300);
+  const escalaAlta = await cp.evaluate(() => OX.game.resScale);
+  ok(escalaAlta === 1, `qualidade manual "Alta (HD)" trava 100% (${escalaAlta})`);
+  await cp.evaluate(() => { OX.state.settings.imageQuality = 'baixa'; });
+  await cp.waitForTimeout(300);
+  const escalaBaixa = await cp.evaluate(() => OX.game.resScale);
+  ok(escalaBaixa === 0.55, `qualidade manual "Baixa" trava 55% (${escalaBaixa})`);
+  await cp.evaluate(() => {
+    OX.state.settings.imageQuality = 'auto';
+    OX.game.resScale = 1;      // deixa o estado limpo p/ o fechamento
+  });
+
   await c.context.close();
 
   await browser.close();

@@ -44,6 +44,11 @@ test('migração: perfil criado com apelido padrão válido', () => {
   assert.ok(state.profile.createdAt);
 });
 
+test('qualidade de imagem nasce em automática (A7/HD)', () => {
+  // settings legados sem a chave ganham o default por merge
+  assert.equal(state.settings.imageQuality, 'auto');
+});
+
 test('addScoreToRanking grava o apelido do momento', () => {
   setNickname('NeoPilot');
   const pos = addScoreToRanking(500);

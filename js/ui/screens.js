@@ -457,6 +457,7 @@ function bindSettings() {
   const reduce = document.getElementById('set-reduce');
   const tut = document.getElementById('set-tutorial');
   const contrast = document.getElementById('set-contrast');
+  const quality = document.getElementById('set-quality');
 
   sound.addEventListener('change', () => {
     state.settings.sound = sound.checked; saveSettings(); applyVolume(); sfx('ui');
@@ -485,6 +486,12 @@ function bindSettings() {
     saveSettings();
     sfx('ui');
   });
+  quality.addEventListener('change', () => {
+    // qualidade manual (A7/HD): o update() do jogo aplica na hora
+    state.settings.imageQuality = quality.value;
+    saveSettings();
+    sfx('ui');
+  });
 }
 
 export function applySettingsToUI() {
@@ -495,6 +502,7 @@ export function applySettingsToUI() {
   document.getElementById('set-haptics').checked = s.haptics;
   document.getElementById('set-reduce').checked = s.reduceMotion;
   document.getElementById('set-contrast').checked = !!s.highContrast;
+  document.getElementById('set-quality').value = s.imageQuality || 'auto';
   document.getElementById('set-tutorial').checked = !state.tutorialDone;
   document.body.classList.toggle('reduce-motion', s.reduceMotion);
   setReduceMotion(s.reduceMotion);

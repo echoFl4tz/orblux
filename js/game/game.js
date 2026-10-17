@@ -68,6 +68,7 @@ export const game = {
   bloom: null, bloomFrac: 0,   // offscreen do bloom (§11) e fração vigente
   frameAcc: 0, frameN: 0,      // janela p/ medir a duração média dos quadros
   smoothFrames: 0,             // quadros lisos consecutivos (p/ voltar ao topo)
+  lastPerf: 0,                 // performance.now() do frame anterior (dt real)
   reduceMotion: false,
 };
 
@@ -403,6 +404,9 @@ export function revive() {
 /** Resolução mínima da qualidade adaptativa (55% dos pixels). */
 const RES_MIN = 0.55;
 
+/** Escalas das opções manuais de qualidade (Configurações → Imagem). */
+const QUAL_ESCALA = { alta: 1, media: 0.7, baixa: 0.55 };
+
 export function update(dt) {
   const g = game;
 
@@ -416,24 +420,40 @@ export function update(dt) {
   if (g.qualLock != null) {
     if (g.resScale !== g.qualLock) { g.resScale = g.qualLock; resize(); }
   } else {
-    g.frameAcc += dt; g.frameN++;
-    if (g.frameN >= 60) {
-      const avg = g.frameAcc / g.frameN;
-      g.frameAcc = 0; g.frameN = 0;
-      if (avg > 0.0180 && g.resScale > RES_MIN) {
-        g.resScale = Math.max(RES_MIN, Math.round((g.resScale - 0.15) * 100) / 100);
-        g.smoothFrames = 0;
-        resize();
-      } else if (avg < 0.0170 && g.mode !== 'playing') {
-        // §11: a qualidade NUNCA sobe sozinha durante a partida
-        g.smoothFrames += 60;
-        if (g.smoothFrames >= 600 && g.resScale < 1) {
-          g.resScale = Math.min(1, Math.round((g.resScale + 0.15) * 100) / 100);
+    const alvoManual = QUAL_ESCALA[state.settings.imageQuality];
+    if (alvoManual != null) {
+      // qualidade manual (Configurações → Imagem, A7/HD): escala
+      // travada na escolha do jogador — inclusive em partida, pois é
+      // decisão dele; o §11 regula só a adaptação automática.
+      if (g.resScale !== alvoManual) { g.resScale = alvoManual; resize(); }
+    } else {
+      // dt REAL entre frames (o loop corta em 50 ms, então o dt
+      // recebido mentiria em aba oculta): quadros > 0,75 s (janela
+      // coberta a ~1 Hz, aba suspensa) não entram na média — sem
+      // isso, trocar de aba derrubava o HD de 100% para 55% em
+      // segundos. Pausa de GC longa conta no teto de 50 ms.
+      const agora = performance.now();
+      const cru = g.lastPerf > 0 ? (agora - g.lastPerf) / 1000 : dt;
+      g.lastPerf = agora;
+      if (cru <= 0.75) { g.frameAcc += Math.min(cru, 0.05); g.frameN++; }
+      if (g.frameN >= 60) {
+        const avg = g.frameAcc / g.frameN;
+        g.frameAcc = 0; g.frameN = 0;
+        if (avg > 0.0180 && g.resScale > RES_MIN) {
+          g.resScale = Math.max(RES_MIN, Math.round((g.resScale - 0.15) * 100) / 100);
           g.smoothFrames = 0;
           resize();
+        } else if (avg < 0.0170 && g.mode !== 'playing') {
+          // §11: a qualidade NUNCA sobe sozinha durante a partida
+          g.smoothFrames += 60;
+          if (g.smoothFrames >= 600 && g.resScale < 1) {
+            g.resScale = Math.min(1, Math.round((g.resScale + 0.15) * 100) / 100);
+            g.smoothFrames = 0;
+            resize();
+          }
+        } else {
+          g.smoothFrames = 0;
         }
-      } else {
-        g.smoothFrames = 0;
       }
     }
   }
