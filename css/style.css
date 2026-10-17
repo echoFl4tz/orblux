@@ -552,12 +552,19 @@ body.q-baixa .power-chip {
   max-width: 420px;
   min-height: 64px;                        /* JOGAR enorme */
   font-size: 1.3rem;
+  font-weight: 800;
   letter-spacing: 0.06em;
-  animation: playPulse 2.6s ease-in-out infinite;
+  text-transform: uppercase;
+  color: #000;                            /* preto puro: ≥8:1 no pior ponto (magenta) */
+  background: var(--play-grad);
+  border: none;
+  box-shadow: var(--glow-play);
+  animation: playPulse 3s ease-in-out infinite;   /* respiração ~3s */
 }
+.btn-play:hover, .btn-play:focus-visible { background: var(--play-grad); }
 @keyframes playPulse {
-  0%, 100% { box-shadow: var(--glow-1), var(--glow-2); }
-  50% { box-shadow: 0 0 20px rgba(34, 230, 255, 0.65), 0 0 44px rgba(255, 61, 240, 0.3); }
+  0%, 100% { box-shadow: var(--glow-play); }
+  50% { box-shadow: 0 0 32px rgba(34, 230, 255, 0.6), 0 0 72px rgba(255, 61, 240, 0.4); }
 }
 
 /* Missões */
