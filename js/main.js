@@ -5,7 +5,7 @@
 
 import { startLoop } from './core/loop.js';
 import { on, emit } from './core/events.js';
-import { state, saveStats, addScoreToRanking, saveWallet, todayKey } from './core/state.js';
+import { state, saveStats, saveSettings, addScoreToRanking, saveWallet, todayKey } from './core/state.js';
 import { initAudio, resumeAudio, sfx } from './core/audio.js';
 import { initInput } from './core/input.js';
 import { initGame, update, render, startGame, forceGameOver, revive, game } from './game/game.js';
@@ -29,6 +29,47 @@ import * as wallet from './core/wallet.js';
 import * as economy from './core/economy.js';
 import { getApi } from '../net/api.js';
 import { burst, ring, shockwave, floatText, comboText, levelBanner, setPoolMax, countActive } from './game/particles.js';
+
+/**
+ * Sonda de desempenho (A8): aparelho bom já nasce em "Alta (HD)".
+ * Roda uma vez, só se o jogador nunca escolheu a qualidade manualmente,
+ * medindo fillRect + blit auto num canvas offscreen pequeno — o mesmo
+ * tipo de trabalho do fundo do jogo. Renderização por software (ms
+ * alto) e aparelhos com poucos núcleos/memória ficam em Automático.
+ * Se a sonda errar, o jogo recua sozinho em partida (game.js, A8).
+ */
+function sondaQualidade() {
+  const s = state.settings;
+  if (s.imageQualitySeed === 'usuario' || s.imageQualitySeed === 'healada') return;
+  // modo de teste/desenvolvimento (?debug=1) não semeia: as suítes
+  // medem a adaptação automática e precisam do comportamento padrão
+  if (/[?&]debug=1/.test(location.search || '')) return;
+  try {
+    const c = document.createElement('canvas');
+    c.width = 640; c.height = 360;
+    const x = c.getContext('2d');
+    if (!x) return;
+    const passo = () => {
+      for (let i = 0; i < 3; i++) {
+        x.fillStyle = i === 0 ? '#22E4FF' : i === 1 ? '#FF3DF0' : '#0A0F1E';
+        x.fillRect((i * 97) % 500, (i * 53) % 280, 220, 140);
+      }
+      x.drawImage(c, 0, 0, 640, 360, 0, 0, 640, 360);
+      x.drawImage(c, 0, 0, 640, 360, 4, 4, 632, 352);
+    };
+    for (let i = 0; i < 4; i++) passo();            // aquecimento (relógio da GPU)
+    const t0 = performance.now();
+    for (let i = 0; i < 8; i++) passo();
+    const ms = (performance.now() - t0) / 8;
+    const nucleos = navigator.hardwareConcurrency || 0;
+    const memoria = navigator.deviceMemory || 0;    // Chrome expõe; 0 = desconhecida
+    if (ms <= 4 && nucleos >= 4 && (memoria === 0 || memoria >= 4)) {
+      s.imageQuality = 'alta';
+      s.imageQualitySeed = 'sonda';
+      saveSettings();
+    }
+  } catch { /* sonda é opcional: em qualquer erro, fica Automático */ }
+}
 
 function boot() {
   const canvas = document.getElementById('game-canvas');
@@ -140,6 +181,9 @@ function boot() {
   // ---- game loop (60 FPS com delta time) ----
   // hudTick por frame mantém o HUD em sincronia (contagem do x2, perigo)
   startLoop((dt) => { update(dt); hudTick(); }, render);
+
+  // ---- sonda de qualidade (A8): depois do 1º quadro, sem atrasar o boot ----
+  requestAnimationFrame(() => setTimeout(sondaQualidade, 350));
 
   // ---- PWA: registra o service worker (só em http/https) ----
   if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {

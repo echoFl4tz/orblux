@@ -49,6 +49,7 @@ const DEFAULT_SETTINGS = {
   reduceMotion: prefersReducedMotion(),
   highContrast: false,   // obstáculos com contorno branco extra (a11y)
   imageQuality: 'auto',  // qualidade de imagem: auto | alta | media | baixa (A7/HD)
+  imageQualitySeed: null, // A8: 'sonda' = alta semeada, 'usuario' = escolha manual, 'healada' = sonda recuou
 };
 
 const DEFAULT_STATS = {

@@ -6,7 +6,7 @@
 import { emit } from '../core/events.js';
 import { getAxis, getPointer, resetInput } from '../core/input.js';
 import { sfx, getMusicPulse } from '../core/audio.js';
-import { state } from '../core/state.js';
+import { state, saveSettings } from '../core/state.js';
 import {
   createPlayer, drawPlayer, drawOrbLight, orbLightRadius, drawObstacle, drawPickup, drawPowerup, drawOrbDecor,
   circleRectHit, circlesHit, COLORS,
@@ -69,6 +69,7 @@ export const game = {
   frameAcc: 0, frameN: 0,      // janela p/ medir a duração média dos quadros
   smoothFrames: 0,             // quadros lisos consecutivos (p/ voltar ao topo)
   lastPerf: 0,                 // performance.now() do frame anterior (dt real)
+  qualHealFeito: false,        // A8: recuo da sonda já aconteceu nesta sessão
   reduceMotion: false,
 };
 
@@ -439,6 +440,17 @@ export function update(dt) {
       if (g.frameN >= 60) {
         const avg = g.frameAcc / g.frameN;
         g.frameAcc = 0; g.frameN = 0;
+        // A8: a sonda errou e o aparelho não aguenta a Alta em partida?
+        // Uma única vez por sessão, recua para Automático (persistido
+        // como 'healada' — a sonda não semeia de novo) e a adaptação
+        // assume. Escolha manual do jogador ('usuario') intocável.
+        if (state.settings.imageQualitySeed === 'sonda' && !g.qualHealFeito
+            && g.mode === 'playing' && avg > 0.030) {
+          state.settings.imageQuality = 'auto';
+          state.settings.imageQualitySeed = 'healada';
+          saveSettings();
+          g.qualHealFeito = true;
+        }
         if (avg > 0.0180 && g.resScale > RES_MIN) {
           g.resScale = Math.max(RES_MIN, Math.round((g.resScale - 0.15) * 100) / 100);
           g.smoothFrames = 0;

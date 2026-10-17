@@ -487,8 +487,10 @@ function bindSettings() {
     sfx('ui');
   });
   quality.addEventListener('change', () => {
-    // qualidade manual (A7/HD): o update() do jogo aplica na hora
+    // qualidade manual (A7/HD): o update() do jogo aplica na hora;
+    // 'usuario' marca a escolha para a sonda (A8) nunca sobrescrever
     state.settings.imageQuality = quality.value;
+    state.settings.imageQualitySeed = 'usuario';
     saveSettings();
     sfx('ui');
   });

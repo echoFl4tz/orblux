@@ -44,9 +44,11 @@ test('migração: perfil criado com apelido padrão válido', () => {
   assert.ok(state.profile.createdAt);
 });
 
-test('qualidade de imagem nasce em automática (A7/HD)', () => {
+test('qualidade de imagem nasce em automática (A7/A8/HD)', () => {
   // settings legados sem a chave ganham o default por merge
   assert.equal(state.settings.imageQuality, 'auto');
+  // a sonda de desempenho (A8) ainda não decidiu neste dispositivo
+  assert.equal(state.settings.imageQualitySeed, null);
 });
 
 test('addScoreToRanking grava o apelido do momento', () => {
