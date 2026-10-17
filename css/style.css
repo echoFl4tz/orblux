@@ -385,12 +385,24 @@ body.q-baixa .power-chip {
    6. MENU
 --------------------------------------------------------- */
 .menu-wrap {
+  position: relative;                     /* scrim atrás do topo (P1-2) */
   width: min(94vw, 560px);
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: var(--s4);
   animation: panelIn var(--dur-3) var(--ease) both;
+}
+/* scrim de legibilidade atrás do logo sobre o túnel animado (P1-2) */
+.menu-wrap::before {
+  content: '';
+  position: absolute;
+  inset: -20px -8vw auto;
+  height: min(52%, 320px);
+  background: var(--scrim-top);
+  border-radius: 0 0 48px 48px;
+  pointer-events: none;
+  z-index: -1;
 }
 .menu-brand { display: flex; flex-direction: column; gap: var(--s2); align-items: center; }
 /* linha de luz sob a marca (P1-1) */
@@ -403,7 +415,16 @@ body.q-baixa .power-chip {
   background: var(--accent-line);
   opacity: 0.9;
 }
-.menu-main { width: 100%; display: flex; flex-direction: column; gap: var(--s3); align-items: center; }
+.menu-main { position: relative; width: 100%; display: flex; flex-direction: column; gap: var(--s3); align-items: center; }
+/* halo escuro atrás da coluna central — JOGAR sempre legível (P1-2) */
+.menu-main::before {
+  content: '';
+  position: absolute;
+  inset: -12px -7vw;
+  background: radial-gradient(68% 58% at 50% 26%, rgba(5, 6, 15, 0.52), transparent 72%);
+  pointer-events: none;
+  z-index: -1;
+}
 .menu-side { width: 100%; display: flex; flex-direction: column; gap: var(--s3); }
 
 /* Topbar (P0-1): apelido à esquerda; saldo + recompensa diária à direita */
