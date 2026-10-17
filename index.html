@@ -123,6 +123,25 @@
   <!-- ================= TELA: MENU ================= -->
   <section id="screen-menu" class="screen active" data-screen="menu" aria-label="Menu principal">
     <div class="menu-wrap">
+      <div class="menu-topbar">
+        <button class="nick-chip" data-action="edit-nickname" aria-label="Alterar apelido">
+          <svg class="ic ic-sm" aria-hidden="true"><use href="#ic-user"/></svg>
+          <span>Olá, <b id="menu-nickname">Jogador</b></span>
+          <svg class="ic ic-sm nick-chip-pencil" aria-hidden="true"><use href="#ic-edit"/></svg>
+        </button>
+        <div class="coin-row">
+          <span id="coin-chip" class="coin-chip" aria-label="Suas moedas">
+            <svg class="ic ic-sm" aria-hidden="true"><use href="#ic-coin"/></svg>
+            <span id="menu-coins">0</span>
+            <span class="coin-chip-unit">moedas</span>
+          </span>
+          <button class="btn btn-daily daily-pill" id="btn-daily" hidden aria-label="Resgatar recompensa diária">
+            <svg class="ic ic-sm" aria-hidden="true"><use href="#ic-coin"/></svg>
+            <span id="btn-daily-label">+20</span>
+          </button>
+        </div>
+      </div>
+
       <header class="menu-brand">
         <h1 class="logo" aria-label="ORBLUX">
           <svg class="logo-orb" viewBox="0 0 64 64" aria-hidden="true" focusable="false">
@@ -143,42 +162,41 @@
       </header>
 
       <div class="menu-main">
-        <button class="nick-chip" data-action="edit-nickname" aria-label="Alterar apelido">
-          <svg class="ic ic-sm" aria-hidden="true"><use href="#ic-user"/></svg>
-          <span>Olá, <b id="menu-nickname">Jogador</b></span>
-          <svg class="ic ic-sm nick-chip-pencil" aria-hidden="true"><use href="#ic-edit"/></svg>
-        </button>
-        <div class="record-card">
-          <svg class="ic" aria-hidden="true"><use href="#ic-trophy"/></svg>
-          <div>
-            <span class="record-label">Seu recorde</span>
-            <span id="menu-best" class="record-value">0</span>
-          </div>
-        </div>
-        <div class="coin-row">
-          <span id="coin-chip" class="coin-chip" aria-label="Suas moedas">
-            <svg class="ic ic-sm" aria-hidden="true"><use href="#ic-coin"/></svg>
-            <span id="menu-coins">0</span>
-            <span class="coin-chip-unit">moedas</span>
-          </span>
-          <button class="btn btn-daily" id="btn-daily" hidden>
-            <svg class="ic ic-sm" aria-hidden="true"><use href="#ic-coin"/></svg>
-            <span id="btn-daily-label">Recompensa diária</span>
-          </button>
-        </div>
         <button class="btn btn-primary btn-big btn-play" data-action="play">
           <svg class="ic ic-lg" aria-hidden="true"><use href="#ic-play"/></svg> JOGAR
         </button>
-        <nav class="menu-grid" aria-label="Opções">
-          <button class="btn" data-action="howto">
-            <svg class="ic" aria-hidden="true"><use href="#ic-help"/></svg> Como jogar
-          </button>
+        <p class="menu-record">Recorde <span id="menu-best">0</span></p>
+
+        <!-- Nível 1: destinos largos (Ranking, Skins) -->
+        <div class="menu-dests">
           <button class="btn" data-action="ranking">
             <svg class="ic" aria-hidden="true"><use href="#ic-trophy"/></svg> Ranking
           </button>
           <button class="btn" data-action="skins" id="btn-skins">
             <svg class="ic" aria-hidden="true"><use href="#ic-skin"/></svg> Skins
             <span id="skins-badge" class="new-badge" hidden>Novo</span>
+          </button>
+        </div>
+
+        <!-- Nível 2: barra-resumo de missões (mobile; no desktop o card lateral assume) -->
+        <button class="missions-summary" data-action="toggle-missions" aria-expanded="false" aria-controls="missions-list">
+          <svg class="ic" aria-hidden="true"><use href="#ic-mission"/></svg>
+          <span>Missões do dia</span>
+          <span id="missions-summary-frac" class="missions-summary-frac">0/3</span>
+          <span class="missions-summary-track"><span id="missions-summary-fill"></span></span>
+          <svg class="ic chev" aria-hidden="true"><use href="#ic-chevron"/></svg>
+        </button>
+
+        <!-- Nível 3: linha pequena de atalhos + recursos quando liberados -->
+        <nav class="menu-small" aria-label="Opções">
+          <button class="btn" data-action="howto">
+            <svg class="ic" aria-hidden="true"><use href="#ic-help"/></svg> Como jogar
+          </button>
+          <button class="btn" data-action="settings">
+            <svg class="ic" aria-hidden="true"><use href="#ic-gear"/></svg> Ajustes
+          </button>
+          <button class="btn" data-action="install" id="btn-install" hidden>
+            <svg class="ic" aria-hidden="true"><use href="#ic-install"/></svg> Instalar
           </button>
           <button class="btn" data-action="social" id="btn-social" hidden>
             <svg class="ic" aria-hidden="true"><use href="#ic-globe"/></svg> Comunidade
@@ -191,12 +209,6 @@
           </button>
           <button class="btn" data-action="tournament" id="btn-tournament" hidden>
             <svg class="ic" aria-hidden="true"><use href="#ic-trophy"/></svg> Torneio
-          </button>
-          <button class="btn" data-action="settings">
-            <svg class="ic" aria-hidden="true"><use href="#ic-gear"/></svg> Configurações
-          </button>
-          <button class="btn" data-action="install" id="btn-install" hidden>
-            <svg class="ic" aria-hidden="true"><use href="#ic-install"/></svg> Instalar
           </button>
         </nav>
       </div>

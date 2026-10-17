@@ -13,6 +13,9 @@
   --surface-1: rgba(15, 18, 40, 0.74);    /* vidro (painéis) */
   --surface-2: rgba(26, 31, 64, 0.62);    /* vidro (botões secundários) */
   --surface-solid: #0d1024;               /* fallback sem backdrop-filter */
+  --surface-sheet: rgba(10, 12, 30, 0.94); /* quase opaco: qualidade Média/Baixa ou reduced-transparency */
+  --surface-ghost: rgba(26, 31, 64, 0.42); /* botões do menu sobre o túnel */
+  --scrim-top: linear-gradient(#05060fcc, transparent); /* legibilidade do logo sobre o canvas */
   --line: rgba(154, 166, 200, 0.18);
   --primary: #22e6ff;
   --primary-soft: rgba(34, 230, 255, 0.14);
@@ -20,6 +23,8 @@
   --secondary-text: #ff6ff5;          /* pink p/ texto: ≥ 7:1 no fundo (§12) */
   --secondary-soft: rgba(255, 61, 240, 0.14);
   --reward: #ffe45e;
+  /* --record: dourado reservado ao momento "NOVO RECORDE" (P0-4) */
+  --record: #ffe45e;
   --success: #4dff9e;
   --danger: #ff4d6d;
   --danger-text: #ff8095;             /* vermelho p/ texto: ≥ 7:1 no fundo (§12) */
@@ -361,26 +366,40 @@ a:hover { text-decoration: underline; }
 .menu-main { width: 100%; display: flex; flex-direction: column; gap: var(--s3); align-items: center; }
 .menu-side { width: 100%; display: flex; flex-direction: column; gap: var(--s3); }
 
-.record-card {
+/* Topbar (P0-1): apelido à esquerda; saldo + recompensa diária à direita */
+.menu-topbar {
+  width: 100%;
   display: flex;
   align-items: center;
-  gap: var(--s3);
-  padding: var(--s3) var(--s5);
-  background: var(--surface-1);
-  border: 1px solid rgba(255, 228, 94, 0.35);
-  border-radius: var(--r-md);
-  box-shadow: 0 0 16px rgba(255, 228, 94, 0.18);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
+  justify-content: space-between;
+  gap: var(--s2);
 }
-.record-card .ic { width: 26px; height: 26px; color: var(--reward); }
-.record-label {
-  display: block;
-  font-size: 0.68rem;
-  letter-spacing: 0.24em;
-  text-transform: uppercase;
+.menu-topbar .nick-chip { margin: 0; min-width: 0; }
+.menu-topbar .nick-chip span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.menu-topbar .coin-row { flex: 0 0 auto; flex-wrap: nowrap; }
+
+/* Recorde como linha de texto sob o JOGAR (P0-1): sem card, sem dourado (P0-4) */
+.menu-record {
+  margin: 0;
   color: var(--text-2);
+  font-size: var(--fs-caption);
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
 }
+.menu-record span {
+  color: var(--text-1);
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 1.05rem;
+  letter-spacing: 0.02em;
+  font-variant-numeric: tabular-nums;   /* P0-6: dígitos estáveis */
+}
+
+/* Saldo de moedas em Configurações (dourado = papel legítimo: moeda) */
 .record-value {
   font-family: var(--font-display);
   font-size: 1.7rem;
@@ -390,22 +409,83 @@ a:hover { text-decoration: underline; }
   line-height: 1.1;
 }
 
-.menu-grid {
+/* Nível 1 (P0-2): destinos largos — Ranking e Skins */
+.menu-dests {
   width: 100%;
   display: grid;
-  grid-template-columns: repeat(3, 1fr);   /* 3 botões iguais em linha — sem órfão */
+  grid-template-columns: 1fr 1fr;
   gap: var(--s2);
 }
-.menu-grid .btn {
-  width: 100%;
-  min-height: 68px;
-  flex-direction: column;                  /* ícone em cima, rótulo embaixo */
-  gap: 4px;
-  font-size: 0.74rem;
-  padding: 8px 4px;
-  white-space: nowrap;
+.menu-dests .btn {
+  position: relative;                   /* ancora do selo "Novo" */
+  min-height: 72px;
+  font-size: 1rem;
+  background: var(--surface-ghost);
 }
-.menu-grid .btn .ic { width: 20px; height: 20px; }
+
+/* Nível 2 (P0-3): barra-resumo de missões — só no mobile (vira bottom sheet) */
+.missions-summary {
+  display: none;
+  width: 100%;
+  align-items: center;
+  gap: var(--s2);
+  min-height: 48px;
+  padding: 0 var(--s4);
+  background: var(--surface-ghost);
+  border: 1px solid var(--line);
+  border-radius: var(--r-sm);
+  color: var(--text-1);
+  font-family: var(--font-display);
+  font-size: 0.85rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+.missions-summary .ic { color: var(--primary); }
+.missions-summary .chev {
+  margin-left: auto;
+  color: var(--text-2);
+  transition: transform var(--dur-2) var(--ease);
+}
+.missions-summary[aria-expanded="true"] .chev { transform: rotate(180deg); }
+.missions-summary-frac {
+  color: var(--text-2);
+  font-size: var(--fs-caption);
+  font-variant-numeric: tabular-nums;
+}
+.missions-summary-track {
+  flex: 1;
+  min-width: 40px;
+  height: 5px;
+  border-radius: var(--r-full);
+  background: rgba(154, 166, 200, 0.18);
+  overflow: hidden;
+}
+.missions-summary-track > span {
+  display: block;
+  height: 100%;
+  width: 0;
+  border-radius: var(--r-full);
+  background: linear-gradient(90deg, var(--primary), var(--secondary));
+  transition: width var(--dur-3) var(--ease);
+}
+
+/* Nível 3 (P0-2): linha pequena de atalhos — Como jogar · Ajustes · Instalar */
+.menu-small {
+  width: 100%;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: var(--s2);
+}
+.menu-small .btn {
+  min-height: 44px;
+  padding: 0 var(--s4);
+  font-size: 0.82rem;
+  font-weight: 600;
+  background: var(--surface-ghost);
+  border-radius: var(--r-full);
+}
+.menu-small .btn .ic { width: 16px; height: 16px; }
 .btn-play {
   width: min(100%, 420px);
   max-width: 420px;
@@ -1246,12 +1326,41 @@ body[data-screen="gameover"] .toasts {
 /* ---------------------------------------------------------
    16. RESPONSIVO
 --------------------------------------------------------- */
+/* Missões (P0-3): barra-resumo no fluxo + bottom sheet no mobile */
+@media (max-width: 959px) {
+  .missions-summary { display: flex; }
+  .missions-card {
+    position: fixed;
+    left: 0; right: 0; bottom: 0; top: auto;
+    width: 100%;
+    max-height: 70vh;
+    max-height: min(70dvh, 460px);
+    overflow-y: auto;
+    z-index: 20;                          /* acima do menu, abaixo de modais (30) */
+    border-radius: 24px 24px 0 0;
+    border-bottom: none;
+    background: var(--surface-sheet);
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+    box-shadow: 0 -18px 50px rgba(2, 4, 12, 0.6);
+    transform: translateY(110%);
+    transition: transform var(--dur-3) var(--ease);
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+  .missions-card.sheet-open { transform: none; }
+  .missions-card:not(.sheet-open) { pointer-events: none; }
+  .missions-card .missions-toggle { display: none; }     /* o gatilho é a barra-resumo */
+  .missions-card.collapsed .missions-list { display: block; }  /* estado desktop não vaza pro sheet */
+  .missions-list { padding: var(--s3); }
+}
+
 /* Telas baixas (celular em paisagem) */
 @media (max-height: 540px) {
   .panel { padding: var(--s3) var(--s4); gap: var(--s3); }
   .logo { font-size: clamp(1.7rem, 6vh, 2.2rem); }
   .tagline { display: none; }
   .missions-card { display: none; }
+  .missions-summary { display: none; }
   .btn { min-height: 44px; }
   .btn-big { min-height: 48px; font-size: 1rem; }
   .go-stats { grid-template-columns: repeat(4, 1fr); }
@@ -1264,11 +1373,13 @@ body[data-screen="gameover"] .toasts {
     display: grid;
     grid-template-columns: 1.1fr 0.9fr;
     grid-template-areas:
+      'topbar side'
       'brand side'
       'main side';
     align-items: center;
     column-gap: var(--s8);
   }
+  .menu-topbar { grid-area: topbar; align-self: end; }
   .menu-brand { grid-area: brand; }
   .menu-main { grid-area: main; }
   .menu-side { grid-area: side; align-self: center; }
@@ -1280,6 +1391,7 @@ body[data-screen="gameover"] .toasts {
 @media (pointer: coarse) {
   .btn { min-height: 52px; }
   .icon-btn { min-width: 48px; min-height: 48px; }
+  .menu-small .btn { min-height: 52px; }
 }
 
 /* ---------------------------------------------------------
@@ -1334,7 +1446,6 @@ body[data-screen="gameover"] .toasts {
   box-shadow: 0 0 8px rgba(255, 228, 94, 0.55);
   pointer-events: none;
 }
-.menu-grid .btn { position: relative; }
 .chip-warn { color: var(--reward); border-color: rgba(255, 228, 94, 0.4); background: rgba(255, 228, 94, 0.1); }
 .chip-success { color: var(--success); border-color: rgba(77, 255, 158, 0.4); background: rgba(77, 255, 158, 0.1); }
 
@@ -1504,6 +1615,7 @@ body.reduce-motion .skin-card:hover { transform: none; }
   color: var(--text-2);
   font-weight: 500;
 }
+@media (max-width: 400px) { .coin-chip-unit { display: none; } }  /* topbar compacta */
 .btn-daily {
   border-color: rgba(255, 228, 94, 0.45);
   color: var(--reward);
@@ -1511,6 +1623,7 @@ body.reduce-motion .skin-card:hover { transform: none; }
 }
 .btn-daily .ic { color: var(--reward); }
 .btn-daily:hover, .btn-daily:focus-visible { border-color: var(--reward); }
+.daily-pill { min-height: 44px; padding: 0 12px; border-radius: var(--r-full); }
 #daily-title { display: flex; align-items: center; gap: var(--s2); }
 #daily-title .ic { color: var(--reward); }
 .btn-coins { border-color: rgba(255, 228, 94, 0.5); color: var(--reward); }

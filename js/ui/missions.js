@@ -132,9 +132,15 @@ export function renderMissions() {
   const list = document.getElementById('missions-list');
   if (!list) return;
   ensureToday();
+  const total = state.missions.list.length;
   const done = state.missions.list.filter((m) => m.done).length;
   const badge = document.getElementById('missions-count');
-  if (badge) badge.textContent = `${done}/${state.missions.list.length}`;
+  if (badge) badge.textContent = `${done}/${total}`;
+  // barra-resumo do mobile (P0-3): mesma contagem do card
+  const frac = document.getElementById('missions-summary-frac');
+  if (frac) frac.textContent = `${done}/${total}`;
+  const fill = document.getElementById('missions-summary-fill');
+  if (fill) fill.style.width = `${total ? Math.round((done / total) * 100) : 0}%`;
 
   list.innerHTML = state.missions.list.map((m) => {
     const pct = Math.min(100, Math.round((m.progress / m.target) * 100));

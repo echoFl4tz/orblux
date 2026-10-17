@@ -354,9 +354,16 @@ function bindModals() {
 //  Missões colapsáveis
 // ---------------------------------------------------------
 function collapseMissionsOnShortScreens() {
-  // em telas baixas, missões começam recolhidas para o menu não rolar
+  // mobile: o card é um bottom sheet — sempre começa fechado (a barra-resumo abre)
   const card = document.getElementById('missions-card');
   if (!card) return;
+  const ehMobile = window.matchMedia('(max-width: 959px)').matches;
+  if (ehMobile) {
+    card.classList.remove('sheet-open');
+    card.querySelectorAll('[aria-controls="missions-list"]').forEach((b) => b.setAttribute('aria-expanded', 'false'));
+    return;
+  }
+  // desktop curto: recolhe a lista para o menu não rolar
   if (window.innerHeight < 720 || window.innerWidth < 380) {
     card.classList.add('collapsed');
     card.querySelector('.missions-toggle')?.setAttribute('aria-expanded', 'false');
@@ -366,8 +373,16 @@ function collapseMissionsOnShortScreens() {
 function toggleMissions(btn) {
   const card = document.getElementById('missions-card');
   if (!card) return;
-  const collapsed = card.classList.toggle('collapsed');
-  btn.setAttribute('aria-expanded', String(!collapsed));
+  // o gatilho (barra-resumo no mobile, cabeçalho no desktop) e o estado
+  // do card são sincronizados via aria-expanded em ambos
+  const ehMobile = window.matchMedia('(max-width: 959px)').matches;
+  if (ehMobile) {
+    const open = card.classList.toggle('sheet-open');
+    card.querySelectorAll('[aria-controls="missions-list"]').forEach((b) => b.setAttribute('aria-expanded', String(open)));
+  } else {
+    const collapsed = card.classList.toggle('collapsed');
+    card.querySelectorAll('[aria-controls="missions-list"]').forEach((b) => b.setAttribute('aria-expanded', String(!collapsed)));
+  }
 }
 
 // ---------------------------------------------------------

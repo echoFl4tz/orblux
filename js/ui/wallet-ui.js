@@ -48,8 +48,10 @@ function renderDailyButton() {
   const st = wallet.dailyStatus();
   btn.hidden = !st.canClaim;
   if (st.canClaim) {
+    // pílula compacta ao lado do saldo (P0-1): valor à vista, texto completo no aria-label
     const lbl = $('btn-daily-label');
-    if (lbl) lbl.textContent = `Recompensa diária +${st.next}`;
+    if (lbl) lbl.textContent = `+${st.next}`;
+    btn.setAttribute('aria-label', `Resgatar recompensa diária: +${st.next} moedas`);
   }
 }
 
