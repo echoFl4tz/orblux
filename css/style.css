@@ -1196,6 +1196,7 @@ body[data-screen="gameover"] .toasts {
 .toast .ic { color: var(--reward); width: 24px; height: 24px; }
 .toast-title { font-weight: 800; font-size: 0.9rem; }
 .toast-desc { color: var(--text-2); font-size: 0.78rem; }
+.toast-action { margin-left: auto; flex: 0 0 auto; }   /* botão do toast (Parte 2) */
 .toast-bar {
   position: absolute;
   left: 0; bottom: 0;

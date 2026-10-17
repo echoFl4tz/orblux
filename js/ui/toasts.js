@@ -10,10 +10,12 @@ export function initToasts() {
 }
 
 /**
- * @param {{icon?:string, title:string, desc?:string}} t
+ * @param {{icon?:string, title:string, desc?:string, action?:{label:string, fn:()=>void}, ms?:number}} t
  * icon = id do symbol no sprite SVG (padrão: medalha)
+ * action = botão opcional no toast (ex.: "Atualizar" da PWA, Parte 2)
+ * ms = duração do toast (padrão 3200)
  */
-export function showToast({ icon = 'ic-medal', title, desc = '' }) {
+export function showToast({ icon = 'ic-medal', title, desc = '', action = null, ms = 3200 }) {
   if (!container) return;
   // fim de jogo: no máximo 1 toast por vez (nunca cobrir o painel)
   if (document.body?.dataset?.screen === 'gameover' && container.children.length >= 1) return;
@@ -25,8 +27,19 @@ export function showToast({ icon = 'ic-medal', title, desc = '' }) {
       <div class="toast-title">${title}</div>
       ${desc ? `<div class="toast-desc">${desc}</div>` : ''}
     </div>
+    ${action ? `<button class="btn btn-small toast-action">${action.label}</button>` : ''}
     <span class="toast-bar"></span>`;
+  if (action) {
+    div.querySelector('.toast-action')?.addEventListener('click', () => {
+      div.remove();
+      action.fn();
+    });
+  }
   container.appendChild(div);
+
+  // barra de tempo acompanha a duração real do toast
+  const barra = div.querySelector('.toast-bar');
+  if (barra) barra.style.animationDuration = `${ms}ms`;
 
   // no máximo 3 toasts na tela
   while (container.children.length > 3) container.removeChild(container.firstChild);
@@ -34,7 +47,7 @@ export function showToast({ icon = 'ic-medal', title, desc = '' }) {
   setTimeout(() => {
     div.classList.add('leaving');
     setTimeout(() => div.remove(), 400);
-  }, 3200);
+  }, ms);
 }
 
 /**

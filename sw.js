@@ -8,7 +8,7 @@
    Atualize CACHE_VERSION quando a lista PRECACHE mudar.
    ========================================================= */
 
-const CACHE_VERSION = 'orblux-v11';
+const CACHE_VERSION = 'orblux-v12';
 
 const PRECACHE = [
   './',
@@ -46,11 +46,16 @@ const PRECACHE = [
 ];
 
 self.addEventListener('install', (event) => {
+  // Parte 2: sem skipWaiting automático — a versão nova espera o jogador
+  // clicar "Atualizar" no toast da página (aí envia SKIP_WAITING e assume)
   event.waitUntil(
     caches.open(CACHE_VERSION)
       .then((cache) => cache.addAll(PRECACHE).catch(() => {}))
-      .then(() => self.skipWaiting())
   );
+});
+
+self.addEventListener('message', (event) => {
+  if (event.data && event.data.type === 'SKIP_WAITING') self.skipWaiting();
 });
 
 self.addEventListener('activate', (event) => {

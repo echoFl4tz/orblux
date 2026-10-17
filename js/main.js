@@ -185,12 +185,44 @@ function boot() {
   // ---- sonda de qualidade (A8): depois do 1º quadro, sem atrasar o boot ----
   requestAnimationFrame(() => setTimeout(sondaQualidade, 350));
 
-  // ---- PWA: registra o service worker (só em http/https) ----
+  // ---- splash some no 1º quadro com o menu pronto (Parte 2) ----
+  requestAnimationFrame(() => requestAnimationFrame(() => document.getElementById('splash')?.remove()));
+
+  // ---- PWA: registra o service worker e avisa quando há versão nova ----
   if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
-    window.addEventListener('load', () => {
-      navigator.serviceWorker.register('sw.js').catch((err) => {
+    window.addEventListener('load', async () => {
+      try {
+        const reg = await navigator.serviceWorker.register('sw.js');
+        // SW novo esperando (página já aberta): avisa e aplica no clique
+        const vigia = () => {
+          const novo = reg.installing;
+          if (!novo) return;
+          novo.addEventListener('statechange', () => {
+            if (novo.state === 'installed' && navigator.serviceWorker.controller) {
+              showToast({
+                icon: 'ic-restart',
+                title: 'Versão nova disponível',
+                desc: 'Toque em Atualizar — leva 2 segundos.',
+                action: { label: 'Atualizar', fn: () => novo.postMessage({ type: 'SKIP_WAITING' }) },
+                ms: 15000,
+              });
+            }
+          });
+        };
+        if (reg.installing) vigia();
+        reg.addEventListener('updatefound', vigia);
+        // SW ativado após o clique: recarrega uma vez para servir o código
+        // novo (na 1ª visita o claim() também dispara o evento — aí não recarrega)
+        const jaControlava = !!navigator.serviceWorker.controller;
+        let recarregou = false;
+        navigator.serviceWorker.addEventListener('controllerchange', () => {
+          if (!jaControlava || recarregou) return;
+          recarregou = true;
+          location.reload();
+        });
+      } catch (err) {
         console.warn('[pwa] service worker não registrado:', err);
-      });
+      }
     });
   }
 
@@ -198,6 +230,18 @@ function boot() {
   document.addEventListener('visibilitychange', () => {
     if (!document.hidden) resumeAudio();
   });
+
+  // ---- erro global em pt-BR (Parte 2): um aviso educado, no máximo 1 a cada 4s ----
+  let ultimoAvisoErro = 0;
+  const avisaErro = (detalhe) => {
+    console.error('[erro]', detalhe);
+    const agora = performance.now();
+    if (agora - ultimoAvisoErro < 4000) return;
+    ultimoAvisoErro = agora;
+    showToast({ icon: 'ic-close', title: 'Algo deu errado', desc: 'Tente de novo. Se persistir, recarregue a página.' });
+  };
+  window.addEventListener('error', (e) => avisaErro(e.message || 'erro de script'));
+  window.addEventListener('unhandledrejection', (e) => avisaErro(String(e.reason ?? 'promessa rejeitada')));
 
   // ---- API de debug (somente localhost ou ?debug=1) ----
   const isDebug = ['localhost', '127.0.0.1', '[::1]'].includes(location.hostname)

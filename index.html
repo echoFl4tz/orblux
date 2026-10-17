@@ -33,6 +33,19 @@
   <link rel="stylesheet" href="css/fonts.css">
   <link rel="stylesheet" href="css/style.css">
 
+  <!-- Splash inline (Parte 2): fundo e marca pintados junto com o HTML,
+       antes do CSS/fontes — sem flash branco e sem layout shift -->
+  <style>
+    #splash {
+      position: fixed; inset: 0; z-index: 100;
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      gap: 14px;
+      background: radial-gradient(120% 90% at 50% 22%, #101a3d 0%, #05060f 62%);
+    }
+    #splash img { width: 76px; height: 76px; }
+    #splash span { font: 600 12px/1 system-ui, sans-serif; letter-spacing: 0.28em; color: #8fa6d9; }
+  </style>
+
   <!-- =========================================================
        GOOGLE ADSENSE — cole abaixo o snippet da sua conta
        (Painel AdSense > Anúncios > Por unidade de anúncio > Obter código)
@@ -41,6 +54,9 @@
        ========================================================= -->
 </head>
 <body data-screen="menu">
+
+  <!-- splash: sai sozinho no 1º quadro com o menu pronto (main.js) -->
+  <div id="splash" aria-hidden="true"><img src="logo.svg" alt=""><span>CARREGANDO</span></div>
 
   <!-- ================= SPRITE DE ÍCONES (SVG inline, traço 2px) ================= -->
   <svg xmlns="http://www.w3.org/2000/svg" style="display:none" aria-hidden="true" focusable="false">
