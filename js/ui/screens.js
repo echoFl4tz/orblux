@@ -509,8 +509,16 @@ function bindSettings() {
     state.settings.imageQuality = quality.value;
     state.settings.imageQualitySeed = 'usuario';
     saveSettings();
+    applyGlassMode();                    // P0-5: Média/Baixa = superfícies opacas
     sfx('ui');
   });
+}
+
+/** P0-5: em qualidade Média/Baixa os painéis viram superfície opaca
+    (sem backdrop-filter) — menos custo de composição no aparelho modesto. */
+function applyGlassMode() {
+  const q = state.settings.imageQuality;
+  document.body.classList.toggle('q-baixa', q === 'media' || q === 'baixa');
 }
 
 export function applySettingsToUI() {
@@ -525,4 +533,5 @@ export function applySettingsToUI() {
   document.getElementById('set-tutorial').checked = !state.tutorialDone;
   document.body.classList.toggle('reduce-motion', s.reduceMotion);
   setReduceMotion(s.reduceMotion);
+  applyGlassMode();                      // P0-5
 }

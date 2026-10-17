@@ -153,6 +153,31 @@ a:hover { text-decoration: underline; }
 @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
   .panel, .cookie-banner, .toast { background: var(--surface-solid); }
 }
+/* P0-5: vidro sob controle — opaco quando não há brilho a pagar */
+/* listas longas (Ajustes, Ranking) sempre opacas: legível e sem blur por frame */
+#screen-settings .panel,
+#screen-ranking .panel {
+  background: var(--surface-sheet);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+/* qualidade Média/Baixa (body.q-baixa) ou transparência reduzida do sistema */
+body.q-baixa .panel,
+body.q-baixa .missions-card,
+body.q-baixa .cookie-banner,
+body.q-baixa .toast,
+body.q-baixa .power-chip {
+  background: var(--surface-sheet);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+@media (prefers-reduced-transparency: reduce) {
+  .panel, .missions-card, .cookie-banner, .toast, .power-chip {
+    background: var(--surface-sheet);
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+  }
+}
 .panel-wide { width: min(94vw, 540px); }
 
 .panel-head {
