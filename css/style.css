@@ -1150,6 +1150,7 @@ body[data-screen="gameover"] .toasts {
   padding: 3px 8px;
   min-width: 36px;
   text-align: center;
+  font-variant-numeric: tabular-nums;   /* P0-6: x1→x5 sem "dança" de dígitos */
   text-shadow: 0 1px 6px rgba(0, 0, 0, 0.8);
   transition: color var(--dur-2), border-color var(--dur-2);
 }
