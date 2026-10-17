@@ -21,6 +21,7 @@ const fmt = (n) => (Number.isFinite(n) ? n : 0).toLocaleString('pt-BR');
 /** Rótulos do extrato (`reason` vem do ledger — sempre via textContent). */
 const MOTIVOS = {
   partida: 'Partida',
+  dobro: 'Dobro do fim de jogo',
   missao: 'Missão',
   conquista: 'Conquista',
   diaria: 'Recompensa diária',

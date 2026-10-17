@@ -6,13 +6,13 @@
 
 import { on, emit } from '../core/events.js';
 import { state, saveSettings, resetAllProgress, resetTutorialFlag, markTutorialDone, ownsSkin } from '../core/state.js';
-import { getCoins } from '../core/wallet.js';
+import { getCoins, earn } from '../core/wallet.js';
 import { SKINS } from '../game/skins.js';
 import { startGame, pauseGame, resumeGame, quitToMenu, game, setReduceMotion } from '../game/game.js';
 import { sfx, initAudio, applyVolume, setMusicEnabled, resumeAudio } from '../core/audio.js';
 import { showToast, trimToasts, clearToasts } from './toasts.js';
 import { updateHudMenuBest, resetHud } from './hud.js';
-import { closeAllAds } from '../monetization/ads.js';
+import { closeAllAds, showRewarded } from '../monetization/ads.js';
 import { renderMissions } from './missions.js';
 import { equippedLook } from '../game/skinrender.js';   // P1-1: orbe do logo = skin equipada
 
@@ -35,6 +35,8 @@ let deferredInstallPrompt = null;
 let lastFocused = null; // elemento que tinha o foco antes de abrir um modal
 let screenGen = 0;      // "geração de tela": invalida callbacks de animações antigas
 let scoreRafId = 0;     // id do RAF da contagem do placar (cancelado ao trocar de tela)
+let lastRunCoins = 0;   // moedas creditadas na última partida (P1-5: dobrar)
+let moedasDobradas = false; // já dobrou nesta partida? (1× por partida)
 
 export function initScreens() {
   bindActions();
@@ -76,6 +78,7 @@ export function initScreens() {
   on('stats:changed', updateBestDisplay);
   on('state:reset', () => { updateBestDisplay(); applySettingsToUI(); });
   on('skins:changed', applyLogoSkin);       // P1-1: trocou a skin, o logo acompanha
+  on('wallet:run-coins', ({ coins }) => { lastRunCoins = coins || 0; });  // P1-5: dobrar
   applyLogoSkin();                           // P1-1 no boot
 }
 
@@ -197,7 +200,7 @@ export function returnToMenu() {
 }
 
 /** Tela de fim de jogo com contagem animada do placar. */
-export function showGameOver({ score, best, isRecord, position, elapsed, pickups, maxCombo, level, wave, nearMiss, revived }) {
+export function showGameOver({ score, best, bestAnterior, isRecord, position, elapsed, pickups, maxCombo, level, wave, nearMiss, revived }) {
   const scoreEl = document.getElementById('go-score');
   document.getElementById('go-best').textContent = (best || 0).toLocaleString('pt-BR');
   document.getElementById('go-record').hidden = !isRecord;
@@ -211,6 +214,8 @@ export function showGameOver({ score, best, isRecord, position, elapsed, pickups
     goNick.hidden = false;
   }
 
+  // 3 cartões (tempo, pulsos, combo máx) + rank de pódio (P1-5);
+  // nível, onda e desvios saíram da grade para o painel respirar
   const stats = document.getElementById('go-stats');
   const mins = Math.floor(elapsed / 60);
   const secs = Math.floor(elapsed % 60);
@@ -219,18 +224,25 @@ export function showGameOver({ score, best, isRecord, position, elapsed, pickups
     <div class="go-stat">${icon('ic-clock')}<b>${mins}:${String(secs).padStart(2, '0')}</b>${revived ? '<span class="go-revived">reviveu</span>' : ''}</div>
     <div class="go-stat">${icon('ic-pulse')}<b>${pickups}</b> pulsos</div>
     <div class="go-stat">${icon('ic-flame')}máx <b>x${maxCombo}</b></div>
-    <div class="go-stat">${icon('ic-bolt')}<b>Nv ${level}</b></div>
-    <div class="go-stat">${icon('ic-mission')}<b>Onda ${wave || 1}</b></div>
-    ${nearMiss ? `<div class="go-stat">${icon('ic-shield')}<b>${nearMiss}</b> ${nearMiss === 1 ? 'desvio' : 'desvios'}</div>` : ''}
     ${position && position <= 5 ? `<div class="go-stat go-rank">${icon('ic-trophy')}<b>${position}º</b> lugar</div>` : ''}`;
+
+  // com recorde, Compartilhar vira primário ao lado do replay (P1-5)
+  document.getElementById('btn-share-score')?.classList.toggle('btn-primary', !!isRecord);
+  document.getElementById('go-actions-row')?.classList.toggle('two-cols', !!isRecord);
 
   // botão de reviver: só na primeira derrota da sessão
   const btnRevive = document.getElementById('btn-revive');
   btnRevive.hidden = game.reviveUsed;
   btnRevive.disabled = false;
 
+  // dobrar moedas (P1-5): escondido por padrão; só aparece com consentimento
+  // LGPD, moedas de verdade na partida e ainda não dobrado nesta partida
+  moedasDobradas = false;
+  const btnDobrar = document.getElementById('btn-dobrar');
+  if (btnDobrar) btnDobrar.hidden = !(state.consent === true && lastRunCoins > 0);
+
   // incentivo honesto + barras de progresso (estado real, nada inventado)
-  renderGoGap(score, best, isRecord);
+  renderGoGap(score, bestAnterior, isRecord);
   renderEndProgress();
 
   showScreen('gameover');
@@ -238,21 +250,51 @@ export function showGameOver({ score, best, isRecord, position, elapsed, pickups
   // selo de recorde: solta confetes (desligado com movimento reduzido)
   if (isRecord && !state.settings.reduceMotion) spawnConfetti();
 
-  // animação de contagem do placar
+  // animação de contagem do placar (600ms, P1-5)
   animateScore(scoreEl, score);
 }
 
 /**
- * Frase de incentivo quando NÃO houve recorde: "Faltaram N pontos…".
- * Some quando há recorde ou quando nunca existiu um.
+ * Linha sob o placar (P1-5): com recorde, "+N sobre o anterior" (ou
+ * "Primeiro recorde!"); sem recorde, "Faltaram N pontos…". Some quando
+ * nunca existiu um recorde para comparar.
  */
-function renderGoGap(score, best, isRecord) {
+function renderGoGap(score, bestAnterior, isRecord) {
   const el = document.getElementById('go-gap');
   if (!el) return;
-  const gap = (best || 0) - score;
-  const mostrar = !isRecord && gap > 0;
+  if (isRecord) {
+    const delta = (bestAnterior || 0) > 0 ? score - bestAnterior : 0;
+    el.hidden = false;
+    el.classList.add('is-record');
+    el.innerHTML = delta > 0
+      ? `+<b>${delta.toLocaleString('pt-BR')}</b> sobre o anterior`
+      : 'Primeiro recorde!';
+    return;
+  }
+  el.classList.remove('is-record');
+  const gap = (bestAnterior || 0) - score;
+  const mostrar = gap > 0;
   el.hidden = !mostrar;
   if (mostrar) el.innerHTML = `Faltaram <b>${gap.toLocaleString('pt-BR')}</b> pontos para o seu recorde`;
+}
+
+/**
+ * P1-5: dobrar as moedas da partida via anúncio recompensado — opcional,
+ * uma vez por partida e só com consentimento; a recompensa entra de
+ * verdade na wallet (ledger com motivo "dobro").
+ */
+function dobrarMoedas() {
+  const btn = document.getElementById('btn-dobrar');
+  if (moedasDobradas || lastRunCoins <= 0) return;
+  if (state.consent !== true) { if (btn) btn.hidden = true; return; }
+  showRewarded(() => {
+    if (moedasDobradas) return;             // clique duplo no resgate
+    const r = earn(lastRunCoins, 'dobro', `dobro-${Date.now()}`);
+    if (!r.ok) return;
+    moedasDobradas = true;
+    if (btn) btn.hidden = true;
+    showToast({ icon: 'ic-coin', title: 'Moedas dobradas!', desc: `+${r.granted} moedas` });
+  });
 }
 
 /**
@@ -322,7 +364,7 @@ function spawnConfetti() {
 
 function animateScore(elScore, target) {
   if (state.settings.reduceMotion) { elScore.textContent = target.toLocaleString('pt-BR'); return; }
-  const dur = 700;
+  const dur = 600;                           // contagem rápida e legível (P1-5)
   const t0 = performance.now();
   const gen = screenGen;                       // captura a geração da tela atual
   if (scoreRafId) cancelAnimationFrame(scoreRafId); // cancela contagem anterior (replay rápido)
@@ -446,6 +488,7 @@ function bindActions() {
       case 'pause': sfx('ui'); pauseGame(); showScreen('pause'); break;
       case 'resume': sfx('ui'); resumeGame(); showScreen(null); break;
       case 'revive': sfx('ui'); emit('ads:rewarded-revive'); break;
+      case 'dobrar': sfx('ui'); dobrarMoedas(); break;
       case 'share-score': case 'share-rank': {
         sfx('ui');
         const mode = action === 'share-score' ? 'score' : 'rank';

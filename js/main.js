@@ -155,7 +155,7 @@ function boot() {
       showToast({ icon: 'ic-trophy', title: `Novo recorde, ${nick}!`, desc: `${run.score.toLocaleString('pt-BR')} pontos` });
     }
 
-    showGameOver({ ...run, best: state.stats.best, isRecord, position });
+    showGameOver({ ...run, best: state.stats.best, bestAnterior, isRecord, position });
     adsOnRunEnd();
 
     // ranking global (camada social): fire-and-forget — flag desligada,

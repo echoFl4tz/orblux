@@ -202,6 +202,17 @@ body.q-baixa .power-chip {
 .panel-foot { flex: 0 0 auto; display: flex; gap: var(--s2); flex-wrap: wrap; justify-content: center; }
 .panel-foot.column { flex-direction: column; }
 
+/* P1-5: linha dupla replay + compartilhar quando há NOVO RECORDE */
+.go-actions-row { display: flex; flex-direction: column; gap: var(--s2); width: 100%; }
+.go-actions-row .btn { width: 100%; }
+.go-actions-row.two-cols { flex-direction: row; }
+.go-actions-row.two-cols .btn { flex: 1; min-height: 52px; padding: 0 var(--s3); font-size: 0.82rem; }
+.go-actions-row.two-cols .btn-big { flex: 1.35; }
+.go-actions-row.two-cols .btn .ic { width: 18px; height: 18px; }
+/* Dobrar moedas: dourado porque é ação sobre moeda (P0-4 permite) */
+.btn-dobrar { border-color: rgba(255, 228, 94, 0.45); color: var(--reward); }
+.btn-dobrar .ic { color: var(--reward); }
+
 @keyframes panelIn {
   from { transform: translateY(12px); opacity: 0; }
   to { transform: none; opacity: 1; }
@@ -876,7 +887,13 @@ body.q-baixa .power-chip {
   font-size: 0.85rem;
   font-weight: 800;
   letter-spacing: 1px;
-  animation: recordGlow 1.4s ease-in-out infinite;
+  /* P1-5: selo desliza de cima (com mov. reduzido o bloco global corta a
+     duração — sobra só o fade) e depois respira no glow */
+  animation: badgeIn 0.28s var(--ease) both, recordGlow 1.4s ease-in-out 0.3s infinite;
+}
+@keyframes badgeIn {
+  0% { transform: translateY(-14px) scale(0.92); opacity: 0; }
+  100% { transform: none; opacity: 1; }
 }
 /* Confetes do NOVO RECORDE (spawns no screens.js; cortados com mov. reduzido) */
 .confetti {
@@ -941,6 +958,8 @@ body.q-baixa .power-chip {
   grid-template-columns: repeat(2, 1fr);
   gap: var(--s2);
 }
+/* 3 cartões (tempo, pulsos, combo máx) cabem em 3 colunas quando a tela abre */
+@media (min-width: 560px) { .go-stats { grid-template-columns: repeat(3, 1fr); } }
 .go-stat {
   display: flex;
   align-items: center;
@@ -1449,7 +1468,7 @@ body[data-screen="gameover"] .toasts {
   .missions-summary { display: none; }
   .btn { min-height: 44px; }
   .btn-big { min-height: 48px; font-size: 1rem; }
-  .go-stats { grid-template-columns: repeat(4, 1fr); }
+  .go-stats { grid-template-columns: repeat(3, 1fr); }
 }
 
 /* Desktop / tablet largo: duas colunas no menu */
@@ -1731,7 +1750,7 @@ body.reduce-motion .skin-card:hover { transform: none; }
 }
 .go-coins b { font-family: var(--font-display); }
 
-/* Faltam N pontos para o recorde (incentivo sem pressão) */
+/* Faltam N pontos / +N sobre o anterior (incentivo sem pressão) */
 .go-gap {
   margin-top: 6px;
   color: var(--text-2);
@@ -1739,6 +1758,8 @@ body.reduce-motion .skin-card:hover { transform: none; }
   text-align: center;
 }
 .go-gap b { color: var(--cyan, #22e6ff); font-family: var(--font-display); }
+.go-gap.is-record { color: var(--record); }        /* P1-5: "+N sobre o anterior" */
+.go-gap.is-record b { color: var(--record); }
 
 /* Barras de progresso do fim de jogo (próxima skin + missões do dia) */
 .go-progress {

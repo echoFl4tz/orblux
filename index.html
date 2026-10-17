@@ -1115,6 +1115,11 @@
         <svg class="ic ic-sm" aria-hidden="true"><use href="#ic-coin"/></svg>
         <span>Você ganhou <b id="go-coins-value">0</b> moedas</span>
       </div>
+      <!-- dobrar moedas (P1-5): hidden por padrão; aparece só com consentimento
+           e moedas na partida; paga de verdade via anúncio recompensado -->
+      <button class="btn btn-dobrar" id="btn-dobrar" data-action="dobrar" hidden>
+        <svg class="ic" aria-hidden="true"><use href="#ic-video"/></svg> Dobrar moedas
+      </button>
       <div id="go-progress" class="go-progress" hidden>
         <div class="go-prog" id="go-prog-skin" hidden>
           <div class="go-prog-head">
@@ -1134,16 +1139,19 @@
         </div>
       </div>
       <div class="panel-foot column">
-        <button class="btn btn-primary btn-big" data-action="replay">
-          <svg class="ic ic-lg" aria-hidden="true"><use href="#ic-restart"/></svg> JOGAR DE NOVO
-        </button>
+        <!-- com recorde: Compartilhar sobe para primário ao lado do replay (P1-5) -->
+        <div class="go-actions-row" id="go-actions-row">
+          <button class="btn btn-primary btn-big" data-action="replay">
+            <svg class="ic ic-lg" aria-hidden="true"><use href="#ic-restart"/></svg> JOGAR DE NOVO
+          </button>
+          <button class="btn" id="btn-share-score" data-action="share-score">
+            <svg class="ic" aria-hidden="true"><use href="#ic-share"/></svg> Compartilhar
+          </button>
+        </div>
         <button class="btn btn-success" id="btn-revive" data-action="revive" hidden>
           <svg class="ic" aria-hidden="true"><use href="#ic-video"/></svg> Assistir anúncio e reviver
         </button>
-        <button class="btn" data-action="share-score">
-          <svg class="ic" aria-hidden="true"><use href="#ic-share"/></svg> Compartilhar
-        </button>
-        <button class="btn" data-action="menu">
+        <button class="link-btn" data-action="menu">
           <svg class="ic" aria-hidden="true"><use href="#ic-menu"/></svg> Menu
         </button>
       </div>
