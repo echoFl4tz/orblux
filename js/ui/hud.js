@@ -16,6 +16,8 @@ let livesTimer = 0;
 let lastZone = -1;          // zona de cor vigente (glow do placar, §10)
 let danoFlashes = [];       // timestamps dos flashes de dano (teto 3/s, §9)
 let shatterTimer = 0;       // remove a classe de estilhaço do combo
+let comboPulseAt = 0;       // último pulso do combo (throttle 333ms ≈ 3/s, §9)
+let comboPopTimer = 0;      // remove a classe .pop do combo após o pulso
 
 /** Flash vermelho rápido nas bordas ao levar dano (respeita mov. reduzido no CSS). */
 function flashDamage() {
@@ -126,6 +128,17 @@ export function initHud() {
       last.mult = multiplier;
       el.combo.textContent = `x${multiplier}`;
       el.comboWrap.classList.toggle('hot', multiplier >= 2);
+      // pulso visual com teto de 3/s (P2): throttle de 333ms, classe .pop
+      // separada do estado "hot" para o throttle não brigar com a cor
+      const agora = performance.now();
+      if (multiplier >= 2 && agora - comboPulseAt >= 333) {
+        comboPulseAt = agora;
+        el.comboWrap.classList.remove('pop');
+        void el.comboWrap.offsetWidth;          // reinicia a animação
+        el.comboWrap.classList.add('pop');
+        clearTimeout(comboPopTimer);
+        comboPopTimer = setTimeout(() => el.comboWrap.classList.remove('pop'), 140);
+      }
     }
     const f = Math.round((frac || 0) * 100) / 100;
     if (f !== last.frac) {
@@ -239,7 +252,9 @@ export function resetHud() {
   el.comboWrap.style.opacity = '1';
   el.comboWrap.classList.remove('hot');
   el.comboWrap.classList.remove('estilhaco');
+  el.comboWrap.classList.remove('pop');
   clearTimeout(shatterTimer);
+  clearTimeout(comboPopTimer);
   el.combo.textContent = 'x1';
   el.score.textContent = '0';
   if (el.levelText) el.levelText.textContent = 'NÍV 1';

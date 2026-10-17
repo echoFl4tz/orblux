@@ -77,7 +77,7 @@ export function initScreens() {
 
   on('stats:changed', updateBestDisplay);
   on('state:reset', () => { updateBestDisplay(); applySettingsToUI(); });
-  on('skins:changed', applyLogoSkin);       // P1-1: trocou a skin, o logo acompanha
+  on('skins:changed', () => { applyLogoSkin(); renderMenuTop3(); });  // P1-1/P2
   on('wallet:run-coins', ({ coins }) => { lastRunCoins = coins || 0; });  // P1-5: dobrar
   applyLogoSkin();                           // P1-1 no boot
 }
@@ -381,6 +381,28 @@ function animateScore(elScore, target) {
 
 function updateBestDisplay() {
   updateHudMenuBest(state.stats.best);
+  renderMenuTop3();                        // P2: pódio + skin na coluna do menu
+}
+
+/** P2: coluna do menu no desktop — pódio local (top 3) + skin equipada. */
+function renderMenuTop3() {
+  const box = document.getElementById('menu-top3');
+  if (!box) return;
+  const ol = document.getElementById('menu-top3-list');
+  const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+  const top = (state.ranking || []).slice().sort((a, b) => (b.score || 0) - (a.score || 0)).slice(0, 3);
+  if (ol) {
+    ol.innerHTML = top.length
+      ? top.map((r, i) => `<li class="top3-row"><span class="top3-pos">${i + 1}º</span><span class="top3-name">${esc(r.name || 'Jogador')}</span><b class="top3-pts">${(r.score || 0).toLocaleString('pt-BR')}</b></li>`).join('')
+      : '<li class="top3-row muted">Sem partidas ainda</li>';
+  }
+  const skin = document.getElementById('menu-skin-name');
+  if (skin) {
+    let nome = 'Orbe';
+    try { nome = equippedLook()?.nome || 'Orbe'; } catch { /* skin quebrada: fica no padrão */ }
+    skin.textContent = nome;
+  }
+  box.hidden = false;                       // o CSS esconde no mobile
 }
 
 // ---------------------------------------------------------

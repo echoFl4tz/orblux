@@ -132,9 +132,12 @@ a:hover { text-decoration: underline; }
   overscroll-behavior: contain;
   scrollbar-width: thin;
   scrollbar-color: rgba(34, 230, 255, 0.35) transparent;
-  transition: opacity var(--dur-2) var(--ease), visibility var(--dur-2);
+  transition: opacity var(--dur-out) var(--ease), visibility var(--dur-out);  /* saída mais rápida (P2) */
 }
-.screen.active { opacity: 1; visibility: visible; pointer-events: auto; }
+.screen.active {
+  opacity: 1; visibility: visible; pointer-events: auto;
+  transition: opacity var(--dur-in) var(--ease), visibility var(--dur-in);   /* entrada 160ms (P2) */
+}
 .screen::-webkit-scrollbar { width: 8px; }
 .screen::-webkit-scrollbar-thumb { background: rgba(34, 230, 255, 0.3); border-radius: var(--r-full); }
 .screen::-webkit-scrollbar-track { background: transparent; }
@@ -430,8 +433,27 @@ body.q-baixa .power-chip {
   flex-direction: column;
   align-items: center;
   gap: var(--s4);
-  animation: panelIn var(--dur-3) var(--ease) both;
 }
+/* P2: entrada escalonada do menu — 30ms de diferença entre blocos */
+@keyframes menuIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: none; }
+}
+.menu-wrap > *,
+.menu-main > * { animation: menuIn var(--dur-in) var(--ease) both; }
+.menu-wrap > *:nth-child(2) { animation-delay: 30ms; }
+.menu-wrap > *:nth-child(3) { animation-delay: 60ms; }
+.menu-wrap > *:nth-child(4) { animation-delay: 90ms; }
+.menu-main > *:nth-child(2) { animation-delay: 30ms; }
+.menu-main > *:nth-child(3) { animation-delay: 60ms; }
+.menu-main > *:nth-child(4) { animation-delay: 90ms; }
+.menu-main > *:nth-child(5) { animation-delay: 120ms; }
+/* movimento reduzido: sem cascata — tudo aparece junto, sem congelar */
+@media (prefers-reduced-motion: reduce) {
+  .menu-wrap > *, .menu-main > * { animation: none; }
+}
+body.reduce-motion .menu-wrap > *,
+body.reduce-motion .menu-main > * { animation: none; }
 /* scrim de legibilidade atrás do logo sobre o túnel animado (P1-2) */
 .menu-wrap::before {
   content: '';
@@ -598,7 +620,8 @@ body.q-baixa .power-chip {
   background: var(--play-grad);
   border: none;
   box-shadow: var(--glow-play);
-  animation: playPulse 3s ease-in-out infinite;   /* respiração ~3s */
+  /* menuIn acompanha a cascata do menu; playPulse respira em loop (P2) */
+  animation: menuIn var(--dur-in) var(--ease) both, playPulse 3s ease-in-out infinite;
 }
 .btn-play:hover, .btn-play:focus-visible { background: var(--play-grad); }
 @keyframes playPulse {
@@ -684,6 +707,50 @@ body.q-baixa .power-chip {
   font-size: var(--fs-caption);
   flex-wrap: wrap;
 }
+
+/* P2: pódio local + skin equipada na coluna do desktop (>=960px) */
+.menu-top3 {
+  width: 100%;
+  background: var(--surface-ghost);
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  padding: var(--s3) var(--s4);
+}
+.menu-top3-title {
+  margin: 0 0 var(--s2);
+  font-size: var(--fs-caption);
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--text-2);
+  font-weight: 600;
+}
+.top3-list { list-style: none; margin: 0; padding: 0; }
+.top3-row {
+  display: flex;
+  align-items: center;
+  gap: var(--s2);
+  padding: 3px 0;
+  font-size: 0.85rem;
+  color: var(--text-2);
+}
+.top3-pos {
+  width: 22px;
+  color: var(--primary);                 /* posição é informação: ciano (P0-4) */
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+.top3-name {
+  flex: 1;
+  color: var(--text-1);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.top3-pts { color: var(--text-1); font-variant-numeric: tabular-nums; }
+.top3-row.muted { color: var(--text-2); }
+.menu-skin { margin: var(--s2) 0 0; font-size: var(--fs-caption); color: var(--text-2); }
+.menu-skin b { color: var(--primary); }
+@media (max-width: 959px) { .menu-top3 { display: none; } }   /* desktop-only */
 
 /* Espaço de anúncio (altura reservada = sem layout shift) */
 .ad-slot {
@@ -1250,9 +1317,10 @@ body[data-screen="gameover"] .toasts {
 .hud-combo.hot .hud-combo-x {
   color: var(--primary);
   border-color: rgba(34, 230, 255, 0.7);
-  animation: comboPop 0.3s var(--ease);
 }
-@keyframes comboPop { 0% { transform: scale(1); } 50% { transform: scale(1.3); } 100% { transform: scale(1); } }
+/* pulso isolado do estado de cor: classe .pop é dada com throttle 333ms (P2) */
+.hud-combo.pop .hud-combo-x { animation: comboPop 0.12s var(--ease); }
+@keyframes comboPop { 0% { transform: scale(1); } 50% { transform: scale(1.12); } 100% { transform: scale(1); } }
 
 .hud-pause {
   position: absolute;
