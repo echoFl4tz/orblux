@@ -198,7 +198,7 @@ a:hover { text-decoration: underline; }
   color: var(--text-1);
   letter-spacing: 0.5px;
 }
-.card-title .ic { color: var(--reward); }
+.card-title .ic { color: var(--primary); }   /* P0-4: destaque/info = ciano */
 
 .chip {
   display: inline-flex;
@@ -523,7 +523,7 @@ a:hover { text-decoration: underline; }
   font-weight: 700;
   cursor: pointer;
 }
-.missions-toggle .ic { color: var(--reward); }
+.missions-toggle .ic { color: var(--primary); }   /* P0-4 */
 .missions-toggle .chev { margin-left: auto; color: var(--text-2); transition: transform var(--dur-2) var(--ease); }
 .missions-toggle[aria-expanded="true"] .chev { transform: rotate(180deg); }
 .missions-list { list-style: none; padding: 0 var(--s3) var(--s3); }
@@ -616,7 +616,7 @@ a:hover { text-decoration: underline; }
 .howto-list li:nth-child(2) .howto-ic { background: var(--secondary-soft); color: var(--secondary); border-color: rgba(255, 61, 240, 0.25); }
 .howto-list li:nth-child(3) .howto-ic { background: rgba(255, 77, 109, 0.12); color: var(--danger); border-color: rgba(255, 77, 109, 0.3); }
 .howto-list li:nth-child(4) .howto-ic { background: rgba(77, 255, 158, 0.12); color: var(--success); border-color: rgba(77, 255, 158, 0.3); }
-.howto-list li:nth-child(5) .howto-ic { background: rgba(255, 228, 94, 0.12); color: var(--reward); border-color: rgba(255, 228, 94, 0.3); }
+.howto-list li:nth-child(5) .howto-ic { background: rgba(34, 230, 255, 0.12); color: var(--primary); border-color: rgba(34, 230, 255, 0.3); }
 .howto-list b { display: block; margin-bottom: 2px; }
 .howto-ic .mini { width: 30px; height: 30px; flex: 0 0 auto; }
 
@@ -637,8 +637,8 @@ a:hover { text-decoration: underline; }
 }
 .podium-slot .pos { font-family: var(--font-display); font-weight: 900; font-size: 1.05rem; font-variant-numeric: tabular-nums; }
 .podium-slot .pts { font-size: 0.85rem; font-weight: 700; font-variant-numeric: tabular-nums; }
-.podium-1 { border-color: rgba(255, 228, 94, 0.6); box-shadow: 0 0 18px rgba(255, 228, 94, 0.28); padding-top: var(--s5); }
-.podium-1 .pos, .podium-1 .ic { color: var(--reward); }
+.podium-1 { border-color: rgba(34, 230, 255, 0.6); box-shadow: 0 0 18px rgba(34, 230, 255, 0.28); padding-top: var(--s5); }
+.podium-1 .pos, .podium-1 .ic { color: var(--primary); }   /* P0-4: troféu = ciano */
 .podium-2 { border-color: rgba(210, 225, 255, 0.45); }
 .podium-2 .pos, .podium-2 .ic { color: #d2e1ff; }
 .podium-3 { border-color: rgba(255, 158, 90, 0.45); }
@@ -690,8 +690,8 @@ a:hover { text-decoration: underline; }
 }
 .achievement .ic { width: 26px; height: 26px; color: var(--text-2); opacity: 0.55; filter: grayscale(1); }
 .achievement .ach-name { color: var(--text-1); font-weight: 700; font-size: 0.78rem; }
-.achievement.unlocked { border-color: rgba(255, 228, 94, 0.55); box-shadow: 0 0 12px rgba(255, 228, 94, 0.2); }
-.achievement.unlocked .ic { color: var(--reward); opacity: 1; filter: none; }
+.achievement.unlocked { border-color: rgba(34, 230, 255, 0.55); box-shadow: 0 0 12px rgba(34, 230, 255, 0.2); }
+.achievement.unlocked .ic { color: var(--primary); opacity: 1; filter: none; }   /* P0-4 */
 
 /* ---------------------------------------------------------
    9. CONFIGURAÇÕES
@@ -802,8 +802,8 @@ a:hover { text-decoration: underline; }
   gap: var(--s2);
   padding: var(--s2) var(--s4);
   border-radius: var(--r-full);
-  border: 1px solid var(--reward);
-  color: var(--reward);
+  border: 1px solid var(--record);       /* P0-4: dourado = só moeda + novo recorde */
+  color: var(--record);
   font-family: var(--font-display);
   font-size: 0.85rem;
   font-weight: 800;
@@ -849,6 +849,7 @@ a:hover { text-decoration: underline; }
   text-shadow: var(--glow-pink-1), var(--glow-pink-2);
 }
 .go-best { text-align: center; color: var(--text-2); font-size: 0.9rem; }
+.go-score.is-record { color: var(--record); }   /* P0-4: o placar só fica dourado no NOVO RECORDE */
 .go-nick {
   text-align: center; color: var(--text-1); font-size: 0.95rem; font-weight: 600;
   margin-top: -4px; letter-spacing: 0.3px;
@@ -888,10 +889,10 @@ a:hover { text-decoration: underline; }
 .go-rank {
   grid-column: 1 / -1;
   justify-content: center;
-  border-color: rgba(255, 228, 94, 0.5);
-  color: var(--reward);
+  border-color: rgba(34, 230, 255, 0.5);
+  color: var(--primary);
 }
-.go-rank .ic { color: var(--reward); }
+.go-rank .ic { color: var(--primary); }   /* P0-4: troféu = ciano */
 
 .pause-score { text-align: center; color: var(--text-2); }
 .pause-score b { color: var(--text-1); font-variant-numeric: tabular-nums; }
@@ -1128,8 +1129,8 @@ body[data-screen="gameover"] .toasts {
   transition: color var(--dur-2), border-color var(--dur-2);
 }
 .hud-combo.hot .hud-combo-x {
-  color: var(--reward);
-  border-color: rgba(255, 228, 94, 0.7);
+  color: var(--primary);
+  border-color: rgba(34, 230, 255, 0.7);
   animation: comboPop 0.3s var(--ease);
 }
 @keyframes comboPop { 0% { transform: scale(1); } 50% { transform: scale(1.3); } 100% { transform: scale(1); } }
@@ -1172,11 +1173,11 @@ body[data-screen="gameover"] .toasts {
   font-size: 0.875rem;                   /* 14px — par do multiplicador */
   font-weight: 700;
   letter-spacing: 0.1em;
-  color: var(--reward);
+  color: var(--primary);                 /* P0-4: nível é informação, não moeda */
   padding: 4px 10px;
   border-radius: var(--r-full);
-  background: rgba(255, 228, 94, 0.12);
-  border: 1px solid rgba(255, 228, 94, 0.38);
+  background: rgba(34, 230, 255, 0.12);
+  border: 1px solid rgba(34, 230, 255, 0.38);
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
 }
@@ -1235,13 +1236,13 @@ body[data-screen="gameover"] .toasts {
   font-family: var(--font-display);
   font-size: clamp(1.6rem, 7vw, 2.4rem);
   font-weight: 900;
-  color: var(--reward);
-  text-shadow: var(--glow-pink-1), var(--glow-pink-2);
+  color: var(--primary);                 /* P0-4: faixa de nível = informação */
+  text-shadow: var(--glow-1), 0 0 18px rgba(34, 230, 255, 0.45);
   white-space: nowrap;
   padding: 4px 26px;
   border-radius: var(--r-full);
   /* faixa rápida de nível: brilho passando atrás do texto */
-  background: linear-gradient(100deg, transparent 20%, rgba(255, 228, 94, 0.16) 50%, transparent 80%);
+  background: linear-gradient(100deg, transparent 20%, rgba(34, 230, 255, 0.16) 50%, transparent 80%);
   background-size: 240% 100%;
   animation: hudToast 1.2s var(--ease) both, hudSweep 0.7s var(--ease) both;
 }
@@ -1296,7 +1297,7 @@ body[data-screen="gameover"] .toasts {
   -webkit-backdrop-filter: blur(10px);
   animation: panelIn var(--dur-3) var(--ease) both;
 }
-.tutorial-text .ic { color: var(--reward); width: 24px; height: 24px; }
+.tutorial-text .ic { color: var(--primary); width: 24px; height: 24px; }   /* P0-4 */
 /* Retrato: a dica fica NO topo, logo abaixo do placar (nunca sob a mão) */
 @media (orientation: portrait) {
   .tutorial {
@@ -1442,18 +1443,18 @@ body[data-screen="gameover"] .toasts {
   position: absolute; top: -7px; right: -7px;
   padding: 1px 7px; border-radius: var(--r-full);
   font-size: 0.62rem; font-weight: 800; letter-spacing: 0.6px; text-transform: uppercase;
-  color: #06121a; background: var(--reward);
-  box-shadow: 0 0 8px rgba(255, 228, 94, 0.55);
+  color: #06121a; background: var(--primary);   /* P0-4: "Novo" é destaque, não moeda */
+  box-shadow: 0 0 8px rgba(34, 230, 255, 0.55);
   pointer-events: none;
 }
-.chip-warn { color: var(--reward); border-color: rgba(255, 228, 94, 0.4); background: rgba(255, 228, 94, 0.1); }
+.chip-warn { color: var(--primary); border-color: rgba(34, 230, 255, 0.4); background: rgba(34, 230, 255, 0.1); }
 .chip-success { color: var(--success); border-color: rgba(77, 255, 158, 0.4); background: rgba(77, 255, 158, 0.1); }
 
 #screen-skins .panel { width: min(96vw, 760px); }
 .shop-status {
   margin: 0 0 var(--s3); padding: var(--s2) var(--s3);
-  font-size: var(--fs-caption); color: var(--reward);
-  background: rgba(255, 228, 94, 0.08); border: 1px solid rgba(255, 228, 94, 0.25);
+  font-size: var(--fs-caption); color: var(--primary);
+  background: rgba(34, 230, 255, 0.08); border: 1px solid rgba(34, 230, 255, 0.25);
   border-radius: var(--r-sm);
 }
 .shop-filters { display: flex; gap: var(--s2); margin-bottom: var(--s4); flex-wrap: wrap; }
@@ -1515,8 +1516,8 @@ body[data-screen="gameover"] .toasts {
   font-size: 0.74rem; font-weight: 700; color: var(--success);
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%;
 }
-.shop-item-bundle .skin-card { border-color: rgba(255, 228, 94, 0.35); }
-.shop-item-bundle .skin-card-state { color: var(--reward); }
+.shop-item-bundle .skin-card { border-color: rgba(255, 228, 94, 0.35); }   /* item precificado em moedas */
+.shop-item-bundle .skin-card-state { color: var(--primary); }
 .shop-item-bundle .skin-card.is-owned .skin-card-state { color: var(--success); }
 
 /* detalhe */

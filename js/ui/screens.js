@@ -176,6 +176,8 @@ export function showGameOver({ score, best, isRecord, position, elapsed, pickups
   const scoreEl = document.getElementById('go-score');
   document.getElementById('go-best').textContent = (best || 0).toLocaleString('pt-BR');
   document.getElementById('go-record').hidden = !isRecord;
+  // P0-4: dourado no placar só quando for NOVO RECORDE
+  scoreEl?.classList.toggle('is-record', !!isRecord);
   // apelido junto ao placar
   const goNick = document.getElementById('go-nick');
   if (goNick) {
