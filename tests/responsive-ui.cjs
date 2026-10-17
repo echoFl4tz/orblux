@@ -135,7 +135,9 @@ async function checkScreen(page, label, name) {
           && r.width > 0 && r.height > 0;
       };
       return {
-        score: dentro('hud-score'), wave: dentro('hud-wave'), level: dentro('hud-level'),
+        // P1-4: a onda virou sr-only (só leitor de tela); o chip visível
+        // correspondente é a barra de combo, então ela entra na medição
+        score: dentro('hud-score'), combo: dentro('hud-combo-wrap'), level: dentro('hud-level'),
         pause: dentro('btn-pause'), lives: dentro('hud-lives'),
       };
     });

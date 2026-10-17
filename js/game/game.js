@@ -30,7 +30,7 @@ const LIVES_START = 3;
 const COMBO_WINDOW = 3.5;       // s sem coletar até zerar o combo
 const INVULN_TIME = 1.6;        // s de invulnerabilidade após levar dano
 const PLAYER_SPEED = 470;       // px/s (antes da escala S)
-const POINTS_PER_LEVEL = 1000;
+export const POINTS_PER_LEVEL = 1000;
 const X2_DURATION = 8;          // s do power-up dobra-pontos
 const MAX_MULT = SCORE.MAX_MULT; // teto do multiplicador (regra espelhada, Fase 2)
 

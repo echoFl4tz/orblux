@@ -1159,17 +1159,19 @@ body[data-screen="gameover"] .toasts {
   width: min(100%, 470px);              /* cluster compacto, também no paisagem */
 }
 .hud-combo {
-  flex: 1;
+  position: relative;
+  width: 100%;                           /* full-width: sangra até as bordas (P1-4) */
+  margin: 2px -56px 0;                   /* anula o padding do .hud-top */
   display: flex;
   align-items: center;
   gap: 8px;
-  min-width: 0;
+  padding-right: var(--s3);
 }
 .combo-track {
   position: relative;
   flex: 1;
   min-width: 60px;
-  height: 11px;                         /* barra de combo mais grossa e visível */
+  height: 4px;                           /* traço fino de 4px (P1-4) */
   border-radius: var(--r-full);
   background: rgba(154, 166, 200, 0.18);
   overflow: hidden;
@@ -1212,32 +1214,39 @@ body[data-screen="gameover"] .toasts {
   height: 46px;
 }
 
-.hud-bottom {
-  position: absolute;
-  left: max(var(--s3), env(safe-area-inset-left));
-  right: max(var(--s3), env(safe-area-inset-right));
-  bottom: max(var(--s3), env(safe-area-inset-bottom));
-  display: flex;
-  align-items: flex-end;
-  justify-content: space-between;
-  gap: var(--s2);
-}
-.hud-lives { display: flex; gap: 6px; color: var(--danger); }
+.hud-lives { display: flex; gap: 5px; color: var(--danger); margin-top: 4px; }
 .hud-lives .ic {
-  width: 26px; height: 26px;             /* vidas >= 24px (a11y) */
-  filter: drop-shadow(0 0 7px rgba(255, 77, 109, 0.7));
+  width: 14px; height: 14px;             /* pips pequenos sob o placar (P1-4) */
+  filter: drop-shadow(0 0 5px rgba(255, 77, 109, 0.6));
 }
 .hud-lives .ic.empty { color: rgba(154, 166, 200, 0.45); filter: none; }
-.hud-lives .ic.hit { animation: heartBreak 0.5s var(--ease); }
-/* Coração "quebra" ao perder vida: estoura, gira e esvazia */
-@keyframes heartBreak {
-  0% { transform: scale(1); filter: brightness(2.2); }
-  30% { transform: scale(1.55) rotate(9deg); filter: brightness(1.6); }
-  60% { transform: scale(0.72) rotate(-7deg); filter: brightness(1); }
-  100% { transform: scale(1) rotate(0); filter: brightness(1); }
+.hud-lives .ic.hit { animation: heartDissolve 0.2s var(--ease); }  /* pip se dissolve (P1-4) */
+.hud-lives.hit { animation: livesShake 0.2s var(--ease); }          /* tremida de 2px */
+@keyframes heartDissolve {
+  0% { transform: scale(1.6); filter: brightness(2.4); }
+  100% { transform: scale(1); filter: none; }
+}
+@keyframes livesShake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-2px); }
+  75% { transform: translateX(2px); }
+}
+
+/* utilitário sr-only (P1-4): invisível na tela, vivo no leitor de tela */
+.sr-only {
+  position: absolute;
+  width: 1px; height: 1px;
+  padding: 0; margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
 }
 
 .hud-level {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
   font-family: var(--font-display);
   font-size: 0.875rem;                   /* 14px — par do multiplicador */
   font-weight: 700;
@@ -1250,26 +1259,33 @@ body[data-screen="gameover"] .toasts {
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
 }
-
-/* chip de onda (Fase 2) — mesma forma do chip de nível, tom ciano */
-.hud-wave {
-  color: var(--cyan, #22e6ff);
-  background: rgba(34, 230, 255, 0.1);
-  border-color: rgba(34, 230, 255, 0.35);
+/* micro-barra: quanto falta para o próximo nível (P1-4) */
+.hud-level-bar {
+  width: 30px;
+  height: 4px;
+  border-radius: var(--r-full);
+  background: rgba(34, 230, 255, 0.22);
+  overflow: hidden;
 }
-.hud-wave.pop { animation: scorePop 0.22s var(--ease); }
+.hud-level-bar > span {
+  display: block;
+  height: 100%;
+  width: 0;
+  border-radius: inherit;
+  background: var(--primary);
+  transition: width var(--dur-2) linear;
+}
 
 .hud-powerups {
-  position: absolute;
-  /* abaixo do cluster do topo (placar + chips) — nunca sobrepõe a linha de combo */
-  top: calc(max(var(--s3), env(safe-area-inset-top)) + 116px);
-  right: max(var(--s3), env(safe-area-inset-right));
+  align-self: flex-end;                  /* sob a barra de combo, à direita (P1-4) */
   display: flex;
   flex-direction: column;
   gap: 6px;
   align-items: flex-end;
 }
+.hud-powerups:empty { display: none; }
 .power-chip {
+  --p: 1;                                /* fração restante do efeito (hudTick, P1-4) */
   position: relative;
   display: flex;
   align-items: center;
@@ -1277,7 +1293,7 @@ body[data-screen="gameover"] .toasts {
   padding: 5px 12px;
   border-radius: var(--r-full);
   background: var(--surface-1);
-  border: 1px solid var(--success);
+  border: 1px solid rgba(77, 255, 158, 0.45);
   color: var(--success);
   font-family: var(--font-display);
   font-size: 0.7rem;
@@ -1287,14 +1303,14 @@ body[data-screen="gameover"] .toasts {
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
 }
-.power-chip .chip-bar {
+/* contagem radial do tempo restante: lavagem cônica que "escorre" via --p */
+.power-chip::before {
+  content: '';
   position: absolute;
-  left: 0; bottom: 0;
-  height: 2px;
-  width: 100%;
-  transform-origin: left;
-  background: currentColor;
-  opacity: 0.7;
+  inset: 0;
+  border-radius: inherit;
+  background: conic-gradient(rgba(77, 255, 158, 0.2) calc(var(--p) * 360deg), transparent 0);
+  pointer-events: none;
 }
 
 .hud-toast {

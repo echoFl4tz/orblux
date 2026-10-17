@@ -5,13 +5,14 @@
    ========================================================= */
 
 import { on } from '../core/events.js';
-import { game } from '../game/game.js';
+import { game, POINTS_PER_LEVEL } from '../game/game.js';
 import { zoneForLevel } from '../game/theme.js';
 
 let el = {};
-let last = { score: -1, lives: -1, level: -1, wave: -1, combo: -1, mult: -1, frac: -1 };
+let last = { score: -1, lives: -1, level: -1, wave: -1, combo: -1, mult: -1, frac: -1, pct: -1 };
 let toastTimer = 0;
 let damageTimer = 0;
+let livesTimer = 0;
 let lastZone = -1;          // zona de cor vigente (glow do placar, §10)
 let danoFlashes = [];       // timestamps dos flashes de dano (teto 3/s, §9)
 let shatterTimer = 0;       // remove a classe de estilhaço do combo
@@ -38,6 +39,8 @@ export function initHud() {
     score: document.getElementById('hud-score'),
     lives: document.getElementById('hud-lives'),
     level: document.getElementById('hud-level'),
+    levelText: document.getElementById('hud-level-text'),
+    levelFill: document.getElementById('hud-level-fill'),
     wave: document.getElementById('hud-wave'),
     comboWrap: document.getElementById('hud-combo-wrap'),
     combo: document.getElementById('hud-combo'),
@@ -50,7 +53,7 @@ export function initHud() {
   };
 
   on('game:start', () => {
-    last = { score: -1, lives: -1, level: -1, wave: -1, combo: -1, mult: -1, frac: -1 };
+    last = { score: -1, lives: -1, level: -1, wave: -1, combo: -1, mult: -1, frac: -1, pct: -1 };
     el.powerups.innerHTML = '';
     el.damage?.classList.remove('on');
     el.hud.hidden = false;
@@ -81,16 +84,20 @@ export function initHud() {
     el.lives.innerHTML = html;
     if (lost) {
       flashDamage();                    // flash vermelho nas bordas
-      // anima o coração recém-perdido
-      const hearts = el.lives.querySelectorAll('.ic');
-      hearts[lives]?.classList.add('hit');
+      // pip recém-perdido se dissolve (200ms) + tremida de 2px no grupo (P1-4)
+      el.lives.querySelectorAll('.ic')[lives]?.classList.add('hit');
+      el.lives.classList.remove('hit');
+      void el.lives.offsetWidth;        // reinicia a tremida
+      el.lives.classList.add('hit');
+      clearTimeout(livesTimer);
+      livesTimer = setTimeout(() => el.lives.classList.remove('hit'), 220);
     }
   });
 
   on('game:level', ({ level }) => {
     if (level === last.level) return;
     last.level = level;
-    el.level.textContent = `NÍVEL ${level}`;
+    if (el.levelText) el.levelText.textContent = `NÍV ${level}`;   // rótulo enxuto (P1-4)
     // glow do placar na cor da zona (§10) — só recalcula na troca de zona
     const z = zoneForLevel(level);
     if (z.index !== lastZone) {
@@ -100,13 +107,12 @@ export function initHud() {
   });
 
   on('game:wave', ({ wave }) => {
-    if (wave === last.wave || !el.wave) return;
+    if (wave === last.wave) return;
     last.wave = wave;
-    el.wave.textContent = `ONDA ${wave}`;
-    // "pop" ao virar a onda (mesma animação do placar)
-    el.wave.classList.remove('pop');
-    void el.wave.offsetWidth;
-    el.wave.classList.add('pop');
+    // onda virou sr-only (P1-4): o leitor de tela recebe o texto via
+    // aria-live e o jogador vê um toast curto no centro
+    if (el.wave) el.wave.textContent = `ONDA ${wave}`;
+    showHudToast(`ONDA ${wave}`);
   });
 
   on('game:combo', ({ multiplier, frac }) => {
@@ -138,8 +144,8 @@ export function initHud() {
     chip.innerHTML = `
       <svg class="ic ic-sm" aria-hidden="true"><use href="#${kind === 'shield' ? 'ic-shield' : 'ic-bolt'}"/></svg>
       <span class="chip-label">${kind === 'shield' ? 'ESCUDO' : 'x2'}</span>
-      ${kind === 'x2' ? `<span class="chip-time">${(duration || 8).toFixed(1)}s</span>` : ''}
-      <span class="chip-bar"></span>`;
+      ${kind === 'x2' ? `<span class="chip-time">${(duration || 8).toFixed(1)}s</span>` : ''}`;
+    chip._p = 1;                          // cache da contagem radial (--p, P1-4)
     el.powerups.appendChild(chip);
   });
   on('game:shield', () => document.getElementById('power-shield')?.remove());
@@ -169,16 +175,27 @@ export function initHud() {
 export function hudTick() {
   if (!el.hud || el.hud.hidden) return;
 
+  // micro-barra do nível: fração atual dentro dos 1000 pontos (P1-4).
+  // passo de 5%: no máximo 20 escritas de estilo por segundo.
+  if (el.levelFill && game.score >= 0) {
+    const pct = Math.round(((game.score % POINTS_PER_LEVEL) / POINTS_PER_LEVEL) * 20) / 20;
+    if (pct !== last.pct) {
+      last.pct = pct;
+      el.levelFill.style.width = `${pct * 100}%`;
+    }
+  }
+
   // contagem regressiva do power-up x2 (valor real do jogo)
   if (game.x2Timer > 0 && game.mode === 'playing') {
     const chip = document.getElementById('power-x2');
     if (chip) {
       const time = chip.querySelector('.chip-time');
       if (time) time.textContent = `${game.x2Timer.toFixed(1)}s`;
-      const bar = chip.querySelector('.chip-bar');
-      if (bar) {
-        const total = Number(chip.dataset.duration) || 8;
-        bar.style.transform = `scaleX(${Math.max(0, Math.min(1, game.x2Timer / total))})`;
+      const total = Number(chip.dataset.duration) || 8;
+      const pct = Math.round(Math.max(0, Math.min(1, game.x2Timer / total)) * 20) / 20;
+      if (pct !== chip._p) {             // contagem radial via --p (P1-4)
+        chip._p = pct;
+        chip.style.setProperty('--p', String(pct));
       }
     }
   }
@@ -213,7 +230,9 @@ export function resetHud() {
   el.toast.hidden = true;
   clearTimeout(toastTimer);
   clearTimeout(damageTimer);
+  clearTimeout(livesTimer);
   el.damage?.classList.remove('on');
+  el.lives?.classList.remove('hit');
   el.powerups.innerHTML = '';
   // barra de combo e chips de volta ao estado neutro
   el.comboFill.style.transform = 'scaleX(1)';
@@ -223,8 +242,10 @@ export function resetHud() {
   clearTimeout(shatterTimer);
   el.combo.textContent = 'x1';
   el.score.textContent = '0';
-  el.level.textContent = 'NÍVEL 1';
+  if (el.levelText) el.levelText.textContent = 'NÍV 1';
+  if (el.levelFill) el.levelFill.style.width = '0%';
+  if (el.wave) el.wave.textContent = 'ONDA 1';
   el.lives.innerHTML = '';
   // zera o cache de "último valor" para o próximo jogo redesenhar do zero
-  last = { score: -1, lives: -1, level: -1, combo: -1, mult: -1, frac: -1 };
+  last = { score: -1, lives: -1, level: -1, wave: -1, combo: -1, mult: -1, frac: -1, pct: -1 };
 }

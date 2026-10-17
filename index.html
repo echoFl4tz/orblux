@@ -95,23 +95,25 @@
       <div class="hud-score">
         <span class="hud-score-label">Pontos</span>
         <span id="hud-score" class="hud-score-value">0</span>
+        <!-- vidas como pips minúsculos sob o placar (P1-4) -->
+        <div id="hud-lives" class="hud-lives" aria-label="Vidas restantes"></div>
       </div>
       <div class="hud-chiprow">
-        <span id="hud-level" class="hud-level">NÍVEL 1</span>
-        <span id="hud-wave" class="hud-level hud-wave" aria-label="Onda atual">ONDA 1</span>
-        <div class="hud-combo" id="hud-combo-wrap" aria-label="Barra de combo">
-          <div class="combo-track"><div id="combo-fill" class="combo-fill"></div></div>
-          <span id="hud-combo" class="hud-combo-x">x1</span>
-        </div>
+        <span id="hud-level" class="hud-level"><span id="hud-level-text">NÍV 1</span><span class="hud-level-bar" aria-hidden="true"><span id="hud-level-fill"></span></span></span>
+        <!-- onda virou só leitor de tela (P1-4); o jogador vê o toast "ONDA n" -->
+        <span id="hud-wave" class="sr-only" role="status" aria-live="polite" aria-label="Onda atual">ONDA 1</span>
       </div>
+      <!-- barra de combo full-width com pílula xN na ponta (P1-4) -->
+      <div class="hud-combo" id="hud-combo-wrap" aria-label="Barra de combo">
+        <div class="combo-track"><div id="combo-fill" class="combo-fill"></div></div>
+        <span id="hud-combo" class="hud-combo-x">x1</span>
+      </div>
+      <!-- power-ups sob a barra, alinhados à direita (fluem no fluxo do topo) -->
+      <div id="hud-powerups" class="hud-powerups"></div>
     </div>
     <button id="btn-pause" class="icon-btn hud-pause" aria-label="Pausar jogo" data-action="pause">
       <svg class="ic" aria-hidden="true"><use href="#ic-pause"/></svg>
     </button>
-    <div class="hud-bottom">
-      <div id="hud-lives" class="hud-lives" aria-label="Vidas restantes"></div>
-    </div>
-    <div id="hud-powerups" class="hud-powerups"></div>
     <div id="hud-toast" class="hud-toast" hidden></div>
   </div>
 
