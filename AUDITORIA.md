@@ -1,7 +1,7 @@
-# ORBLUX — Auditoria final (Fase 8)
+# ORBLUX — Auditoria final (Fase 8 + direção de arte A1–A6)
 
 Rodada completa de testes e auditoria do ORBLUX (jogo + moedas + loja +
-camada social) em **16/10/2026**. Este documento é o mapa do que está
+camada social + direção de arte) em **17/10/2026**. Este documento é o mapa do que está
 verificado, do que ficou pendente e do que fazer antes de publicar.
 
 ---
@@ -15,6 +15,8 @@ verificado, do que ficou pendente e do que fazer antes de publicar.
 | Referências internas | `node tools/validate-refs.mjs` | OK |
 | Auditoria de UI (tamanho/a11y/idioma) | `node tools/audit-ui.mjs` | OK (< 150 KB, sem inglês) |
 | Suítes Playwright (17) | `node tests/<suite>.cjs` | **17/17** |
+| FPS por qualidade (GPU real, throttle 4x) | `node tests/perf-ui.cjs` | Alto **56,9** / Médio **59,9** / Baixo **59,9** |
+| Contraste de texto (§12, 8 telas) | dentro de `accessibility-ui` | **0 violações** |
 
 Zero erros de console em todas as suítes (390x844, 1280x720 e 360x640).
 
