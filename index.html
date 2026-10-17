@@ -243,7 +243,7 @@
 
   <!-- ================= TELA: COMO JOGAR ================= -->
   <section id="screen-howto" class="screen" data-screen="howto" aria-label="Como jogar" role="dialog" aria-modal="true">
-    <div class="panel">
+    <div class="panel sheet">
       <div class="panel-head">
         <h2 class="panel-title">Como jogar</h2>
         <button class="icon-btn" data-action="menu" aria-label="Fechar">
@@ -285,14 +285,15 @@
 
   <!-- ================= TELA: RANKING + CONQUISTAS ================= -->
   <section id="screen-ranking" class="screen" data-screen="ranking" aria-label="Ranking e conquistas" role="dialog" aria-modal="true">
-    <div class="panel panel-wide">
+    <div class="panel panel-wide sheet">
       <div class="panel-head">
         <h2 class="panel-title">Ranking</h2>
         <button class="icon-btn" data-action="menu" aria-label="Fechar">
           <svg class="ic" aria-hidden="true"><use href="#ic-close"/></svg>
         </button>
       </div>
-      <div class="panel-body">
+      <div class="panel-body rank-cols">
+        <div class="rank-main">
         <div class="shop-filters" id="ranking-scopes" role="group" aria-label="Escopo do ranking" hidden>
           <button class="chip-btn active" data-rank-scope="local" aria-pressed="true">Local</button>
           <button class="chip-btn" data-rank-scope="global" aria-pressed="false">Global</button>
@@ -345,12 +346,15 @@
             <button class="btn btn-small" id="daily-retry" hidden>Tentar de novo</button>
           </div>
         </div>
+        </div><!-- /rank-main -->
 
-        <h3 class="card-title" style="margin-top:16px">
-          <svg class="ic" aria-hidden="true"><use href="#ic-medal"/></svg> Conquistas
-          <span id="achievements-count" class="chip"></span>
-        </h3>
-        <div id="achievements-grid" class="achievements-grid"></div>
+        <div class="rank-ach">
+          <h3 class="card-title">
+            <svg class="ic" aria-hidden="true"><use href="#ic-medal"/></svg> Conquistas
+            <span id="achievements-count" class="chip"></span>
+          </h3>
+          <div id="achievements-grid" class="achievements-grid"></div>
+        </div>
       </div>
       <div class="panel-foot">
         <button class="btn" data-action="share-rank">
@@ -363,7 +367,7 @@
 
   <!-- ================= TELA: CONFIGURAÇÕES ================= -->
   <section id="screen-settings" class="screen" data-screen="settings" aria-label="Configurações" role="dialog" aria-modal="true">
-    <div class="panel">
+    <div class="panel sheet">
       <div class="panel-head">
         <h2 class="panel-title">Configurações</h2>
         <button class="icon-btn" data-action="menu" aria-label="Fechar">

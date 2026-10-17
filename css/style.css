@@ -62,6 +62,8 @@
   --dur-1: 0.12s;
   --dur-2: 0.2s;
   --dur-3: 0.35s;
+  --dur-in: 0.16s;                        /* telas/bottom sheets entrando (P2) */
+  --dur-out: 0.12s;                       /* saindo: mais rápido que o entry */
 }
 
 /* ---------------------------------------------------------
@@ -179,6 +181,32 @@ body.q-baixa .power-chip {
     background: var(--surface-sheet);
     backdrop-filter: none;
     -webkit-backdrop-filter: none;
+  }
+}
+
+/* P1-6: bottom sheets no mobile — Ranking, Ajustes e Como jogar sobem
+   de baixo como folhas; no desktop (>=960px) continuam centralizados */
+@keyframes sheetIn {
+  0% { transform: translateY(16%); opacity: 0; }
+  100% { transform: none; opacity: 1; }
+}
+@media (max-width: 959px) {
+  .panel.sheet {
+    position: fixed;
+    left: 0; right: 0; bottom: 0;
+    width: 100%;
+    max-width: none;
+    max-height: 88vh;
+    max-height: 88dvh;
+    margin: 0;
+    border-radius: 24px 24px 0 0;
+    border-bottom: none;
+    background: var(--surface-sheet);
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+    box-shadow: 0 -18px 50px rgba(2, 4, 12, 0.6);
+    padding-bottom: calc(var(--s4) + env(safe-area-inset-bottom));
+    animation: sheetIn var(--dur-in) var(--ease) both;
   }
 }
 .panel-wide { width: min(94vw, 540px); }
@@ -754,6 +782,7 @@ body.q-baixa .power-chip {
 .empty-state .ic { width: 48px; height: 48px; opacity: 0.5; margin-bottom: var(--s2); color: var(--primary); }
 
 .achievements-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); gap: var(--s2); }
+.rank-ach { margin-top: var(--s4); }      /* no desktop 2-col vira coluna (P1-6) */
 .achievement {
   display: flex;
   flex-direction: column;
@@ -1490,6 +1519,9 @@ body[data-screen="gameover"] .toasts {
   .menu-side { grid-area: side; align-self: center; }
   .panel { width: min(92vw, 520px); }
   .panel-wide { width: min(92vw, 620px); }
+  /* P1-6: ranking em 2 colunas — lista à esquerda, conquistas à direita */
+  .rank-cols { display: grid; grid-template-columns: 1.15fr 0.85fr; gap: var(--s5); align-items: start; }
+  .rank-ach { margin-top: 0; }
 }
 
 /* Alvos de toque grandes */
@@ -1643,6 +1675,14 @@ body[data-screen="gameover"] .toasts {
 .detail-actions { display: flex; flex-wrap: wrap; gap: var(--s2); margin-top: var(--s2); }
 .detail-actions .btn { flex: 1 1 auto; min-width: 140px; }
 .detail-actions .chip { align-self: center; }
+/* P1-6: ações da skin ficam à vista quando a ficha rola */
+#screen-skins #detail-actions {
+  position: sticky;
+  bottom: 0;
+  z-index: 1;
+  padding: var(--s3) 0 var(--s1);
+  background: linear-gradient(transparent, var(--surface-solid) 32%);
+}
 
 /* modais de compra */
 .buy-nome { margin: 0; font-family: var(--font-display); font-size: 1.05rem; color: var(--text-1); }
