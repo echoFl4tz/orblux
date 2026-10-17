@@ -16,6 +16,9 @@
   --surface-sheet: rgba(10, 12, 30, 0.94); /* quase opaco: qualidade Média/Baixa ou reduced-transparency */
   --surface-ghost: rgba(26, 31, 64, 0.42); /* botões do menu sobre o túnel */
   --scrim-top: linear-gradient(#05060fcc, transparent); /* legibilidade do logo sobre o canvas */
+  --play-grad: linear-gradient(100deg, #22e6ff 0%, #7aa5ff 55%, #ff3df0 100%);
+  --glow-play: 0 0 24px rgba(34, 230, 255, 0.45), 0 0 56px rgba(255, 61, 240, 0.28);
+  --accent-line: linear-gradient(90deg, transparent, #22e6ff 30%, #ff3df0 70%, transparent);
   --line: rgba(154, 166, 200, 0.18);
   --primary: #22e6ff;
   --primary-soft: rgba(34, 230, 255, 0.14);
@@ -353,7 +356,8 @@ body.q-baixa .power-chip {
   width: 1.26em;                        /* orbe do "O" ~1.4x — protagonista da marca */
   height: 1.26em;
   flex: 0 0 auto;
-  filter: drop-shadow(0 0 10px rgba(34, 230, 255, 0.55));
+  /* --orb-glow é atualizado pela skin equipada (P1-1); fallback = ciano da marca */
+  filter: drop-shadow(0 0 10px var(--orb-glow, rgba(34, 230, 255, 0.55)));
   animation: orbPulse 3.4s ease-in-out infinite;   /* respiração */
 }
 .logo-orb .orb-ring {
@@ -362,11 +366,12 @@ body.q-baixa .power-chip {
   animation: orbSpin 9s linear infinite;           /* anel girando */
 }
 @keyframes orbSpin { to { transform: rotate(360deg); } }
-.logo-a { color: var(--primary); text-shadow: var(--glow-1); }
-.logo-b { color: var(--secondary-text); text-shadow: var(--glow-pink-1); }
+/* aberração cromática estática de 1px (sem animação) */
+.logo-a { color: var(--primary); text-shadow: var(--glow-1), 1px 0 rgba(34, 230, 255, 0.5), -1px 0 rgba(255, 61, 240, 0.5); }
+.logo-b { color: var(--secondary-text); text-shadow: var(--glow-pink-1), 1px 0 rgba(34, 230, 255, 0.5), -1px 0 rgba(255, 61, 240, 0.5); }
 @keyframes orbPulse {
-  0%, 100% { transform: scale(1); filter: drop-shadow(0 0 8px rgba(34, 230, 255, 0.45)); }
-  50% { transform: scale(1.06); filter: drop-shadow(0 0 16px rgba(34, 230, 255, 0.75)); }
+  0%, 100% { transform: scale(1); filter: drop-shadow(0 0 8px var(--orb-glow, rgba(34, 230, 255, 0.45))); }
+  50% { transform: scale(1.06); filter: drop-shadow(0 0 16px var(--orb-glow, rgba(34, 230, 255, 0.75))); }
 }
 .tagline {
   color: var(--text-2);
@@ -388,6 +393,16 @@ body.q-baixa .power-chip {
   animation: panelIn var(--dur-3) var(--ease) both;
 }
 .menu-brand { display: flex; flex-direction: column; gap: var(--s2); align-items: center; }
+/* linha de luz sob a marca (P1-1) */
+.menu-brand::after {
+  content: '';
+  display: block;
+  width: min(76%, 280px);
+  height: 2px;
+  border-radius: var(--r-full);
+  background: var(--accent-line);
+  opacity: 0.9;
+}
 .menu-main { width: 100%; display: flex; flex-direction: column; gap: var(--s3); align-items: center; }
 .menu-side { width: 100%; display: flex; flex-direction: column; gap: var(--s3); }
 

@@ -14,6 +14,7 @@ import { showToast, trimToasts, clearToasts } from './toasts.js';
 import { updateHudMenuBest, resetHud } from './hud.js';
 import { closeAllAds } from '../monetization/ads.js';
 import { renderMissions } from './missions.js';
+import { equippedLook } from '../game/skinrender.js';   // P1-1: orbe do logo = skin equipada
 
 const SCREEN_IDS = {
   menu: 'screen-menu',
@@ -74,6 +75,30 @@ export function initScreens() {
 
   on('stats:changed', updateBestDisplay);
   on('state:reset', () => { updateBestDisplay(); applySettingsToUI(); });
+  on('skins:changed', applyLogoSkin);       // P1-1: trocou a skin, o logo acompanha
+  applyLogoSkin();                           // P1-1 no boot
+}
+
+/** P1-1: a "O" do logo é a orbe da skin equipada — gradiente e anéis
+    ganham as cores do look (paleta: nucleo/meio/borda/brilho). */
+function applyLogoSkin() {
+  const svg = document.querySelector('.logo-orb');
+  if (!svg) return;
+  let pal = null;
+  try { pal = equippedLook()?.paleta; } catch { /* look indisponível: mantém a marca */ }
+  if (!pal) return;
+  const stops = svg.querySelectorAll('#orbGrad stop');
+  if (stops.length === 3) {
+    stops[0].setAttribute('stop-color', pal.nucleo);
+    stops[1].setAttribute('stop-color', pal.meio);
+    stops[2].setAttribute('stop-color', pal.borda);
+  }
+  const ringOuter = svg.querySelector('.orb-ring');
+  if (ringOuter) ringOuter.setAttribute('stroke', pal.brilho);
+  const ringInner = svg.querySelectorAll('circle')[1];
+  if (ringInner) ringInner.setAttribute('stroke', pal.meio);
+  // brilho da orbe acompanha a skin (color-mix: suporte moderno; sem suporte, sem glow extra)
+  svg.style.setProperty('--orb-glow', `color-mix(in srgb, ${pal.meio} 60%, transparent)`);
 }
 
 /** Inicia uma nova partida (tutorial se for a primeira vez). */
