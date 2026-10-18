@@ -489,6 +489,31 @@
           </button>
         </div>
         <div class="settings-group">
+          <h3><svg class="ic" aria-hidden="true"><use href="#ic-help"/></svg> Sobre</h3>
+          <div class="setting-row">
+            <span class="label">Versão</span>
+            <span class="small">1.0.0</span>
+          </div>
+          <div class="setting-row">
+            <span class="label">Classificação</span>
+            <span class="small">Livre — sem conteúdo impróprio</span>
+          </div>
+          <p class="small muted" style="padding:2px 4px">Jogo gratuito, offline e sem compras reais. Anúncios só aparecem com o seu consentimento — você pode revisar quando quiser.</p>
+          <button class="btn" data-action="consent-review" style="width:100%">
+            <svg class="ic" aria-hidden="true"><use href="#ic-shield"/></svg> Revisar anúncios e cookies
+          </button>
+          <a class="btn" href="mailto:suporte@EXEMPLO.com" style="width:100%">
+            <svg class="ic" aria-hidden="true"><use href="#ic-edit"/></svg> Falar com o suporte
+          </a>
+          <div class="setting-row">
+            <span class="label">Documentos</span>
+            <span class="about-links">
+              <a href="privacy.html" target="_blank" rel="noopener">Política de Privacidade</a>
+              <a href="termos.html" target="_blank" rel="noopener">Termos da Comunidade</a>
+            </span>
+          </div>
+        </div>
+        <div class="settings-group">
           <h3>Dados</h3>
           <p class="small muted" style="padding:8px 4px">Seu recorde e progresso ficam salvos apenas neste dispositivo (localStorage). Ao apagar o progresso, as skins compradas com dinheiro na Play Store são mantidas; moedas e skins compradas com moedas são apagadas (você escolhe no aviso).</p>
           <button class="btn btn-danger" data-action="reset" style="width:100%">
@@ -1112,6 +1137,8 @@
       <div class="panel-head">
         <h2 class="panel-title">Pausado</h2>
       </div>
+      <!-- contagem 3-2-1 da retomada pós-blur (Parte 2) -->
+      <div id="resume-countdown" class="resume-countdown" hidden aria-live="polite"></div>
       <p class="pause-score">Pontos: <b id="pause-score">0</b></p>
       <div class="panel-foot column">
         <button class="btn btn-primary" data-action="resume">
@@ -1295,8 +1322,9 @@
     <p>Usamos cookies e anúncios (Google AdSense) para manter o jogo gratuito. Ao continuar, você concorda com a nossa
       <a href="privacy.html" target="_blank" rel="noopener">Política de Privacidade</a>.</p>
     <div class="cookie-actions">
-      <button class="btn btn-small" data-consent="accepted">Aceitar</button>
-      <button class="btn btn-small" data-consent="declined">Só o essencial</button>
+      <!-- Parte 2: mesma altura/largura — nenhuma opção é "secundária" -->
+      <button class="btn" data-consent="accepted">Aceitar</button>
+      <button class="btn" data-consent="declined">Só o essencial</button>
     </div>
   </div>
 

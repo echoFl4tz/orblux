@@ -892,6 +892,8 @@ body.reduce-motion .menu-main > * { animation: none; }
 }
 .setting-row .label { display: flex; align-items: center; gap: var(--s2); }
 .setting-row .ic { color: var(--primary); }
+.about-links { display: flex; gap: var(--s3); flex-wrap: wrap; }   /* grupo Sobre */
+.about-links a { color: var(--primary); }
 
 /* Select da qualidade de imagem (A7/HD) */
 .select {
@@ -1079,6 +1081,16 @@ body.reduce-motion .menu-main > * { animation: none; }
 
 .pause-score { text-align: center; color: var(--text-2); }
 .pause-score b { color: var(--text-1); font-variant-numeric: tabular-nums; }
+/* contagem 3-2-1 da retomada pós-blur (Parte 2) */
+.resume-countdown {
+  font-family: var(--font-display);
+  font-size: 2.6rem;
+  font-weight: 900;
+  color: var(--primary);
+  text-align: center;
+  text-shadow: var(--glow-1);
+  font-variant-numeric: tabular-nums;
+}
 
 /* Pausa com blur no fundo (o jogo fica visível, mas \"desfocado\") */
 #screen-pause {
@@ -1159,8 +1171,9 @@ body[data-screen="gameover"] .toasts {
   color: var(--text-1);
   animation: panelIn var(--dur-3) var(--ease) both;
 }
-.cookie-actions { display: flex; gap: var(--s2); margin-top: var(--s3); }
-.cookie-actions .btn { flex: 1; }
+/* Parte 2: as duas opções LGPD em colunas iguais — mesmo destaque */
+.cookie-actions { display: grid; grid-template-columns: 1fr 1fr; gap: var(--s2); margin-top: var(--s3); }
+.cookie-actions .btn { width: 100%; }
 
 /* ---------------------------------------------------------
    12. TOASTS (topo, safe-area, barra de tempo)

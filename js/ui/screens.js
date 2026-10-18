@@ -37,6 +37,8 @@ let screenGen = 0;      // "geração de tela": invalida callbacks de animaçõe
 let scoreRafId = 0;     // id do RAF da contagem do placar (cancelado ao trocar de tela)
 let lastRunCoins = 0;   // moedas creditadas na última partida (P1-5: dobrar)
 let moedasDobradas = false; // já dobrou nesta partida? (1× por partida)
+let pausedByBlur = false;   // pausa veio de blur? (retomada com contagem, Parte 2)
+let cdTimer = 0;            // timer da contagem 3-2-1 de retomada
 
 export function initScreens() {
   bindActions();
@@ -53,26 +55,28 @@ export function initScreens() {
     if (btn) btn.hidden = false;
   });
 
-  // pausa automática ao trocar de aba/app
+  // pausa automática ao trocar de aba/app (Parte 2: a retomada ganha
+  // contagem 3-2-1 via pausedByBlur — ver resumeComContagem)
   document.addEventListener('visibilitychange', () => {
     if (document.hidden && game.mode === 'playing') {
+      pausedByBlur = true;
       pauseGame();
       showScreen('pause');
     }
   });
   window.addEventListener('blur', () => {
-    if (game.mode === 'playing') { pauseGame(); showScreen('pause'); }
+    if (game.mode === 'playing') { pausedByBlur = true; pauseGame(); showScreen('pause'); }
   });
 
   // atalhos de teclado
   on('input:pause', () => {
     if (game.mode === 'playing') { pauseGame(); showScreen('pause'); sfx('ui'); }
-    else if (game.mode === 'paused') { resumeGame(); showScreen(null); sfx('ui'); }
+    else if (game.mode === 'paused') { sfx('ui'); resumeComContagem(); }
   });
   on('input:confirm', () => {
     if (current === 'menu') startRun();
     else if (current === 'gameover') startRun();
-    else if (game.mode === 'paused') { resumeGame(); showScreen(null); }
+    else if (game.mode === 'paused') resumeComContagem();
   });
 
   on('stats:changed', updateBestDisplay);
@@ -106,6 +110,7 @@ function applyLogoSkin() {
 
 /** Inicia uma nova partida (tutorial se for a primeira vez). */
 export function startRun() {
+  paraContagem();                          // cancela contagem 3-2-1 pendente
   initAudio();
   resumeAudio();
   startGame({ tutorial: !state.tutorialDone });
@@ -147,6 +152,7 @@ export function returnToMenu() {
 
   // 1) cancela a contagem animada do placar (requestAnimationFrame)
   if (scoreRafId) { cancelAnimationFrame(scoreRafId); scoreRafId = 0; }
+  paraContagem();                          // e a contagem 3-2-1 de retomada
 
   // 2) fecha todos os modais e para os timers de anúncio/compartilhar
   closeAllAds();
@@ -295,6 +301,46 @@ function dobrarMoedas() {
     if (btn) btn.hidden = true;
     showToast({ icon: 'ic-coin', title: 'Moedas dobradas!', desc: `+${r.granted} moedas` });
   });
+}
+
+/**
+ * Parte 2 — retomada pós-blur com contagem 3-2-1: quando a pausa veio de
+ * troca de aba/app, o jogador ganha 3 segundos para se reorientar antes de
+ * o jogo continuar. Com "Reduzir movimento", retoma na hora (sem animação).
+ */
+function resumeComContagem() {
+  const cd = document.getElementById('resume-countdown');
+  if (!pausedByBlur || state.settings.reduceMotion || !cd || game.mode !== 'paused') {
+    paraContagem();
+    resumeGame();
+    showScreen(null);
+    return;
+  }
+  pausedByBlur = false;
+  let n = 3;
+  cd.hidden = false;
+  cd.textContent = n;
+  sfx('ui');
+  clearInterval(cdTimer);
+  cdTimer = setInterval(() => {
+    n -= 1;
+    if (n <= 0) {
+      paraContagem();
+      resumeGame();
+      showScreen(null);
+      return;
+    }
+    cd.textContent = n;
+    sfx('ui');
+  }, 600);
+}
+
+/** Cancela a contagem 3-2-1 (sair/reiniciar partida durante a contagem). */
+function paraContagem() {
+  clearInterval(cdTimer);
+  pausedByBlur = false;
+  const cd = document.getElementById('resume-countdown');
+  if (cd) { cd.hidden = true; cd.textContent = ''; }
 }
 
 /**
@@ -508,7 +554,13 @@ function bindActions() {
       case 'menu':
         sfx('ui'); returnToMenu(); break;
       case 'pause': sfx('ui'); pauseGame(); showScreen('pause'); break;
-      case 'resume': sfx('ui'); resumeGame(); showScreen(null); break;
+      case 'resume': sfx('ui'); resumeComContagem(); break;
+      case 'consent-review': {           // reabre o aviso LGPD (Parte 2)
+        sfx('ui');
+        const banner = document.getElementById('cookie-banner');
+        if (banner) banner.hidden = false;
+        break;
+      }
       case 'revive': sfx('ui'); emit('ads:rewarded-revive'); break;
       case 'dobrar': sfx('ui'); dobrarMoedas(); break;
       case 'share-score': case 'share-rank': {
