@@ -134,15 +134,19 @@ export function renderMissions() {
   ensureToday();
   const total = state.missions.list.length;
   const done = state.missions.list.filter((m) => m.done).length;
+  const todas = total > 0 && done === total;   // Parte 2: estado final do dia
   const badge = document.getElementById('missions-count');
-  if (badge) badge.textContent = `${done}/${total}`;
+  if (badge) {
+    badge.textContent = `${done}/${total}`;
+    badge.classList.toggle('chip-success', todas);
+  }
   // barra-resumo do mobile (P0-3): mesma contagem do card
   const frac = document.getElementById('missions-summary-frac');
   if (frac) frac.textContent = `${done}/${total}`;
   const fill = document.getElementById('missions-summary-fill');
   if (fill) fill.style.width = `${total ? Math.round((done / total) * 100) : 0}%`;
 
-  list.innerHTML = state.missions.list.map((m) => {
+  const linhas = state.missions.list.map((m) => {
     const pct = Math.min(100, Math.round((m.progress / m.target) * 100));
     return `<li class="mission-row ${m.done ? 'done' : ''}">
       <span class="mission-ic"><svg class="ic" aria-hidden="true"><use href="#${m.done ? 'ic-check' : m.icon}"/></svg></span>
@@ -153,4 +157,12 @@ export function renderMissions() {
       <span class="chip ${m.done ? 'chip-success' : 'chip-reward'} mission-reward">+${missionCoins(m.d)}</span>
     </li>`;
   }).join('');
+  // Parte 2: quando fecha o dia, diz em pt-BR em vez de só mostrar 3/3
+  const fechamento = todas
+    ? `<li class="mission-row all-done">
+        <span class="mission-ic"><svg class="ic" aria-hidden="true"><use href="#ic-check2"/></svg></span>
+        <div class="mission-info"><div>Todas concluídas! Novas missões amanhã.</div></div>
+      </li>`
+    : '';
+  list.innerHTML = linhas + fechamento;
 }

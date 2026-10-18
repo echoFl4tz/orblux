@@ -697,6 +697,13 @@ body.reduce-motion .menu-main > * { animation: none; }
 }
 .mission-row.done .mission-bar > span { background: var(--success); }
 .mission-reward { flex: 0 0 auto; }
+/* fechamento do dia (Parte 2): "Todas concluídas!" */
+.mission-row.all-done {
+  color: var(--success);
+  font-weight: 700;
+  border-top: 1px dashed rgba(77, 255, 158, 0.35);
+}
+.mission-row.all-done .mission-ic { background: rgba(77, 255, 158, 0.14); color: var(--success); }
 
 .menu-footer {
   display: flex;
