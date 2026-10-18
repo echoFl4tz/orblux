@@ -2,7 +2,7 @@
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <title>ORBLUX — jogo arcade neon grátis no navegador</title>
   <meta name="description" content="ORBLUX é um jogo arcade neon rápido e viciante: colete pulsos, acumule combos e desvie das barreiras. Grátis, funciona no celular e no computador.">
   <meta name="keywords" content="orblux, jogo, arcade, neon, retrô, browser game, jogo gratuito, jogar online">
@@ -30,6 +30,16 @@
 
   <link rel="preload" href="assets/fonts/orblux-display.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="preload" href="assets/fonts/orblux-sans.woff2" as="font" type="font/woff2" crossorigin>
+  <!-- Lighthouse (Parte 2): logo = elemento LCP; módulos descobertos em
+       paralelo em vez de em cascata — 1ª visita em rede lenta mais rápida -->
+  <link rel="preload" href="logo.svg" as="image">
+  <link rel="modulepreload" href="js/game/game.js">
+  <link rel="modulepreload" href="js/ui/screens.js">
+  <link rel="modulepreload" href="js/core/audio.js">
+  <link rel="modulepreload" href="js/core/input.js">
+  <link rel="modulepreload" href="js/ui/ranking.js">
+  <link rel="modulepreload" href="js/monetization/ads.js">
+  <link rel="modulepreload" href="js/ui/skins-shop.js">
   <link rel="stylesheet" href="css/fonts.css">
   <link rel="stylesheet" href="css/style.css">
 
@@ -244,7 +254,7 @@
 
         <!-- P2: pódio local + skin equipada — só na coluna do desktop -->
         <section id="menu-top3" class="menu-top3" aria-label="Melhores pontuações" hidden>
-          <h4 class="menu-top3-title">Top local</h4>
+          <p class="menu-top3-title">Top local</p>
           <ol id="menu-top3-list" class="top3-list"></ol>
           <p class="menu-skin">Skin: <b id="menu-skin-name">Orbe</b></p>
         </section>
@@ -1216,7 +1226,8 @@
   <div id="modal-nickname" class="modal" hidden role="dialog" aria-modal="true" aria-labelledby="nick-title">
     <div class="panel modal-panel">
       <div class="panel-head">
-        <h3 class="panel-title" id="nick-title">Escolha seu apelido</h3>
+        <!-- h2 (não h3): este modal abre sozinho no boot sobre o menu (h1) -->
+        <h2 class="panel-title" id="nick-title">Escolha seu apelido</h2>
       </div>
       <p class="small muted" id="nick-hint">Seu apelido aparece no ranking e quando você compartilha. <b>Não use seu nome real nem dados pessoais.</b></p>
       <label class="nick-field" for="nick-input">

@@ -47,6 +47,8 @@ function refreshDisplays() {
   const nick = state.profile.nickname;
   const mn = document.getElementById('menu-nickname');
   if (mn) mn.textContent = nick;
+  // nome acessível do chip inclui o texto visível (WCAG: rótulo == nome)
+  mn?.closest('.nick-chip')?.setAttribute('aria-label', `Alterar apelido — Olá, ${nick}`);
   const sn = document.getElementById('set-nickname');
   if (sn) sn.textContent = nick;
 }
