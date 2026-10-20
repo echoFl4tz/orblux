@@ -152,7 +152,7 @@ test('determinismo: spawner original idêntico ao snapshot pré-mudanças', () =
 // ---------------------------------------------------------
 function fakeG(extra = {}) {
   return {
-    W: 390, H: 844, S: 1, runSeed: null, level: 1, lives: 3,
+    W: 390, H: 844, S: 1, runSeed: null, level: 1, lives: 3, score: 0,
     player: null, obstacles: [], pickups: [], powerups: [],
     drops: [], dropFx: {}, dropCd: {}, dropCounts: {}, dropSemTempo: 0,
     dropTimer: 0, reduceMotion: false,
@@ -294,4 +294,33 @@ test('drop imã: atrai pulsos no raio de 150 e some ao expirar', () => {
   assert.equal(drops.atracaoRaio(g), 150, 'raio de atração de 150×S');
   drops.updateDrops(g, cfg.dur + 0.01);
   assert.equal(drops.atracaoRaio(g), 0, 'sem efeito após expirar');
+});
+
+test('drop reparo: +1 vida (máx 3); some com vida cheia; dobra com 1 vida', () => {
+  const cfg = drops.DROP_CONFIG.find((c) => c.id === 'coracao');
+  assert.ok(cfg, 'config do reparo deve existir');
+  assert.equal(cfg.soVidaBaixa, true, 'regra: invisível com vida cheia');
+  assert.equal(cfg.nivelMin, 2, 'raros exigem nível mínimo');
+  // pool: com vida cheia não nasce; ferido, nasce
+  const backup = [...drops.DROP_CONFIG];
+  drops.DROP_CONFIG.length = 0;
+  drops.DROP_CONFIG.push(cfg);
+  try {
+    drops.setDropsRng('reparo');
+    assert.equal(drops.spawnDrop(fakeG({ lives: 3, level: 2 })), false, 'vida cheia: não nasce');
+    assert.equal(drops.spawnDrop(fakeG({ lives: 1, level: 2 })), true, 'ferido: nasce');
+    assert.equal(drops.spawnDrop(fakeG({ lives: 2, level: 1 })), false, 'nível 1: raros fora');
+  } finally {
+    drops.DROP_CONFIG.length = 0;
+    drops.DROP_CONFIG.push(...backup);
+  }
+  // efeito: cura até o teto; cheio vira fallback de pontos (não desperdiça)
+  const g = fakeG({ lives: 1, player: { x: 100, y: 200 } });
+  drops.EFEITOS.coracao(g, cfg, { x: 50, y: 50 });
+  assert.equal(g.lives, 2);
+  drops.EFEITOS.coracao(g, cfg, { x: 50, y: 50 });
+  assert.equal(g.lives, 3);
+  drops.EFEITOS.coracao(g, cfg, { x: 50, y: 50 });
+  assert.equal(g.lives, 3, 'nunca passa do máximo');
+  assert.equal(g.score, 50, 'com vida cheia vira +50 pontos');
 });

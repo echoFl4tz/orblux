@@ -40,6 +40,17 @@ export const DROP_CONFIG = [
     cor: '#22E6FF',
     dur: 7, raridade: 'comum', peso: 28, nivelMin: 1, cd: 8,
   },
+  {
+    id: 'coracao',
+    nome: 'Reparo',
+    desc: 'Recupera 1 vida (até o máximo de 3)',
+    icone: 'ic-repair',
+    cor: '#7CFFB2',
+    dur: 0, raridade: 'rara', peso: 10, nivelMin: 2, cd: 10,
+    soVidaBaixa: true,        // nunca aparece com vida cheia
+    dobroVidaBaixa: true,     // com 1 vida a chance dobra
+    som: 'drop_prot',
+  },
   // próximos drops entram aqui um por commit
 ];
 
@@ -64,6 +75,31 @@ GLIFOS.ima = (ctx, x, y, r) => {
   ctx.beginPath();
   ctx.moveTo(x - w - r * 0.3, y - r * 0.7); ctx.lineTo(x - w + r * 0.3, y - r * 0.7);
   ctx.moveTo(x + w - r * 0.3, y - r * 0.7); ctx.lineTo(x + w + r * 0.3, y - r * 0.7);
+  ctx.stroke();
+};
+
+// ---------- Reparo ----------
+EFEITOS.coracao = (g, cfg) => {
+  if (g.lives < VIDAS_MAX) {
+    g.lives += 1;
+    floatText(g.player.x, g.player.y - 30 * g.S, '+1 VIDA', cfg.cor, 18);
+    emit('game:lives', { lives: g.lives });
+  } else {
+    // segurança: o pool já exclui vida cheia; nunca desperdiça o drop
+    g.score += 50;
+  }
+};
+
+GLIFOS.coracao = (ctx, x, y, r) => {
+  // coração geométrico (mesmo estilo do sprite)
+  ctx.beginPath();
+  ctx.moveTo(x, y + r * 0.95);
+  ctx.lineTo(x - r * 0.95, y - r * 0.05);
+  ctx.lineTo(x - r * 0.5, y - r * 0.8);
+  ctx.lineTo(x, y - r * 0.35);
+  ctx.lineTo(x + r * 0.5, y - r * 0.8);
+  ctx.lineTo(x + r * 0.95, y - r * 0.05);
+  ctx.closePath();
   ctx.stroke();
 };
 

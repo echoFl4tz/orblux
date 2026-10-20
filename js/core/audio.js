@@ -121,6 +121,10 @@ export function sfx(name, opts = {}) {
       tone({ freq: 880, type: 'square', dur: 0.06, gain: 0.14 });
       tone({ freq: 1320, type: 'square', dur: 0.09, gain: 0.1, delay: 0.05 });
       break;
+    case 'drop_prot': // proteção/recuperação (quadratura grave)
+      tone({ freq: 160, type: 'sine', dur: 0.16, gain: 0.2 });
+      tone({ freq: 240, type: 'sine', dur: 0.2, gain: 0.12, delay: 0.05 });
+      break;
     default: break;
   }
 }
