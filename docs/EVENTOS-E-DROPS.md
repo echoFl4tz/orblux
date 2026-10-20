@@ -49,9 +49,10 @@ garantida em sequência**. Vida cheia: Reparo sai do pool. Vida 1: peso do
 Reparo dobra.
 
 ### Rota segura
-Antes de qualquer padrão de barreira de evento (Tempestade), `temRotaSegura`
-valida passagem ≥ `2*r + margem(0,35 s × velocidade)` — teste com 500+
-sementes em níveis baixos/médios/altos.
+A barreira da Tempestade é construída por design com passagem de **210×S**
+(≈7× o raio do jogador) e folga de 30×S das laterais — nunca é "parede
+impossível". Validado por teste com 500+ sementes (gap ≥210, sempre dentro
+da tela, nenhuma peça invade a passagem).
 
 ## 3. Drops — tabela de balanceamento (final)
 
@@ -59,14 +60,14 @@ sementes em níveis baixos/médios/altos.
 |---|---|---|---|---|---|---|---|---|
 | `escudo` | Escudo (legado) | absorve 1 batida | até usar | comum | spawner original | — | — | — |
 | `x2` | Dobro (legado) | dobra pontos | 8 s | comum | spawner original | — | — | — |
-| `imã` | Ímã | atrai pulsos num raio de 150×S | 7 s | comum | 28 | 1 | 8 s | — |
-| `coracao` | Reparo | +1 vida (máx. 3) | instant. | rara | 10 (×2 com 1 vida; 0 com vida cheia) | 2 | 10 s | — |
+| `ima` | Ímã | atrai pulsos num raio de 150×S | 7 s | comum | 28 | 1 | 8 s | — |
+| `coracao` | Reparo | +1 vida (máx. 3) | instant. | rara | 10 (×2 com 1 vida; sai do pool com vida cheia) | 2 | 10 s | — |
 | `fantasma` | Fase | atravessa obstáculos; pisca nos últimos 1,5 s | 4 s | rara | 8 | 3 | 14 s | — |
 | `tempo` | Câmara lenta | corredor a 70% por 5 s; **pontuação intacta** | 5 s | incomum | 16 | 2 | 10 s | — |
 | `combo` | Trava de combo | congela o cronômetro de 3,5 s | 8 s | incomum | 16 | 2 | 10 s | — |
-| `nova` | Nova | remove obstáculos/drones da tela; +30/item | instant. | rara | 7 | 3 | 15 s | 3/partida |
+| `nova` | Nova | remove obstáculos/drones da tela; +30/item (teto 10 itens) | instant. | rara | 7 | 3 | 15 s | 3/partida |
 | `surto` | Surto de pulsos | fileira de 3 pulsos à frente | instant. | incomum | 15 | 1 | 6 s | — |
-| `moeda` | Cristal | +3 moedas da partida | instant. | incomum | 10 | 2 | 12 s | 5/partida |
+| `cristal` | Cristal | +3 moedas da partida | instant. | incomum | 10 | 2 | 12 s | 5/partida |
 
 Spawn: primeiro ~7 s, depois 9–13 s (timer próprio). Nasce a ≥90×S de
 qualquer obstáculo (4 tentativas, senão desiste). Forma = categoria, cor =
@@ -75,13 +76,13 @@ um (`state.stats.vistoDrops`).
 
 ## 4. Eventos — tabela de balanceamento (final)
 
-| Id | Nome | O que faz | Duração | Nível mín. | Cor |
-|---|---|---|---|---|---|
-| `chuva` | Chuva de Pulsos | pulsos ×2 em cadência, clusters; barreiras raras (`obstMul` 2.2) | 10 s | 2 | ciano |
-| `tempestade` | Tempestade de Barreiras | cadência ×0.55 com passagem larga telegrafada; +150 se completar sem bater | 12 s | 3 | vermelho-suave (aviso) |
-| `hora_dourada` | Hora Dourada | coleta vale ×1,5; fundo ganha tom quente (overlay ≤8% alfa) | 8 s | 2 | dourado |
-| `comboFrenesi` | Frenesi de Combo | janela do combo 3,5→6 s; pulsos mais juntos | 10 s | 2 | lima-ciano |
-| `apagao` | Apagão | fundo escurece 55%; pulsos ganham halo (sprites; sem shadowBlur) | 10 s | 4 | violeta |
+| Id | Nome | O que faz | Duração | Nível mín. | Cooldown | Cor |
+|---|---|---|---|---|---|---|
+| `chuva` | Chuva de Pulsos | clusters de 1–3 pulsos a cada 0,6 s (rng próprio); barreiras raras (`obstMul` 2.2) | 10 s | 2 | 40 s | ciano |
+| `tempestade` | Tempestade de Barreiras | barreiras próprias a cada 2,2 s com passagem larga telegrafada; normais raras (`obstMul` 1.8); +150 se completar sem bater | 12 s | 3 | 55 s | vermelho-suave (aviso) |
+| `hora_dourada` | Hora Dourada | coleta vale ×1,5; fundo ganha tom quente (overlay ≤8% alfa) | 8 s | 2 | 45 s | dourado |
+| `comboFrenesi` | Frenesi de Combo | janela do combo 3,5→6 s; +1 pulso a cada 1,2 s | 10 s | 2 | 45 s | lima |
+| `apagao` | Apagão | fundo escurece 55%; pulsos ganham halo (sprite em cache; sem shadowBlur) | 10 s | 4 | 60 s | violeta |
 
 Agendamento: 1º evento só após 25 s e nível ≥2; depois intervalo mínimo de
 35 s; **máximo 1 ativo por vez**; aviso de 2 s (toast + faixa no topo + som).
@@ -118,7 +119,8 @@ Pausa: o scheduler roda só em `mode === 'playing'` (pausa congela junto).
 
 - SFX novos sintetizados (WebAudio, mesmos buses): `drop` (arpejo curto),
   `drop_prot` (quadratura grave), `drop_tempo` (tom caindo), `evento`
-  (aviso duplo), `evento_end` (resolução). Respeitam mudo/volume atuais.
+  (aviso duplo), `evento_start` (subida), `evento_end` (resolução
+  descendente). Respeitam mudo/volume atuais.
 - Glifos no canvas por traços (sem blur/shadowBlur): ferradura, coração
   geométrico, anel duplo, ampulheta, cadeado, estrela de 8 pontas, fileira
   de losangos, losango facetado. Entrada = fade de 400 ms (1 flash).
