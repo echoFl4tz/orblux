@@ -434,8 +434,10 @@ test('drop cristal: credita moedas no fim com teto de 5 por partida', () => {
 //  Scheduler de eventos
 // ---------------------------------------------------------
 let evSeq = 0;
-/** Registra n eventos sintéticos temporários e sempre limpa depois. */
+/** Registra n eventos sintéticos (isolando o pool) e sempre restaura. */
 function comEventos(n, fn, dur = 3) {
+  const backup = [...eventos.EVENT_CONFIG];
+  eventos.EVENT_CONFIG.length = 0;          // só os sintéticos no pool
   const ids = [];
   for (let i = 0; i < n; i++) {
     const id = `evteste${evSeq++}`;
@@ -448,11 +450,9 @@ function comEventos(n, fn, dur = 3) {
   try {
     return fn(ids);
   } finally {
-    for (const id of ids) {
-      const i = eventos.EVENT_CONFIG.findIndex((c) => c.id === id);
-      if (i >= 0) eventos.EVENT_CONFIG.splice(i, 1);
-      delete eventos.EFEITOS[id];
-    }
+    eventos.EVENT_CONFIG.length = 0;
+    eventos.EVENT_CONFIG.push(...backup);
+    for (const id of ids) delete eventos.EFEITOS[id];
   }
 }
 
@@ -512,4 +512,24 @@ test('eventos: Corrida do Dia e ajuste desligam; rng próprio é determinístico
   assert.deepEqual(s1, s2, 'mesma semente ⇒ mesma agenda de eventos');
   assert.ok(s1.some((v) => v.endsWith(':aviso')) && s1.some((v) => v.endsWith(':ativo')),
     'a agenda deve variar entre avisos e ativos');
+});
+
+// ---------------------------------------------------------
+//  Eventos individuais
+// ---------------------------------------------------------
+test('evento chuva: clusters com rng próprio, barreiras raras e fim limpo', () => {
+  const cfg = eventos.EVENT_CONFIG.find((c) => c.id === 'chuva');
+  assert.ok(cfg, 'config da chuva deve existir');
+  assert.equal(cfg.nivelMin, 2);
+  const g = fakeG({ level: 2, pickups: [] });
+  g.evento = { id: 'chuva', cfg, fase: 'ativo', resto: cfg.dur, dur: cfg.dur };
+  eventos.EFEITOS.chuva.inicio(g);
+  assert.equal(g.eventoMod.obstMul, 2.2, 'barreiras raras durante a chuva');
+  const antes = g.pickups.length;
+  for (let i = 0; i < 60; i++) eventos.EFEITOS.chuva.tick(g, 1 / 60);  // 1 s
+  assert.ok(g.pickups.length > antes, 'chuva solta pulsos extras');
+  assert.ok(g.pickups.length - antes <= 9, 'cadência limitada (não vira inundação)');
+  for (const pk of g.pickups) assert.ok(pk.y <= -40 * g.S + 1, 'nascem no topo');
+  eventos.EFEITOS.chuva.fim(g);
+  assert.equal(g.eventoMod, null, 'fim: mods zerados');
 });

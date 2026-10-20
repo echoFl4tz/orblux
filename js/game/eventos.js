@@ -17,6 +17,7 @@ import { emit } from '../core/events.js';
 import { sfx } from '../core/audio.js';
 import { state } from '../core/state.js';
 import { hashSeed, mulberry32 } from '../../net/rng.js';
+import { createPickup } from './entities.js';
 
 /** Segundos de aviso antes do início (regra do design). */
 const AVISO_S = 2;
@@ -31,11 +32,43 @@ const INTERVALO_MIN = 35;
 //  desenhar(ctx, g, time) }
 // ---------------------------------------------------------
 export const EVENT_CONFIG = [
-  // entradas dos eventos são adicionadas um por commit
+  {
+    id: 'chuva',
+    nome: 'Chuva de Pulsos',
+    desc: 'Muitos pulsos caem — monte combo e pontue forte',
+    cor: '#7DF9FF',
+    dur: 10, nivelMin: 2, cd: 40,
+  },
+  // próximos eventos entram aqui um por commit
 ];
 
 /** Handlers por id (adicionados junto do evento correspondente). */
 export const EFEITOS = {};
+
+// ---------- Chuva de Pulsos ----------
+EFEITOS.chuva = {
+  inicio(g) {
+    g.eventoMod = { obstMul: 2.2 };        // barreiras raras durante o evento
+    g.evAcc = 0;
+  },
+  tick(g, dt) {
+    // clusters extras a cada 0,6 s com o rng dos eventos (nunca o do spawner)
+    g.evAcc -= dt;
+    if (g.evAcc <= 0) {
+      g.evAcc = 0.6;
+      const S = g.S;
+      const margem = 40 * S;
+      const n = rngEventos() < 0.4 ? 3 : 1;
+      const x = margem + rngEventos() * (g.W - margem * 2);
+      for (let i = 0; i < n; i++) {
+        g.pickups.push(createPickup(x + (i - (n - 1) / 2) * 46 * S, -40 * S, S, rngEventos));
+      }
+    }
+  },
+  fim(g) {
+    g.eventoMod = null;                    // limpeza explícita (encerrar já garante)
+  },
+};
 
 // ---------------------------------------------------------
 //  Flag + RNG próprio
