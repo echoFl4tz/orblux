@@ -350,3 +350,16 @@ test('drop tempo: mundo a 70% enquanto ativo; pontuação nunca muda', () => {
   assert.ok(Math.abs(g.drops[0].y - esperado) < 1e-3, 'volta à velocidade normal ao expirar');
   assert.equal(g.score, 0, 'câmera lenta nunca mexe na pontuação');
 });
+
+test('drop trava de combo: congela por 8s e expira com mapa limpo', () => {
+  const cfg = drops.DROP_CONFIG.find((c) => c.id === 'combo');
+  assert.ok(cfg, 'config da trava deve existir');
+  const g = fakeG();
+  drops.ativarFx(g, 'combo', cfg.dur);
+  assert.equal(drops.fx(g, 'combo'), 8);
+  drops.updateDrops(g, 4);
+  assert.ok(drops.fx(g, 'combo') > 0, 'congelada no meio da duração');
+  drops.updateDrops(g, 4.01);
+  assert.equal(drops.fx(g, 'combo'), 0);
+  assert.deepEqual(g.dropFx, {}, 'fim limpo: nada vaza no mapa de efeitos');
+});

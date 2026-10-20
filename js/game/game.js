@@ -690,7 +690,8 @@ export function update(dt) {
   tryCollectDrop(g, p);            // colisão dos novos drops (drops.js)
 
   // ---------- combo / x2 / nível ----------
-  if (g.comboTimer > 0) {
+  // Trava de combo (drop combo, 1.1.0): congela o cronômetro enquanto ativa
+  if (g.comboTimer > 0 && fx(g, 'combo') === 0) {
     g.comboTimer -= dt;
     if (g.comboTimer <= 0) {
       if (g.combo >= 3) g.comboBreakT = 0.35;  // fundo escurece 350 ms (§9)

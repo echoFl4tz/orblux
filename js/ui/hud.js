@@ -28,6 +28,7 @@ const CHIP_MAP = {
   coracao: { icone: 'ic-repair', label: 'REPARO' },
   fantasma: { icone: 'ic-phase', label: 'FASE' },
   tempo: { icone: 'ic-slow', label: 'CÂMARA' },
+  combo: { icone: 'ic-lock', label: 'TRAVA' },
 };
 
 /** Flash vermelho rápido nas bordas ao levar dano (respeita mov. reduzido no CSS). */

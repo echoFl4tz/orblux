@@ -68,6 +68,14 @@ export const DROP_CONFIG = [
     dur: 5, raridade: 'incomum', peso: 16, nivelMin: 2, cd: 10,
     som: 'drop_tempo',
   },
+  {
+    id: 'combo',
+    nome: 'Trava de combo',
+    desc: 'Congela o cronômetro do combo por alguns segundos',
+    icone: 'ic-lock',
+    cor: '#5FF0E0',
+    dur: 8, raridade: 'incomum', peso: 16, nivelMin: 2, cd: 10,
+  },
   // próximos drops entram aqui um por commit
 ];
 
@@ -148,6 +156,20 @@ GLIFOS.tempo = (ctx, x, y, r) => {
   ctx.moveTo(x + r * 0.6, y - r * 0.72);
   ctx.quadraticCurveTo(x, y, x + r * 0.6, y + r * 0.72);
   ctx.stroke();
+};
+
+// ---------- Trava de combo ----------
+EFEITOS.combo = (g, cfg) => ativarFx(g, 'combo', cfg.dur);
+
+GLIFOS.combo = (ctx, x, y, r) => {
+  // cadeado: arco + corpo
+  ctx.beginPath();
+  ctx.moveTo(x - r * 0.45, y - r * 0.1);
+  ctx.lineTo(x - r * 0.45, y - r * 0.4);
+  ctx.arc(x, y - r * 0.4, r * 0.45, Math.PI, 0, false);
+  ctx.lineTo(x + r * 0.45, y - r * 0.1);
+  ctx.stroke();
+  ctx.strokeRect(x - r * 0.62, y - r * 0.1, r * 1.24, r * 0.95);
 };
 
 function byId(id) {
