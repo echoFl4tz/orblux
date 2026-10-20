@@ -93,7 +93,15 @@ export const DROP_CONFIG = [
     cor: '#22E6FF',
     dur: 0, raridade: 'incomum', peso: 15, nivelMin: 1, cd: 6,
   },
-  // próximo drop entra aqui (cristal, último)
+  {
+    id: 'cristal',
+    nome: 'Cristal',
+    desc: 'Vale 3 moedas ao fim da partida',
+    icone: 'ic-crystal',
+    cor: '#FFE45E',
+    dur: 0, raridade: 'incomum', peso: 10, nivelMin: 2, cd: 12,
+    teto: 5,               // no máximo 5 por partida (recompensa com teto)
+  },
 ];
 
 /** Efeito por id (adicionado junto do drop correspondente). */
@@ -240,6 +248,30 @@ GLIFOS.surto = (ctx, x, y, r) => {
     ctx.closePath();
     ctx.stroke();
   }
+};
+
+// ---------- Cristal ----------
+EFEITOS.cristal = (g, cfg) => {
+  // moedas da partida: main.js credita +3 por cristal no fim (teto 5)
+  g.runStats.crystals = Math.min(5, (g.runStats.crystals || 0) + 1);
+  floatText(g.player.x, g.player.y - 34 * g.S, '+3 MOEDAS NO FIM', cfg.cor, 15);
+};
+
+GLIFOS.cristal = (ctx, x, y, r) => {
+  // losango facetado (cristal)
+  ctx.beginPath();
+  ctx.moveTo(x, y - r);
+  ctx.lineTo(x + r * 0.75, y - r * 0.1);
+  ctx.lineTo(x, y + r);
+  ctx.lineTo(x - r * 0.75, y - r * 0.1);
+  ctx.closePath();
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.moveTo(x - r * 0.75, y - r * 0.1);
+  ctx.lineTo(x + r * 0.75, y - r * 0.1);
+  ctx.moveTo(x, y - r);
+  ctx.lineTo(x, y + r);
+  ctx.stroke();
 };
 
 function byId(id) {

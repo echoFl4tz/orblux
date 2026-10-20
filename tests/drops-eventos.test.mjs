@@ -411,3 +411,20 @@ test('drop surto: fileira de 3 pulsos à frente, determinística pelo rng própr
     'mesma semente ⇒ mesmas posições/velocidades (rng próprio)',
   );
 });
+
+test('drop cristal: credita moedas no fim com teto de 5 por partida', () => {
+  const cfg = drops.DROP_CONFIG.find((c) => c.id === 'cristal');
+  assert.ok(cfg, 'config do cristal deve existir');
+  assert.equal(cfg.teto, 5, 'recompensa sempre com teto');
+  const g = fakeG();
+  for (let i = 0; i < 7; i++) drops.EFEITOS.cristal(g, cfg, { x: 5, y: 5 });
+  assert.equal(g.runStats.crystals, 5, 'teto de 5 cristais por partida');
+  // pool some ao bater o teto; exige nível 2
+  const backup = [...drops.DROP_CONFIG];
+  drops.DROP_CONFIG.length = 0; drops.DROP_CONFIG.push(cfg);
+  try {
+    drops.setDropsRng('cristal');
+    assert.equal(drops.spawnDrop(fakeG({ level: 2, dropCounts: { cristal: 5 } })), false, 'teto: não nasce mais');
+    assert.equal(drops.spawnDrop(fakeG({ level: 1 })), false, 'nível 1: incomuns exigem nível 2');
+  } finally { drops.DROP_CONFIG.length = 0; drops.DROP_CONFIG.push(...backup); }
+});

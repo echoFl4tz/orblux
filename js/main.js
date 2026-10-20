@@ -123,6 +123,11 @@ function boot() {
     st.bestCombo = Math.max(st.bestCombo, run.maxCombo);
     st.bestLevel = Math.max(st.bestLevel, run.level);
     st.totalTime = Math.round((st.totalTime || 0) + run.elapsed);
+    // drops novos (1.1.0): totais simples para conquistas/"Como jogar"
+    st.totalDrops = (st.totalDrops || 0) + (run.drops || 0);
+    const kinds = run.dropsByKind || {};
+    st.dropKinds = st.dropKinds || {};
+    for (const k of Object.keys(kinds)) st.dropKinds[k] = (st.dropKinds[k] || 0) + kinds[k];
     const bestAnterior = st.best;
     const isRecord = run.score > st.best;
     if (isRecord) st.best = run.score;
@@ -135,6 +140,8 @@ function boot() {
     const hoje = todayKey();
     const primeiraDoDia = st.lastRunDay !== hoje;
     st.lastRunDay = hoje;
+    // Cristal (1.1.0): +3 moedas da partida por cristal coletado (teto 5)
+    const cristais = Math.min(run.crystals || 0, 5);
     const ganho = economy.calcRunCoins({
       pickups: run.pickups,
       score: run.score,
@@ -142,7 +149,7 @@ function boot() {
       recordBroken: isRecord && bestAnterior > 0,
       firstRunToday: primeiraDoDia,
     });
-    const creditado = wallet.earn(ganho, 'partida', `run-${st.runs}`);
+    const creditado = wallet.earn(ganho + cristais * 3, 'partida', `run-${st.runs}`);
     emit('wallet:run-coins', { coins: creditado.ok ? creditado.granted : 0 });
 
     saveStats();
