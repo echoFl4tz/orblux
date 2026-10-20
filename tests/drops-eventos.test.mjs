@@ -533,3 +533,48 @@ test('evento chuva: clusters com rng próprio, barreiras raras e fim limpo', () 
   eventos.EFEITOS.chuva.fim(g);
   assert.equal(g.eventoMod, null, 'fim: mods zerados');
 });
+
+test('evento tempestade: passagem larga, bônus só sem bater, fim limpo', () => {
+  const cfg = eventos.EVENT_CONFIG.find((c) => c.id === 'tempestade');
+  assert.ok(cfg, 'config da tempestade deve existir');
+  assert.equal(cfg.nivelMin, 3);
+  const g = fakeG({ level: 3, elapsed: 40, obstacles: [] });
+  g.evento = { id: 'tempestade', cfg, fase: 'ativo', resto: cfg.dur, dur: cfg.dur };
+  eventos.EFEITOS.tempestade.inicio(g);
+  assert.equal(g.eventoMod.obstMul, 1.8, 'barreiras normais ficam raras');
+  for (let i = 0; i < 30; i++) eventos.EFEITOS.tempestade.tick(g, 0.55);  // ~16 s
+  const barras = g.obstacles.filter((o) => o.evCx != null);
+  assert.ok(barras.length >= 5, 'barreiras do evento na cadência de2,2 s');
+  for (const o of barras) assert.ok(o.evGapW >= 210, 'passagem sempre ≥ 210×S');
+  const antes = g.score;
+  eventos.EFEITOS.tempestade.fim(g, true);
+  assert.equal(g.score, antes + 150, 'superar sem bater paga +150 (fixo, com teto)');
+  assert.equal(g.runStats.eventsClean, 1, 'conta como "sem arranhão"');
+  assert.equal(g.eventoMod, null, 'fim: mods zerados');
+  eventos.EFEITOS.tempestade.fim(g, false);
+  assert.equal(g.score, antes + 150, 'batendo durante: sem bônus');
+});
+
+test('evento tempestade: rota segura garantida em 500+ sementes', () => {
+  const cfg = { id: 'tempestade', dur: 12 };
+  let total = 0;
+  for (let s = 0; s < 500; s++) {
+    eventos.setEventosRng(`tempestade-${s}`);
+    const g = fakeG({ level: 3, elapsed: 30 + (s % 90), obstacles: [] });
+    g.evento = { id: 'tempestade', cfg, fase: 'ativo', resto: cfg.dur, dur: cfg.dur };
+    eventos.EFEITOS.tempestade.inicio(g);
+    for (let i = 0; i < 40; i++) eventos.EFEITOS.tempestade.tick(g, 0.55);
+    for (const o of g.obstacles) {
+      if (o.evCx == null) continue;
+      total++;
+      const gapL = o.evCx - o.evGapW / 2;
+      const gapR = o.evCx + o.evGapW / 2;
+      assert.ok(o.evGapW >= 210, 'passagem ≥ 210 px (7× o raio do jogador)');
+      assert.ok(gapL >= 30 && gapR <= g.W - 30, 'passagem sempre dentro da tela');
+      const pecaEsq = o.x + o.w <= gapL + 1e-6;
+      const pecaDir = o.x >= gapR - 1e-6;
+      assert.ok(pecaEsq || pecaDir, 'nenhuma peça invade a passagem');
+    }
+  }
+  assert.ok(total >= 500, `barreiras validadas: ${total} (mínimo 500)`);
+});

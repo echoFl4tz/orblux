@@ -18,6 +18,8 @@ import { sfx } from '../core/audio.js';
 import { state } from '../core/state.js';
 import { hashSeed, mulberry32 } from '../../net/rng.js';
 import { createPickup } from './entities.js';
+import { floatText } from './particles.js';
+import { difficultyParams } from './spawner.js';
 
 /** Segundos de aviso antes do início (regra do design). */
 const AVISO_S = 2;
@@ -38,6 +40,13 @@ export const EVENT_CONFIG = [
     desc: 'Muitos pulsos caem — monte combo e pontue forte',
     cor: '#7DF9FF',
     dur: 10, nivelMin: 2, cd: 40,
+  },
+  {
+    id: 'tempestade',
+    nome: 'Tempestade de Barreiras',
+    desc: 'Barreiras com passagem larga — desvie sem bater e ganhe bônus',
+    cor: '#FF6B6B',
+    dur: 12, nivelMin: 3, cd: 55,
   },
   // próximos eventos entram aqui um por commit
 ];
@@ -67,6 +76,65 @@ EFEITOS.chuva = {
   },
   fim(g) {
     g.eventoMod = null;                    // limpeza explícita (encerrar já garante)
+  },
+};
+
+// ---------- Tempestade de Barreiras ----------
+EFEITOS.tempestade = {
+  inicio(g) {
+    g.eventoMod = { obstMul: 1.8 };        // barreiras normais ~2x mais raras
+    g.evAcc = 1.2;                         // primeira barra em ~1,2 s
+  },
+  tick(g, dt) {
+    // barreiras do evento a cada 2,2 s: duas peças com passagem LARGA
+    // telegrafada (rota segura garantida — validada em 500 sementes)
+    g.evAcc -= dt;
+    if (g.evAcc <= 0) {
+      g.evAcc = 2.2;
+      const S = g.S;
+      const gapW = 210 * S;                // passagem ≥ 7× o raio do jogador
+      const minC = 30 * S + gapW / 2;      // folga das laterais
+      const maxC = g.W - 30 * S - gapW / 2;
+      const cx = minC + rngEventos() * Math.max(0, maxC - minC);
+      const dp = difficultyParams(g.elapsed, false);
+      const vy = 260 * S * dp.speedMul;    // mesma velocidade das normais
+      const y = -40 * S;
+      const h = 16 * S;
+      const wL = cx - gapW / 2;
+      const wR = g.W - (cx + gapW / 2);
+      g.obstacles.push(
+        { type: 'bar', x: 0, y, w: wL, h, vy, halfW: wL / 2, evCx: cx, evGapW: gapW },
+        { type: 'bar', x: cx + gapW / 2, y, w: wR, h, vy, halfW: wR / 2, evCx: cx, evGapW: gapW },
+      );
+    }
+  },
+  fim(g, limpo) {
+    g.eventoMod = null;
+    if (limpo) {
+      // recompensa fixa com teto (bônus único por evento, nunca multiplicativo)
+      g.score += 150;
+      g.runStats.eventsClean = (g.runStats.eventsClean || 0) + 1;
+      floatText(g.W / 2, g.H * 0.24, 'TEMPESTADE SUPERADA +150', '#FFE45E', 18);
+      emit('game:score', { score: Math.floor(g.score) });
+    }
+  },
+  desenhar(ctx, g) {
+    // telegrafia: coluna translúcida da passagem da barreira mais baixa
+    let alvo = null;
+    for (const o of g.obstacles) {
+      if (o.evCx != null && (!alvo || o.y > alvo.y)) alvo = o;
+    }
+    if (!alvo) return;
+    const S = g.S;
+    const gl = alvo.evCx - alvo.evGapW / 2;
+    const gr = alvo.evCx + alvo.evGapW / 2;
+    ctx.save();
+    ctx.fillStyle = 'rgba(255, 107, 107, 0.08)';
+    ctx.fillRect(gl, alvo.y, gr - gl, g.H - alvo.y);
+    ctx.fillStyle = 'rgba(255, 107, 107, 0.55)';
+    ctx.fillRect(gl - 2 * S, alvo.y, 2 * S, g.H - alvo.y);
+    ctx.fillRect(gr, alvo.y, 2 * S, g.H - alvo.y);
+    ctx.restore();
   },
 };
 
