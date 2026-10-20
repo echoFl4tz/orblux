@@ -12,6 +12,7 @@ import {
   circleRectHit, circlesHit, COLORS,
 } from './entities.js';
 import { difficultyParams, spawnObstacles, spawnPickupWave, spawnPowerup, resetSpawner, setSpawnerRng, nextSpawnTimer, nextPickupTimer, nextPowerTimer } from './spawner.js';
+import { resetDrops, updateDrops, spawnDrop, drawDrops, tryCollectDrop, nextDropTimer, dropsAtivos, setDropsRng } from './drops.js';
 import { hashSeed, mulberry32 } from '../../net/rng.js';
 import { SCORE, waveForTime, waveBonus } from '../../net/rules.js';
 import { equippedLook, skinCollectFx } from './skinrender.js';
@@ -44,6 +45,8 @@ export const game = {
 
   player: null,
   obstacles: [], pickups: [], powerups: [],
+  drops: [], dropFx: {},              // novos drops (camada 1.1.0, drops.js)
+  dropCd: {}, dropCounts: {}, dropSemTempo: 0, dropTimer: Infinity,
   lastSpawnX: null,
   spawnTimer: 0, pickupTimer: 0, powerTimer: 0,
 
@@ -52,7 +55,7 @@ export const game = {
   lives: LIVES_START, level: 1, wave: 1,
   elapsed: 0, sinceHit: 0,
   x2Timer: 0, reviveUsed: false, moved: false,
-  runStats: { pickups: 0, maxCombo: 1, powerups: 0, nearMiss: 0 },
+  runStats: { pickups: 0, maxCombo: 1, powerups: 0, nearMiss: 0, drops: 0, crystals: 0, dropsByKind: {} },
 
   stars: [], bgOffset: 0,
   bgStatic: null,              // fundo estático offscreen (pintado só no resize)
@@ -292,12 +295,14 @@ export function startGame(opts = {}) {
   g.wave = 1;
   g.elapsed = 0; g.sinceHit = 0;
   g.x2Timer = 0; g.reviveUsed = false; g.moved = false;
-  g.runStats = { pickups: 0, maxCombo: 1, powerups: 0, nearMiss: 0 };
+  g.runStats = { pickups: 0, maxCombo: 1, powerups: 0, nearMiss: 0, drops: 0, crystals: 0, dropsByKind: {} };
   // Corrida do Dia: mesma semente ⇒ MESMA sequência de obstáculos para
   // todo mundo (net/rng.js). Sem semente = Math.random (partida normal).
   g.runSeed = opts.seed != null ? String(opts.seed).slice(0, 40) : null;
   setSpawnerRng(g.runSeed != null ? mulberry32(hashSeed(g.runSeed)) : null);
   resetSpawner(g);
+  setDropsRng(g.runSeed);              // rng próprio dos drops (null = Math.random)
+  resetDrops(g);                       // camada nova zera (desligada em corrida do dia)
   resetFX();
   resetInput();
   g.mode = 'playing';
@@ -346,7 +351,9 @@ export function quitToMenu() {
   g.bgFlash = 0;
   g.runSeed = null;               // esquece a semente da corrida do dia
   setSpawnerRng(null);            // volta ao Math.random das partidas normais
+  setDropsRng(null);              // rng dos drops também volta ao Math.random
   resetSpawner(g);                 // zera timers/spawn da última partida
+  resetDrops(g);                   // limpa drops/efeitos da partida anterior
   resetFX();                       // remove partículas, textos, ondas e shake da morte
   resetInput();
   emit('game:quit');
@@ -373,6 +380,9 @@ function gameOver() {
     wave: g.wave,
     nearMiss: g.runStats.nearMiss,
     powerups: g.runStats.powerups,
+    drops: g.runStats.drops,            // novos drops coletados (stats/conquistas)
+    dropsByKind: g.runStats.dropsByKind,
+    crystals: g.runStats.crystals,      // Cristal vira +3 moedas cada (main.js)
     revived: g.reviveUsed,
     seed: g.runSeed || null,          // Corrida do Dia: semente usada (null = normal)
   });
@@ -588,6 +598,12 @@ export function update(dt) {
     spawnPowerup(g);
     g.powerTimer = nextPowerTimer();
   }
+  // drops novos (1.1.0): timer/prng próprios — não toca no spawner legado
+  g.dropTimer -= dt;
+  if (g.dropTimer <= 0) {
+    spawnDrop(g);
+    g.dropTimer = dropsAtivos(g) ? nextDropTimer() : Infinity;
+  }
 
   // ---------- mover objetos ----------
   for (const o of g.obstacles) {
@@ -654,6 +670,8 @@ export function update(dt) {
     }
   }
 
+  tryCollectDrop(g, p);            // colisão dos novos drops (drops.js)
+
   // ---------- combo / x2 / nível ----------
   if (g.comboTimer > 0) {
     g.comboTimer -= dt;
@@ -668,6 +686,7 @@ export function update(dt) {
     g.x2Timer -= dt;
     if (g.x2Timer <= 0) emit('game:powerup:end', { kind: 'x2' });
   }
+  updateDrops(g, dt);              // efeitos temporários + queda dos drops
   const newLevel = Math.floor(g.score / POINTS_PER_LEVEL) + 1;
   if (newLevel > g.level) {
     g.level = newLevel;
@@ -801,6 +820,7 @@ export function render(time) {
   if (inRun && g.player) {
     for (const pk of g.pickups) drawPickup(ctx, pk, time, g.reduceMotion);
     for (const pw of g.powerups) drawPowerup(ctx, pw, time, g.reduceMotion);
+    drawDrops(ctx, g, time);        // glifos dos novos drops (drops.js)
     const contrast = state.settings.highContrast;
     for (const o of g.obstacles) drawObstacle(ctx, o, { contrast, time, reduceMotion: g.reduceMotion });
     if (g.mode !== 'gameover') drawDangerChevrons(ctx);

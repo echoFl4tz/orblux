@@ -19,6 +19,13 @@ let shatterTimer = 0;       // remove a classe de estilhaço do combo
 let comboPulseAt = 0;       // último pulso do combo (throttle 333ms ≈ 3/s, §9)
 let comboPopTimer = 0;      // remove a classe .pop do combo após o pulso
 
+/** Ícone/label de cada power-up no chip do HUD (sprite SVG, sem emojis). */
+const CHIP_MAP = {
+  shield: { icone: 'ic-shield', label: 'ESCUDO' },
+  x2: { icone: 'ic-bolt', label: 'x2' },
+  // drops novos (1.1.0) entram aqui junto do drop correspondente
+};
+
 /** Flash vermelho rápido nas bordas ao levar dano (respeita mov. reduzido no CSS). */
 function flashDamage() {
   const d = el.damage;
@@ -150,16 +157,19 @@ export function initHud() {
 
   on('game:powerup', ({ kind, duration }) => {
     document.getElementById(`power-${kind}`)?.remove();
+    const info = CHIP_MAP[kind] || { icone: 'ic-bolt', label: kind };
     const chip = document.createElement('div');
     chip.className = 'power-chip';
     chip.id = `power-${kind}`;
     chip.dataset.duration = String(duration || 8);
     chip.innerHTML = `
-      <svg class="ic ic-sm" aria-hidden="true"><use href="#${kind === 'shield' ? 'ic-shield' : 'ic-bolt'}"/></svg>
-      <span class="chip-label">${kind === 'shield' ? 'ESCUDO' : 'x2'}</span>
-      ${kind === 'x2' ? `<span class="chip-time">${(duration || 8).toFixed(1)}s</span>` : ''}`;
+      <svg class="ic ic-sm" aria-hidden="true"><use href="#${info.icone}"/></svg>
+      <span class="chip-label">${info.label}</span>
+      ${duration ? `<span class="chip-time">${Number(duration).toFixed(1)}s</span>` : ''}`;
     chip._p = 1;                          // cache da contagem radial (--p, P1-4)
     el.powerups.appendChild(chip);
+    // drops instantâneos (duration 0): chip de confirmação que some sozinho
+    if (!duration) setTimeout(() => chip.remove(), 1600);
   });
   on('game:shield', () => document.getElementById('power-shield')?.remove());
   on('game:powerup:end', ({ kind }) => document.getElementById(`power-${kind}`)?.remove());
@@ -207,6 +217,23 @@ export function hudTick() {
       const total = Number(chip.dataset.duration) || 8;
       const pct = Math.round(Math.max(0, Math.min(1, game.x2Timer / total)) * 20) / 20;
       if (pct !== chip._p) {             // contagem radial via --p (P1-4)
+        chip._p = pct;
+        chip.style.setProperty('--p', String(pct));
+      }
+    }
+  }
+
+  // contagem radial dos drops temporários novos (leitura de g.dropFx)
+  if (game.dropFx && game.mode === 'playing') {
+    for (const kind of Object.keys(game.dropFx)) {
+      const chip = document.getElementById(`power-${kind}`);
+      if (!chip) continue;
+      const resto = game.dropFx[kind];
+      const time = chip.querySelector('.chip-time');
+      if (time) time.textContent = `${Math.max(0, resto).toFixed(1)}s`;
+      const total = Number(chip.dataset.duration) || 1;
+      const pct = Math.round(Math.max(0, Math.min(1, resto / total)) * 20) / 20;
+      if (pct !== chip._p) {
         chip._p = pct;
         chip.style.setProperty('--p', String(pct));
       }

@@ -94,7 +94,8 @@ const {
   difficultyParams, nextSpawnTimer, nextPickupTimer, nextPowerTimer, resetSpawner,
 } = await import('../js/game/spawner.js');
 const { hashSeed, mulberry32 } = await import('../net/rng.js');
-// drops.js/eventos.js entram no próximo commit (arquitetura)
+const drops = await import('../js/game/drops.js');
+const { on } = await import('../js/core/events.js');
 
 const DT = 1 / 60;
 
@@ -144,4 +145,140 @@ test('determinismo: spawner original idêntico ao snapshot pré-mudanças', () =
     assert.deepEqual(obtido, esperado,
       `sequência do spawner divergiu do snapshot para a semente "${seed}"`);
   }
+});
+
+// ---------------------------------------------------------
+//  Estado fake de partida (objeto g puro, sem DOM/canvas)
+// ---------------------------------------------------------
+function fakeG(extra = {}) {
+  return {
+    W: 390, H: 844, S: 1, runSeed: null, level: 1, lives: 3,
+    player: null, obstacles: [], pickups: [], powerups: [],
+    drops: [], dropFx: {}, dropCd: {}, dropCounts: {}, dropSemTempo: 0,
+    dropTimer: 0, reduceMotion: false,
+    runStats: { pickups: 0, maxCombo: 1, powerups: 0, nearMiss: 0, drops: 0, crystals: 0, dropsByKind: {} },
+    ...extra,
+  };
+}
+
+// ---------------------------------------------------------
+//  Infraestrutura de drops (cap, expiração, flags, RNG, spawn)
+// ---------------------------------------------------------
+test('drops: cap de 3 efeitos — renova sem empilhar; novo substitui o mais antigo', () => {
+  const g = fakeG();
+  const ends = [];
+  on('game:powerup:end', ({ kind }) => ends.push(kind));
+  drops.ativarFx(g, 'a', 5);
+  drops.ativarFx(g, 'b', 5);
+  drops.ativarFx(g, 'a', 7);                 // já ativo: renova, não empilha
+  assert.equal(Object.keys(g.dropFx).length, 2);
+  drops.ativarFx(g, 'c', 4);
+  drops.ativarFx(g, 'd', 4);                 // cap atingido: expulsa o mais antigo (b)
+  assert.ok(!g.dropFx.b, 'o efeito mais antigo deve expirar');
+  assert.equal(Object.keys(g.dropFx).length, 3);
+  assert.deepEqual(ends, ['b'], 'expirar deve emitir game:powerup:end');
+});
+
+test('drops: updateDrops expira efeitos, cooldowns e zera o chip', () => {
+  const g = fakeG({ dropFx: { ima: 0.1 }, dropCd: { surto: 0.05 } });
+  const ends = [];
+  on('game:powerup:end', ({ kind }) => ends.push(kind));
+  drops.updateDrops(g, 0.2);
+  assert.deepEqual(ends, ['ima']);
+  assert.equal(drops.fx(g, 'ima'), 0);
+  assert.ok(!g.dropCd.surto, 'cooldown deve zerar');
+  drops.updateDrops(g, 0.1);
+  assert.deepEqual(ends, ['ima'], 'sem re-emitir fim de efeito já removido');
+});
+
+test('drops: Corrida do Dia força off; flag setDropsNovos(false) desliga tudo', () => {
+  assert.equal(drops.dropsAtivos(fakeG({ runSeed: 'dia-42' })), false);
+  assert.equal(drops.dropsAtivos(fakeG()), true);
+  drops.setDropsNovos(false);
+  try {
+    assert.equal(drops.dropsAtivos(fakeG()), false);
+    const g = fakeG({ level: 10 });
+    assert.equal(drops.spawnDrop(g), false, 'com flag off nada deve nascer');
+    assert.equal(g.drops.length, 0);
+  } finally {
+    drops.setDropsNovos(true);
+  }
+});
+
+test('drops: RNG próprio — mesma semente ⇒ mesma sequência de escolhas', () => {
+  const push = () => drops.DROP_CONFIG.push(
+    { id: 't1', nome: 'T1', cor: '#fff', dur: 0, raridade: 'comum', peso: 10, nivelMin: 1, cd: 0 },
+    { id: 't2', nome: 'T2', cor: '#fff', dur: 0, raridade: 'comum', peso: 3, nivelMin: 1, cd: 0 },
+  );
+  const pop = () => { drops.DROP_CONFIG.pop(); drops.DROP_CONFIG.pop(); };
+  const seq = () => {
+    drops.setDropsRng('corrida-x');
+    push();
+    const g = fakeG({ level: 10 });
+    const out = [];
+    for (let i = 0; i < 40; i++) {
+      drops.spawnDrop(g);
+      out.push(g.drops.map((d) => d.kind).join(), drops.nextDropTimer().toFixed(6));
+      g.drops.length = 0;
+      g.dropCd = {};
+    }
+    pop();
+    return out;
+  };
+  try {
+    assert.deepEqual(seq(), seq(), 'duas rodadas com a mesma semente devem ser iguais');
+  } finally {
+    pop();
+  }
+});
+
+test('drops: spawn nunca nasce sobre barreira (rota livre no topo)', () => {
+  drops.setDropsRng('barreira');
+  drops.DROP_CONFIG.push({ id: 'tb', nome: 'TB', cor: '#fff', dur: 0, raridade: 'comum', peso: 10, nivelMin: 1, cd: 0 });
+  try {
+    // barreira cobrindo a largura toda na linha de nascimento: nada nasce
+    const gBar = fakeG({ obstacles: [{ type: 'bar', x: 0, y: -60, w: 390, h: 20 }] });
+    for (let i = 0; i < 30; i++) { drops.spawnDrop(gBar); gBar.dropCd = {}; }
+    assert.equal(gBar.drops.length, 0, 'não pode nascer sobre barreira de ponta a ponta');
+    // barreira estreita: nasce com folga ≥ 90 px da borda (ou não nasce)
+    const g2 = fakeG({ obstacles: [{ type: 'bar', x: 170, y: -60, w: 50, h: 20 }] });
+    for (let i = 0; i < 30; i++) { drops.spawnDrop(g2); g2.dropCd = {}; }
+    for (const d of g2.drops) {
+      const dx = Math.max(0, Math.abs(d.x - 195) - 25);
+      assert.ok(dx > 90, `drop nasceu a ${dx}px da barreira (mín 90)`);
+    }
+    assert.ok(g2.drops.length > 0, 'com espaço lateral deve nascer normalmente');
+  } finally {
+    drops.DROP_CONFIG.pop();
+  }
+});
+
+test('drops: coleta conta runStats e toast de novelty é único', () => {
+  drops.DROP_CONFIG.push({
+    id: 'tc', nome: 'TC', desc: 'teste', icone: 'ic-bolt', cor: '#fff',
+    dur: 6, raridade: 'comum', peso: 1, nivelMin: 1, cd: 0,
+  });
+  const firsts = [];
+  on('drop:first', ({ kind }) => firsts.push(kind));
+  const g = fakeG();
+  try {
+    drops.collectDrop(g, { kind: 'tc', x: 10, y: 10 });
+    drops.collectDrop(g, { kind: 'tc', x: 10, y: 10 });
+    assert.equal(g.runStats.drops, 2);
+    assert.equal(g.runStats.dropsByKind.tc, 2);
+    assert.deepEqual(firsts, ['tc'], 'toast de primeira vez deve ser único');
+  } finally {
+    drops.DROP_CONFIG.pop();
+  }
+});
+
+test('drops: resetDrops — 7 s sem semente; Infinity na corrida do dia', () => {
+  const gA = fakeG();
+  drops.resetDrops(gA);
+  assert.equal(gA.dropTimer, 7);
+  const gB = fakeG({ runSeed: 'dia' });
+  drops.resetDrops(gB);
+  assert.equal(gB.dropTimer, Infinity);
+  assert.equal(gB.runStats.drops, 0);
+  assert.deepEqual(gB.runStats.dropsByKind, {});
 });

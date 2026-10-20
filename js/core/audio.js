@@ -117,6 +117,10 @@ export function sfx(name, opts = {}) {
     case 'mission':
       tone({ freq: 880, freqEnd: 1320, type: 'sine', dur: 0.2, gain: 0.35 });
       break;
+    case 'drop': // ganho de drop novo (arpejo curto, categoria)
+      tone({ freq: 880, type: 'square', dur: 0.06, gain: 0.14 });
+      tone({ freq: 1320, type: 'square', dur: 0.09, gain: 0.1, delay: 0.05 });
+      break;
     default: break;
   }
 }

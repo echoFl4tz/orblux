@@ -61,6 +61,13 @@ const DEFAULT_STATS = {
   bestLevel: 1,
   totalTime: 0, // segundos totais jogados
   lastRunDay: '', // último dia (AAAA-MM-DD) com partida — bônus "1ª do dia"
+  // 1.1.0 — contadores simples de drops/eventos (migração: spread acima)
+  totalDrops: 0,
+  dropKinds: {},      // { id: total coletado por tipo }
+  eventsCompleted: 0, // eventos terminados (inclusive falhados)
+  eventsClean: 0,     // tempestades superadas sem bater
+  vistoDrops: [],     // ids já apresentados por toast (novelty única)
+  vistoEventos: [],   // ids de eventos já apresentados
 };
 
 /** Versão de armazenamento gravada (ausente = 1, legado). */

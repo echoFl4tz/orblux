@@ -109,6 +109,11 @@ function boot() {
   window.addEventListener('pointerdown', firstGesture);
   window.addEventListener('keydown', firstGesture);
 
+  // ---- drops novos (1.1.0): toast de apresentação único por novelty ----
+  on('drop:first', ({ nome, desc, icone }) => {
+    showToast({ icon: icone || 'ic-bolt', title: `${nome}!`, desc });
+  });
+
   // ---- fim de partida: estatísticas, ranking, missões, conquistas ----
   on('game:over', (run) => {
     const st = state.stats;
