@@ -325,7 +325,8 @@ function encerrar(g) {
 /** Tick do scheduler (chamado pelo update do game.js; pausa congela junto). */
 export function updateEventos(g, dt) {
   if (!eventosAtivos(g)) return;
-  for (const k of Object.keys(g.eventoCd)) {
+  // for...in sem alocação de array por quadro
+  for (const k in g.eventoCd) {
     g.eventoCd[k] -= dt;
     if (g.eventoCd[k] <= 0) delete g.eventoCd[k];
   }

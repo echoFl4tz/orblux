@@ -346,20 +346,17 @@ export function ativarFx(g, kind, dur) {
 
 /** Tick dos drops: efeitos temporários, cooldowns, queda e idade. */
 export function updateDrops(g, dt) {
-  if (g.dropFx) {
-    for (const kind of Object.keys(g.dropFx)) {
-      g.dropFx[kind] -= dt;
-      if (g.dropFx[kind] <= 0) {
-        delete g.dropFx[kind];
-        emit('game:powerup:end', { kind });
-      }
+  // for...in sem alocação de array por quadro (Object.keys custava 2 arrays/quadro)
+  for (const kind in g.dropFx) {
+    g.dropFx[kind] -= dt;
+    if (g.dropFx[kind] <= 0) {
+      delete g.dropFx[kind];
+      emit('game:powerup:end', { kind });
     }
   }
-  if (g.dropCd) {
-    for (const k of Object.keys(g.dropCd)) {
-      g.dropCd[k] -= dt;
-      if (g.dropCd[k] <= 0) delete g.dropCd[k];
-    }
+  for (const k in g.dropCd) {
+    g.dropCd[k] -= dt;
+    if (g.dropCd[k] <= 0) delete g.dropCd[k];
   }
   if (g.dropSemTempo != null) g.dropSemTempo += dt;
   const lento = fx(g, 'tempo') > 0 ? 0.7 : 1;   // câmara lenta: queda a 70%
@@ -483,25 +480,29 @@ export function atracaoRaio(g) {
 // ---------------------------------------------------------
 export function drawDrops(ctx, g, time) {
   const S = g.S;
+  if (!g.drops.length) return;
+  // um único save/restore por frame (custo constante por quadro, não por drop)
+  ctx.save();
+  ctx.lineCap = 'round';
+  ctx.lineJoin = 'round';
+  ctx.lineWidth = Math.max(1.5, 2 * S);
   for (const d of g.drops) {
     const cfg = byId(d.kind);
     if (!cfg) continue;
+    ctx.strokeStyle = cfg.cor;
+    ctx.fillStyle = cfg.cor;
     if (d.glow > 0 && !g.reduceMotion) {
       ctx.save();
       ctx.globalAlpha = Math.max(0, d.glow / 0.4) * 0.5;
-      ctx.strokeStyle = cfg.cor;
       ctx.lineWidth = 2;
       ctx.beginPath();
       ctx.arc(d.x, d.y, d.r + (1 - d.glow / 0.4) * 10 * S, 0, Math.PI * 2);
       ctx.stroke();
       ctx.restore();
+      // restaura cor/alpha após o save/restore do halo
+      ctx.strokeStyle = cfg.cor;
+      ctx.fillStyle = cfg.cor;
     }
-    ctx.save();
-    ctx.strokeStyle = cfg.cor;
-    ctx.fillStyle = cfg.cor;
-    ctx.lineWidth = Math.max(1.5, 2 * S);
-    ctx.lineCap = 'round';
-    ctx.lineJoin = 'round';
     const glifo = GLIFOS[cfg.id];
     if (glifo) {
       glifo(ctx, d.x, d.y, d.r, time, g.reduceMotion);
@@ -515,6 +516,6 @@ export function drawDrops(ctx, g, time) {
       ctx.closePath();
       ctx.stroke();
     }
-    ctx.restore();
   }
+  ctx.restore();
 }
