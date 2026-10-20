@@ -337,3 +337,16 @@ test('drop fantasma: atravessa obstáculos por 4s e expira limpo', () => {
   drops.updateDrops(g, 2.01);
   assert.equal(drops.fx(g, 'fantasma'), 0, 'expira e sai do mapa de efeitos');
 });
+
+test('drop tempo: mundo a 70% enquanto ativo; pontuação nunca muda', () => {
+  const cfg = drops.DROP_CONFIG.find((c) => c.id === 'tempo');
+  assert.ok(cfg, 'config da câmara lenta deve existir');
+  const g = fakeG({ drops: [{ x: 0, y: 0, vy: 100, glow: 0, kind: 'ima' }] });
+  drops.ativarFx(g, 'tempo', cfg.dur);
+  drops.updateDrops(g, 1);
+  assert.ok(Math.abs(g.drops[0].y - 70) < 1e-6, 'queda a 70% enquanto ativo');
+  drops.updateDrops(g, cfg.dur + 0.01);      // expira aqui
+  const esperado = 70 + 100 * (cfg.dur + 0.01);
+  assert.ok(Math.abs(g.drops[0].y - esperado) < 1e-3, 'volta à velocidade normal ao expirar');
+  assert.equal(g.score, 0, 'câmera lenta nunca mexe na pontuação');
+});

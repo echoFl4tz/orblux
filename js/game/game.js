@@ -606,10 +606,12 @@ export function update(dt) {
   }
 
   // ---------- mover objetos ----------
+  // Câmara lenta (drop tempo, 1.1.0): mundo a 70%; jogador/pontuação intactos
+  const lento = fx(g, 'tempo') > 0 ? 0.7 : 1;
   for (const o of g.obstacles) {
-    o.y += o.vy * dt;
+    o.y += o.vy * dt * lento;
     if (o.type === 'drone') {
-      o.t += dt;
+      o.t += dt * lento;
       o.x = o.baseX + Math.sin(o.t * o.swayFreq) * o.swayAmp;
       o.x = Math.max(o.r, Math.min(g.W - o.r, o.x));
     }
@@ -618,7 +620,7 @@ export function update(dt) {
   const imaR = atracaoRaio(g);
   for (let i = 0; i < g.pickups.length; i++) {
     const pk = g.pickups[i];
-    pk.y += pk.vy * dt;
+    pk.y += pk.vy * dt * lento;
     if (imaR > 0) {
       const dx = p.x - pk.x, dy = p.y - pk.y;
       const dist = Math.hypot(dx, dy);
@@ -629,7 +631,7 @@ export function update(dt) {
       }
     }
   }
-  for (const pw of g.powerups) pw.y += pw.vy * dt;
+  for (const pw of g.powerups) pw.y += pw.vy * dt * lento;
 
   // ---------- colisões ----------
   const pr = p.r * 0.82; // hitbox generosa (jogo justo)

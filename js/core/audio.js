@@ -125,6 +125,9 @@ export function sfx(name, opts = {}) {
       tone({ freq: 160, type: 'sine', dur: 0.16, gain: 0.2 });
       tone({ freq: 240, type: 'sine', dur: 0.2, gain: 0.12, delay: 0.05 });
       break;
+    case 'drop_tempo': // câmara lenta (tom caindo)
+      tone({ freq: 660, freqEnd: 220, type: 'triangle', dur: 0.25, gain: 0.14 });
+      break;
     default: break;
   }
 }

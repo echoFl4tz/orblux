@@ -59,6 +59,15 @@ export const DROP_CONFIG = [
     cor: '#B18CFF',
     dur: 4, raridade: 'rara', peso: 8, nivelMin: 3, cd: 14,
   },
+  {
+    id: 'tempo',
+    nome: 'Câmara lenta',
+    desc: 'O mundo desacelera — a sua pontuação não muda',
+    icone: 'ic-slow',
+    cor: '#8FD8FF',
+    dur: 5, raridade: 'incomum', peso: 16, nivelMin: 2, cd: 10,
+    som: 'drop_tempo',
+  },
   // próximos drops entram aqui um por commit
 ];
 
@@ -121,6 +130,23 @@ GLIFOS.fantasma = (ctx, x, y, r) => {
   ctx.stroke();
   ctx.beginPath();
   ctx.arc(x, y, r * 0.45, 0, Math.PI * 2);
+  ctx.stroke();
+};
+
+// ---------- Câmara lenta ----------
+EFEITOS.tempo = (g, cfg) => ativarFx(g, 'tempo', cfg.dur);
+
+GLIFOS.tempo = (ctx, x, y, r) => {
+  // ampulheta: barras de topo/base + dois triângulos que se encontram
+  ctx.beginPath();
+  ctx.moveTo(x - r * 0.7, y - r * 0.85);
+  ctx.lineTo(x + r * 0.7, y - r * 0.85);
+  ctx.moveTo(x - r * 0.7, y + r * 0.85);
+  ctx.lineTo(x + r * 0.7, y + r * 0.85);
+  ctx.moveTo(x - r * 0.6, y - r * 0.72);
+  ctx.quadraticCurveTo(x, y, x - r * 0.6, y + r * 0.72);
+  ctx.moveTo(x + r * 0.6, y - r * 0.72);
+  ctx.quadraticCurveTo(x, y, x + r * 0.6, y + r * 0.72);
   ctx.stroke();
 };
 
@@ -212,8 +238,9 @@ export function updateDrops(g, dt) {
     }
   }
   if (g.dropSemTempo != null) g.dropSemTempo += dt;
+  const lento = fx(g, 'tempo') > 0 ? 0.7 : 1;   // câmara lenta: queda a 70%
   for (const d of g.drops) {
-    d.y += d.vy * dt;
+    d.y += d.vy * dt * lento;
     if (d.glow > 0) d.glow -= dt;
   }
 }
