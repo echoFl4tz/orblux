@@ -12,7 +12,7 @@ import {
   circleRectHit, circlesHit, COLORS,
 } from './entities.js';
 import { difficultyParams, spawnObstacles, spawnPickupWave, spawnPowerup, resetSpawner, setSpawnerRng, nextSpawnTimer, nextPickupTimer, nextPowerTimer } from './spawner.js';
-import { resetDrops, updateDrops, spawnDrop, drawDrops, tryCollectDrop, nextDropTimer, dropsAtivos, setDropsRng } from './drops.js';
+import { resetDrops, updateDrops, spawnDrop, drawDrops, tryCollectDrop, nextDropTimer, dropsAtivos, setDropsRng, atracaoRaio } from './drops.js';
 import { hashSeed, mulberry32 } from '../../net/rng.js';
 import { SCORE, waveForTime, waveBonus } from '../../net/rules.js';
 import { equippedLook, skinCollectFx } from './skinrender.js';
@@ -614,7 +614,21 @@ export function update(dt) {
       o.x = Math.max(o.r, Math.min(g.W - o.r, o.x));
     }
   }
-  for (const pk of g.pickups) pk.y += pk.vy * dt;
+  // Ímã (1.1.0): enquanto ativo, pulsos no raio são puxados ao jogador
+  const imaR = atracaoRaio(g);
+  for (let i = 0; i < g.pickups.length; i++) {
+    const pk = g.pickups[i];
+    pk.y += pk.vy * dt;
+    if (imaR > 0) {
+      const dx = p.x - pk.x, dy = p.y - pk.y;
+      const dist = Math.hypot(dx, dy);
+      if (dist < imaR && dist > 1) {
+        const pull = Math.min(380 * S * dt, dist);
+        pk.x += (dx / dist) * pull;
+        pk.y += (dy / dist) * pull * 0.85;
+      }
+    }
+  }
   for (const pw of g.powerups) pw.y += pw.vy * dt;
 
   // ---------- colisões ----------

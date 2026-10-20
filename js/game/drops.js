@@ -32,13 +32,40 @@ const MAX_FX = 3;
 //  som? (sfx específico)
 // ---------------------------------------------------------
 export const DROP_CONFIG = [
-  // entradas dos drops novos são adicionadas um por commit
+  {
+    id: 'ima',
+    nome: 'Ímã',
+    desc: 'Atrai os pulsos próximos por alguns segundos',
+    icone: 'ic-magnet',
+    cor: '#22E6FF',
+    dur: 7, raridade: 'comum', peso: 28, nivelMin: 1, cd: 8,
+  },
+  // próximos drops entram aqui um por commit
 ];
 
 /** Efeito por id (adicionado junto do drop correspondente). */
 export const EFEITOS = {};
 /** Glifo canvas por id (mesmo formato dos ícones SVG, traço 2px). */
 export const GLIFOS = {};
+
+// ---------- Ímã ----------
+EFEITOS.ima = (g, cfg) => ativarFx(g, 'ima', cfg.dur);
+
+GLIFOS.ima = (ctx, x, y, r) => {
+  // ferradura: pernas para cima + pontas transversais
+  const w = r * 0.72;
+  ctx.beginPath();
+  ctx.moveTo(x - w, y - r * 0.7);
+  ctx.lineTo(x - w, y);
+  ctx.quadraticCurveTo(x - w, y + r * 0.85, x, y + r * 0.85);
+  ctx.quadraticCurveTo(x + w, y + r * 0.85, x + w, y);
+  ctx.lineTo(x + w, y - r * 0.7);
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.moveTo(x - w - r * 0.3, y - r * 0.7); ctx.lineTo(x - w + r * 0.3, y - r * 0.7);
+  ctx.moveTo(x + w - r * 0.3, y - r * 0.7); ctx.lineTo(x + w + r * 0.3, y - r * 0.7);
+  ctx.stroke();
+};
 
 function byId(id) {
   return DROP_CONFIG.find((c) => c.id === id) || null;

@@ -24,6 +24,7 @@ const CHIP_MAP = {
   shield: { icone: 'ic-shield', label: 'ESCUDO' },
   x2: { icone: 'ic-bolt', label: 'x2' },
   // drops novos (1.1.0) entram aqui junto do drop correspondente
+  ima: { icone: 'ic-magnet', label: 'ÍMÃ' },
 };
 
 /** Flash vermelho rápido nas bordas ao levar dano (respeita mov. reduzido no CSS). */

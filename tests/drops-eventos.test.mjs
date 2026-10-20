@@ -214,22 +214,21 @@ test('drops: RNG próprio — mesma semente ⇒ mesma sequência de escolhas', (
   const seq = () => {
     drops.setDropsRng('corrida-x');
     push();
-    const g = fakeG({ level: 10 });
-    const out = [];
-    for (let i = 0; i < 40; i++) {
-      drops.spawnDrop(g);
-      out.push(g.drops.map((d) => d.kind).join(), drops.nextDropTimer().toFixed(6));
-      g.drops.length = 0;
-      g.dropCd = {};
+    try {
+      const g = fakeG({ level: 10 });
+      const out = [];
+      for (let i = 0; i < 40; i++) {
+        drops.spawnDrop(g);
+        out.push(g.drops.map((d) => d.kind).join(), drops.nextDropTimer().toFixed(6));
+        g.drops.length = 0;
+        g.dropCd = {};
+      }
+      return out;
+    } finally {
+      pop();                    // sempre desfaz os sintéticos (nunca toca nos reais)
     }
-    pop();
-    return out;
   };
-  try {
-    assert.deepEqual(seq(), seq(), 'duas rodadas com a mesma semente devem ser iguais');
-  } finally {
-    pop();
-  }
+  assert.deepEqual(seq(), seq(), 'duas rodadas com a mesma semente devem ser iguais');
 });
 
 test('drops: spawn nunca nasce sobre barreira (rota livre no topo)', () => {
@@ -281,4 +280,18 @@ test('drops: resetDrops — 7 s sem semente; Infinity na corrida do dia', () => 
   assert.equal(gB.dropTimer, Infinity);
   assert.equal(gB.runStats.drops, 0);
   assert.deepEqual(gB.runStats.dropsByKind, {});
+});
+
+// ---------------------------------------------------------
+//  Drops individuais
+// ---------------------------------------------------------
+test('drop imã: atrai pulsos no raio de 150 e some ao expirar', () => {
+  const cfg = drops.DROP_CONFIG.find((c) => c.id === 'ima');
+  assert.ok(cfg, 'config do imã deve existir');
+  assert.equal(cfg.nivelMin, 1, 'imã é comum: disponível desde o nível 1');
+  const g = fakeG();
+  drops.ativarFx(g, 'ima', cfg.dur);
+  assert.equal(drops.atracaoRaio(g), 150, 'raio de atração de 150×S');
+  drops.updateDrops(g, cfg.dur + 0.01);
+  assert.equal(drops.atracaoRaio(g), 0, 'sem efeito após expirar');
 });
