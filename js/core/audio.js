@@ -128,6 +128,16 @@ export function sfx(name, opts = {}) {
     case 'drop_tempo': // câmara lenta (tom caindo)
       tone({ freq: 660, freqEnd: 220, type: 'triangle', dur: 0.25, gain: 0.14 });
       break;
+    case 'evento': // aviso de evento (dupla grave)
+      tone({ freq: 330, type: 'square', dur: 0.12, gain: 0.22 });
+      tone({ freq: 330, type: 'square', dur: 0.12, gain: 0.22, delay: 0.16 });
+      break;
+    case 'evento_start': // início do evento (subida)
+      tone({ freq: 440, freqEnd: 880, type: 'triangle', dur: 0.3, gain: 0.28 });
+      break;
+    case 'evento_end': // fim do evento (resolução descendente)
+      [784, 659, 523].forEach((f, i) => tone({ freq: f, type: 'triangle', dur: 0.16, gain: 0.26, delay: i * 0.1 }));
+      break;
     default: break;
   }
 }

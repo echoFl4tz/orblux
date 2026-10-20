@@ -189,6 +189,41 @@ export function initHud() {
   // toast de curta duração dentro do jogo ("NÍVEL 3", "VAMO LÁ!"...)
   on('hud:toast', ({ text }) => showHudToast(text));
 
+  // faixa de evento (1.1.0): aviso pulsante → ativo com barra → fim limpo
+  on('evento:aviso', ({ nome, cor }) => {
+    const f = document.getElementById('hud-evento');
+    if (!f) return;
+    f.hidden = false;
+    f.className = 'hud-evento aviso';
+    f.style.setProperty('--ev-cor', cor || '#22E6FF');
+    const n = f.querySelector('.evento-nome');
+    if (n) n.textContent = `EVENTO: ${nome.toUpperCase()}`;
+    showHudToast('EVENTO CHEGANDO!');
+  });
+  on('evento:inicio', ({ nome, cor }) => {
+    const f = document.getElementById('hud-evento');
+    if (!f) return;
+    f.hidden = false;
+    f.className = 'hud-evento ativo';
+    f.style.setProperty('--ev-cor', cor || '#22E6FF');
+    const n = f.querySelector('.evento-nome');
+    if (n) n.textContent = nome.toUpperCase();
+    const barra = f.querySelector('.evento-barra i');
+    if (barra) barra.style.transform = 'scaleX(1)';
+    f._p = 1;
+    showHudToast(nome.toUpperCase());
+  });
+  on('evento:fim', () => {
+    const f = document.getElementById('hud-evento');
+    if (f) { f.hidden = true; f.className = 'hud-evento'; }
+    showHudToast('EVENTO ENCERRADO');
+  });
+  // nunca reaparecer "sujo" ao recomeçar partida
+  on('game:start', () => {
+    const f = document.getElementById('hud-evento');
+    if (f) { f.hidden = true; f.className = 'hud-evento'; }
+  });
+
   // tutorial
   on('tutorial:show', (html) => {
     el.tutorialText.innerHTML = html;
@@ -244,6 +279,19 @@ export function hudTick() {
       if (pct !== chip._p) {
         chip._p = pct;
         chip.style.setProperty('--p', String(pct));
+      }
+    }
+  }
+
+  // barra do evento ativo (só a fração muda; escrita em passos de 5%)
+  if (game.evento && game.evento.fase === 'ativo' && game.mode === 'playing') {
+    const f = document.getElementById('hud-evento');
+    if (f && !f.hidden) {
+      const pct = Math.round(Math.max(0, Math.min(1, game.evento.resto / game.evento.dur)) * 20) / 20;
+      if (pct !== f._p) {
+        f._p = pct;
+        const barra = f.querySelector('.evento-barra i');
+        if (barra) barra.style.transform = `scaleX(${pct})`;
       }
     }
   }

@@ -113,6 +113,9 @@ function boot() {
   on('drop:first', ({ nome, desc, icone }) => {
     showToast({ icon: icone || 'ic-bolt', title: `${nome}!`, desc });
   });
+  on('evento:first', ({ nome, desc }) => {
+    showToast({ icon: 'ic-pulse', title: `${nome}!`, desc });
+  });
 
   // ---- fim de partida: estatísticas, ranking, missões, conquistas ----
   on('game:over', (run) => {

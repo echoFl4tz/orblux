@@ -13,6 +13,7 @@ import {
 } from './entities.js';
 import { difficultyParams, spawnObstacles, spawnPickupWave, spawnPowerup, resetSpawner, setSpawnerRng, nextSpawnTimer, nextPickupTimer, nextPowerTimer } from './spawner.js';
 import { resetDrops, updateDrops, spawnDrop, drawDrops, tryCollectDrop, nextDropTimer, dropsAtivos, setDropsRng, atracaoRaio, fx } from './drops.js';
+import { updateEventos, drawEventoOverlay, resetEventos, setEventosRng } from './eventos.js';
 import { hashSeed, mulberry32 } from '../../net/rng.js';
 import { SCORE, waveForTime, waveBonus } from '../../net/rules.js';
 import { equippedLook, skinCollectFx } from './skinrender.js';
@@ -303,6 +304,8 @@ export function startGame(opts = {}) {
   resetSpawner(g);
   setDropsRng(g.runSeed);              // rng próprio dos drops (null = Math.random)
   resetDrops(g);                       // camada nova zera (desligada em corrida do dia)
+  setEventosRng(g.runSeed);            // rng próprio dos eventos (null = Math.random)
+  resetEventos(g);                     // agendador zera (desligado em corrida do dia)
   resetFX();
   resetInput();
   g.mode = 'playing';
@@ -352,8 +355,10 @@ export function quitToMenu() {
   g.runSeed = null;               // esquece a semente da corrida do dia
   setSpawnerRng(null);            // volta ao Math.random das partidas normais
   setDropsRng(null);              // rng dos drops também volta ao Math.random
+  setEventosRng(null);
   resetSpawner(g);                 // zera timers/spawn da última partida
   resetDrops(g);                   // limpa drops/efeitos da partida anterior
+  resetEventos(g);                 // limpa evento ativo e mods vigentes
   resetFX();                       // remove partículas, textos, ondas e shake da morte
   resetInput();
   emit('game:quit');
@@ -383,6 +388,8 @@ function gameOver() {
     drops: g.runStats.drops,            // novos drops coletados (stats/conquistas)
     dropsByKind: g.runStats.dropsByKind,
     crystals: g.runStats.crystals,      // Cristal vira +3 moedas cada (main.js)
+    events: g.runStats.events,          // eventos completados (stats/conquistas)
+    eventsClean: g.runStats.eventsClean,
     revived: g.reviveUsed,
     seed: g.runSeed || null,          // Corrida do Dia: semente usada (null = normal)
   });
@@ -586,7 +593,8 @@ export function update(dt) {
   g.spawnTimer -= dt;
   if (g.spawnTimer <= 0) {
     spawnObstacles(g, dp);
-    g.spawnTimer = nextSpawnTimer(dp.interval);
+    // eventoMod: obstMul rara a cadência de barreiras (fallback = original)
+    g.spawnTimer = nextSpawnTimer(dp.interval * (g.eventoMod?.obstMul || 1));
   }
   g.pickupTimer -= dt;
   if (g.pickupTimer <= 0) {
@@ -705,6 +713,7 @@ export function update(dt) {
     if (g.x2Timer <= 0) emit('game:powerup:end', { kind: 'x2' });
   }
   updateDrops(g, dt);              // efeitos temporários + queda dos drops
+  updateEventos(g, dt);            // scheduler de eventos (pausa congela junto)
   const newLevel = Math.floor(g.score / POINTS_PER_LEVEL) + 1;
   if (newLevel > g.level) {
     g.level = newLevel;
@@ -720,7 +729,7 @@ export function update(dt) {
   if (g.combo > 0) {
     emit('game:combo', {
       combo: g.combo, multiplier: g.multiplier,
-      frac: Math.max(0, g.comboTimer / COMBO_WINDOW),
+      frac: Math.max(0, g.comboTimer / (g.eventoMod?.comboWindow || COMBO_WINDOW)),
     });
   }
 }
@@ -749,6 +758,7 @@ function podeFlash(g) {
 function onHit() {
   const g = game;
   const p = g.player;
+  if (g.evento) g.eventoHouveBatida = true;   // "sem arranhão" (tempestade)
   p.invuln = INVULN_TIME;
   g.lives -= 1;
   if (g.combo >= 3) g.comboBreakT = 0.35; // fundo escurece ao quebrar (§9)
@@ -771,10 +781,12 @@ function collectPulse(pk) {
   const g = game;
   const S = g.S;
   g.combo += 1;
-  g.comboTimer = COMBO_WINDOW;
+  g.comboTimer = g.eventoMod?.comboWindow || COMBO_WINDOW;  // Frenesi estende a janela
   const prevMult = g.multiplier;
   g.multiplier = Math.min(MAX_MULT, 1 + Math.floor(g.combo / 4));
-  const points = SCORE.PICKUP * g.multiplier * (g.x2Timer > 0 ? SCORE.X2_FACTOR : 1);
+  // Hora Dourada multiplica só a coleta (goldMul), nunca os bônus fixos
+  const points = Math.round(SCORE.PICKUP * g.multiplier
+    * (g.x2Timer > 0 ? SCORE.X2_FACTOR : 1) * (g.eventoMod?.goldMul || 1));
   g.score += points;
   g.runStats.pickups += 1;
   g.runStats.maxCombo = Math.max(g.runStats.maxCombo, g.multiplier);
@@ -842,6 +854,7 @@ export function render(time) {
     const contrast = state.settings.highContrast;
     for (const o of g.obstacles) drawObstacle(ctx, o, { contrast, time, reduceMotion: g.reduceMotion });
     if (g.mode !== 'gameover') drawDangerChevrons(ctx);
+    drawEventoOverlay(ctx, g, time);   // véu/colunas do evento ativo (sai limpo)
     // Bloom da luz projetada (§11): o "lighter" da orbe roda em
     // resolução fracionária (Alto 1/4, Médio 1/6, Baixo desligado) num
     // offscreen em cache e é esticado com suavização — custo ~16x

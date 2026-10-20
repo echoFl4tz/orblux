@@ -47,6 +47,7 @@ const DEFAULT_SETTINGS = {
   // 1ª visita: respeita o que o usuário pediu no sistema operacional;
   // a escolha salva nos ajustes sempre sobrescreve este default.
   reduceMotion: prefersReducedMotion(),
+  eventos: true,       // 1.1.0: eventos de partida (Configurações → Jogabilidade)
   highContrast: false,   // obstáculos com contorno branco extra (a11y)
   imageQuality: 'auto',  // qualidade de imagem: auto | alta | media | baixa (A7/HD)
   imageQualitySeed: null, // A8: 'sonda' = alta semeada, 'usuario' = escolha manual, 'healada' = sonda recuou

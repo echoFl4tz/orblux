@@ -1450,6 +1450,51 @@ body[data-screen="gameover"] .toasts {
   pointer-events: none;
 }
 
+/* faixa de evento (1.1.0): aviso pulsante → ativo com barra de duração */
+.hud-evento {
+  --ev-cor: var(--primary);
+  position: absolute;
+  top: max(10px, env(safe-area-inset-top));
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 16px;
+  border-radius: var(--r-full);
+  background: var(--surface-1);
+  border: 1.5px solid var(--ev-cor);
+  color: var(--ev-cor);
+  font-family: var(--font-display);
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  white-space: nowrap;
+  pointer-events: none;
+  z-index: 6;
+}
+.hud-evento.aviso { animation: eventoAviso 0.5s steps(2, end) infinite; }
+@keyframes eventoAviso {
+  50% { box-shadow: 0 0 0 3px color-mix(in srgb, var(--ev-cor) 28%, transparent); }
+}
+.hud-evento.aviso .evento-barra { display: none; }
+.hud-evento .evento-barra {
+  width: 64px;
+  height: 4px;
+  border-radius: var(--r-full);
+  background: color-mix(in srgb, var(--ev-cor) 25%, transparent);
+  overflow: hidden;
+}
+.hud-evento .evento-barra i {
+  display: block;
+  height: 100%;
+  background: var(--ev-cor);
+  transform-origin: left;
+  transform: scaleX(1);
+}
+/* movimento reduzido: aviso estático (sem pulsar) — regra do design */
+.reduce-motion .hud-evento.aviso { animation: none; box-shadow: 0 0 0 2px color-mix(in srgb, var(--ev-cor) 28%, transparent); }
+
 .hud-toast {
   position: absolute;
   top: 26%;

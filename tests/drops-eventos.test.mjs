@@ -95,6 +95,7 @@ const {
 } = await import('../js/game/spawner.js');
 const { hashSeed, mulberry32 } = await import('../net/rng.js');
 const drops = await import('../js/game/drops.js');
+const eventos = await import('../js/game/eventos.js');
 const { on } = await import('../js/core/events.js');
 
 const DT = 1 / 60;
@@ -427,4 +428,88 @@ test('drop cristal: credita moedas no fim com teto de 5 por partida', () => {
     assert.equal(drops.spawnDrop(fakeG({ level: 2, dropCounts: { cristal: 5 } })), false, 'teto: não nasce mais');
     assert.equal(drops.spawnDrop(fakeG({ level: 1 })), false, 'nível 1: incomuns exigem nível 2');
   } finally { drops.DROP_CONFIG.length = 0; drops.DROP_CONFIG.push(...backup); }
+});
+
+// ---------------------------------------------------------
+//  Scheduler de eventos
+// ---------------------------------------------------------
+let evSeq = 0;
+/** Registra n eventos sintéticos temporários e sempre limpa depois. */
+function comEventos(n, fn, dur = 3) {
+  const ids = [];
+  for (let i = 0; i < n; i++) {
+    const id = `evteste${evSeq++}`;
+    eventos.EVENT_CONFIG.push({
+      id, nome: `Evento ${i}`, desc: 'teste', cor: '#ffffff', dur, nivelMin: 2, cd: 20,
+    });
+    eventos.EFEITOS[id] = {};
+    ids.push(id);
+  }
+  try {
+    return fn(ids);
+  } finally {
+    for (const id of ids) {
+      const i = eventos.EVENT_CONFIG.findIndex((c) => c.id === id);
+      if (i >= 0) eventos.EVENT_CONFIG.splice(i, 1);
+      delete eventos.EFEITOS[id];
+    }
+  }
+}
+
+test('eventos: 1º após 25s e nível ≥2; aviso 2s; 1 por vez; fim limpo; intervalo ≥35s', () => {
+  comEventos(1, ([id]) => {
+    const g = fakeG({ level: 1 });
+    eventos.resetEventos(g);
+    assert.equal(g.eventoProx, 25, '1º evento nunca antes de 25 s');
+    eventos.updateEventos(g, 30);
+    assert.equal(g.evento, null, 'nível 1: nada agenda (exige nível ≥2)');
+    g.level = 2;
+    eventos.updateEventos(g, 8);              // retry de 8 s
+    assert.ok(g.evento && g.evento.fase === 'aviso', 'agenda o aviso no nível 2');
+    assert.equal(g.evento.id, id);
+    assert.equal(g.evento.resto, 2, 'aviso dura exatamente 2 s');
+    eventos.updateEventos(g, 2.1);
+    assert.equal(g.evento.fase, 'ativo', 'aviso vira ativo');
+    eventos.updateEventos(g, 1);
+    assert.equal(g.evento.id, id, 'nunca dois eventos ao mesmo tempo');
+    g.eventoHouveBatida = true;               // bateu durante o evento
+    eventos.updateEventos(g, 999);            // duração passa → encerra
+    assert.equal(g.evento, null, 'fim: nada fica pendurado');
+    assert.equal(g.eventoMod, null, 'fim: mods zerados (nunca vaza efeito)');
+    assert.ok(g.eventoProx >= 35 && g.eventoProx <= 45, 'intervalo mínimo de 35 s');
+    assert.equal(g.runStats.events, 1, 'evento completado conta (mesmo falhando)');
+  });
+});
+
+test('eventos: Corrida do Dia e ajuste desligam; rng próprio é determinístico', () => {
+  assert.equal(eventos.eventosAtivos(fakeG({ runSeed: 'dia-42' })), false, 'corrida do dia: off garantido');
+  eventos.setEventosOn(false);
+  try {
+    assert.equal(eventos.eventosAtivos(fakeG()), false, 'flag off: sem eventos');
+    const g = fakeG({ level: 5 });
+    eventos.resetEventos(g);
+    eventos.updateEventos(g, 200);
+    assert.equal(g.evento, null, 'com flag off o agendador nem tenta');
+  } finally {
+    eventos.setEventosOn(true);
+  }
+  const seq = () => comEventos(2, (ids) => {
+    const out = [];
+    for (let r = 0; r < 3; r++) {
+      eventos.setEventosRng('agenda-x');
+      const g = fakeG({ level: 5 });
+      eventos.resetEventos(g);
+      for (let i = 0; i < 12; i++) {
+        eventos.updateEventos(g, 8);
+        // rótulo estável (índice) — os ids sintéticos têm número único por rodada
+        out.push(g.evento ? `${ids.indexOf(g.evento.id)}:${g.evento.fase}` : '-');
+      }
+    }
+    return out;
+  });
+  const s1 = seq();
+  const s2 = seq();
+  assert.deepEqual(s1, s2, 'mesma semente ⇒ mesma agenda de eventos');
+  assert.ok(s1.some((v) => v.endsWith(':aviso')) && s1.some((v) => v.endsWith(':ativo')),
+    'a agenda deve variar entre avisos e ativos');
 });
