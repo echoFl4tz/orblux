@@ -62,7 +62,13 @@ export const EVENT_CONFIG = [
     cor: '#B6FF3D',
     dur: 10, nivelMin: 2, cd: 45,
   },
-  // próximos eventos entram aqui um por commit
+  {
+    id: 'apagao',
+    nome: 'Apagão',
+    desc: 'A luz cai — só os pulsos e você continuam brilhando',
+    cor: '#B388FF',
+    dur: 10, nivelMin: 4, cd: 60,
+  },
 ];
 
 /** Handlers por id (adicionados junto do evento correspondente). */
@@ -191,6 +197,39 @@ EFEITOS.comboFrenesi = {
   },
   fim(g) {
     g.eventoMod = null;
+  },
+};
+
+// ---------- Apagão ----------
+/** Sprite radial em cache (barato; sem shadowBlur/blur por frame). */
+let haloSprite = null;
+function garanteHalo() {
+  if (haloSprite) return haloSprite;
+  const c = document.createElement('canvas');
+  c.width = 48; c.height = 48;
+  const cc = c.getContext('2d');
+  const grad = cc.createRadialGradient(24, 24, 2, 24, 24, 24);
+  grad.addColorStop(0, 'rgba(34, 230, 255, 0.5)');
+  grad.addColorStop(1, 'rgba(34, 230, 255, 0)');
+  cc.fillStyle = grad;
+  cc.fillRect(0, 0, 48, 48);
+  haloSprite = c;
+  return c;
+}
+
+EFEITOS.apagao = {
+  desenhar(ctx, g) {
+    // véu escuro + halo dos pulsos (sprite em cache; composição simples)
+    ctx.save();
+    ctx.fillStyle = 'rgba(2, 4, 14, 0.55)';
+    ctx.fillRect(0, 0, g.W, g.H);
+    const spr = garanteHalo();
+    ctx.globalCompositeOperation = 'lighter';
+    for (const pk of g.pickups) {
+      const r = pk.r * 3.2;
+      ctx.drawImage(spr, pk.x - r, pk.y - r, r * 2, r * 2);
+    }
+    ctx.restore();
   },
 };
 

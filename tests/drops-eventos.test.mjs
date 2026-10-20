@@ -609,3 +609,22 @@ test('evento frenesi de combo: janela 6s, pulso extra por 1,2s e fim limpo', () 
   eventos.EFEITOS.comboFrenesi.fim(g);
   assert.equal(g.eventoMod, null, 'fim: mods zerados');
 });
+
+test('evento apagão: véu escuro + halo dos pulsos com sprite em cache', () => {
+  const cfg = eventos.EVENT_CONFIG.find((c) => c.id === 'apagao');
+  assert.ok(cfg, 'config do apagão deve existir');
+  assert.equal(cfg.nivelMin, 4, 'evento raro: nível alto');
+  const g = fakeG({ level: 4, pickups: [{ x: 100, y: 200, r: 10 }] });
+  g.evento = { id: 'apagao', cfg, fase: 'ativo', resto: cfg.dur, dur: cfg.dur };
+  let drawCalls = 0;
+  const ctx = {
+    save() {}, restore() {}, fillRect() { drawCalls++; },
+    drawImage() { drawCalls++; }, globalCompositeOperation: '', fillStyle: '',
+  };
+  eventos.EFEITOS.apagao.desenhar(ctx, g);
+  assert.equal(drawCalls, 2, '1 véu + 1 halo por pulso (composição barata)');
+  drawCalls = 0;
+  g.pickups.push({ x: 300, y: 100, r: 10 });
+  eventos.EFEITOS.apagao.desenhar(ctx, g);
+  assert.equal(drawCalls, 3, 'halo acompanha a quantidade de pulsos');
+});
