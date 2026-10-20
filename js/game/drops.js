@@ -17,7 +17,7 @@ import { sfx } from '../core/audio.js';
 import { state } from '../core/state.js';
 import { hashSeed, mulberry32 } from '../../net/rng.js';
 import { createPickup, circlesHit } from './entities.js';
-import { ring, floatText } from './particles.js';
+import { ring, floatText, shockwave } from './particles.js';
 
 /** Vidas máximas (espelha LIVES_START de game.js — constante local p/ não criar ciclo). */
 const VIDAS_MAX = 3;
@@ -75,6 +75,15 @@ export const DROP_CONFIG = [
     icone: 'ic-lock',
     cor: '#5FF0E0',
     dur: 8, raridade: 'incomum', peso: 16, nivelMin: 2, cd: 10,
+  },
+  {
+    id: 'nova',
+    nome: 'Nova',
+    desc: 'Limpa a tela e pontua por item removido',
+    icone: 'ic-nova',
+    cor: '#FFF4D6',
+    dur: 0, raridade: 'rara', peso: 7, nivelMin: 3, cd: 15,
+    teto: 3,               // no máximo 3 Novas por partida
   },
   // próximos drops entram aqui um por commit
 ];
@@ -170,6 +179,32 @@ GLIFOS.combo = (ctx, x, y, r) => {
   ctx.lineTo(x + r * 0.45, y - r * 0.1);
   ctx.stroke();
   ctx.strokeRect(x - r * 0.62, y - r * 0.1, r * 1.24, r * 0.95);
+};
+
+// ---------- Nova ----------
+EFEITOS.nova = (g, cfg) => {
+  // remove obstáculos e drones da tela; +30 por item (teto de 10 itens)
+  const itens = g.obstacles.length;
+  g.obstacles.length = 0;
+  const pts = Math.min(itens, 10) * 30;
+  g.score += pts;
+  ring(g.player.x, g.player.y, cfg.cor, 20, 520);
+  if (!g.reduceMotion) shockwave(g.player.x, g.player.y, cfg.cor, 220 * g.S);
+  floatText(g.player.x, g.player.y - 40 * g.S, itens > 0 ? `NOVA! +${pts}` : 'NOVA!', cfg.cor, 22);
+};
+
+GLIFOS.nova = (ctx, x, y, r) => {
+  // estrela de 8 pontas (explosão)
+  ctx.beginPath();
+  for (let i = 0; i < 4; i++) {
+    const a = (i * Math.PI) / 4;
+    ctx.moveTo(x - Math.cos(a) * r, y - Math.sin(a) * r);
+    ctx.lineTo(x + Math.cos(a) * r, y + Math.sin(a) * r);
+  }
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.arc(x, y, r * 0.28, 0, Math.PI * 2);
+  ctx.stroke();
 };
 
 function byId(id) {

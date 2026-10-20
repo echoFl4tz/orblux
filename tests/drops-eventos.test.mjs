@@ -153,7 +153,8 @@ test('determinismo: spawner original idêntico ao snapshot pré-mudanças', () =
 function fakeG(extra = {}) {
   return {
     W: 390, H: 844, S: 1, runSeed: null, level: 1, lives: 3, score: 0,
-    player: null, obstacles: [], pickups: [], powerups: [],
+    player: { x: 100, y: 200, r: 15 },
+    obstacles: [], pickups: [], powerups: [],
     drops: [], dropFx: {}, dropCd: {}, dropCounts: {}, dropSemTempo: 0,
     dropTimer: 0, reduceMotion: false,
     runStats: { pickups: 0, maxCombo: 1, powerups: 0, nearMiss: 0, drops: 0, crystals: 0, dropsByKind: {} },
@@ -362,4 +363,28 @@ test('drop trava de combo: congela por 8s e expira com mapa limpo', () => {
   drops.updateDrops(g, 4.01);
   assert.equal(drops.fx(g, 'combo'), 0);
   assert.deepEqual(g.dropFx, {}, 'fim limpo: nada vaza no mapa de efeitos');
+});
+
+test('drop nova: limpa a tela, pontua (teto 10 itens) e some após 3 por partida', () => {
+  const cfg = drops.DROP_CONFIG.find((c) => c.id === 'nova');
+  assert.ok(cfg, 'config da nova deve existir');
+  assert.equal(cfg.teto, 3, 'regra: no máximo 3 Novas por partida');
+  const g = fakeG({ obstacles: Array.from({ length: 14 }, () => ({ type: 'bar' })) });
+  drops.EFEITOS.nova(g, cfg, { x: 10, y: 10 });
+  assert.equal(g.obstacles.length, 0, 'toda a tela limpa');
+  assert.equal(g.score, 300, '+30 por item com teto de 10 itens');
+  drops.EFEITOS.nova(g, cfg, { x: 10, y: 10 });
+  assert.equal(g.score, 300, 'tela vazia não pontua');
+  // pool some ao bater o teto da partida
+  const backup = [...drops.DROP_CONFIG];
+  drops.DROP_CONFIG.length = 0;
+  drops.DROP_CONFIG.push(cfg);
+  try {
+    drops.setDropsRng('nova');
+    const g3 = fakeG({ level: 3, dropCounts: { nova: 3 } });
+    assert.equal(drops.spawnDrop(g3), false, 'atingiu o teto: não nasce mais');
+  } finally {
+    drops.DROP_CONFIG.length = 0;
+    drops.DROP_CONFIG.push(...backup);
+  }
 });

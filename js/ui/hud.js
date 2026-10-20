@@ -29,6 +29,7 @@ const CHIP_MAP = {
   fantasma: { icone: 'ic-phase', label: 'FASE' },
   tempo: { icone: 'ic-slow', label: 'CÂMARA' },
   combo: { icone: 'ic-lock', label: 'TRAVA' },
+  nova: { icone: 'ic-nova', label: 'NOVA' },
 };
 
 /** Flash vermelho rápido nas bordas ao levar dano (respeita mov. reduzido no CSS). */
