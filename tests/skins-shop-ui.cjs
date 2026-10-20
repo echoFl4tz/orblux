@@ -6,6 +6,7 @@
      (3) cancelar compra e silencioso (sem erro, sem skin)
      (4) personalização persiste e "Restaurar padrão" funciona
      (5) posse/equip persistem após recarregar
+      (5b) "Equipar" do DETALHE equipa (regressão: botão com data-id)
      (6) pacote Coleção Completa concede as 20 pagas
      (7) "Restaurar compras" recupera pelo provedor
      (8) loja indisponível (vitrine): sem preço, compra desabilitada
@@ -149,6 +150,22 @@ const skinsState = (page) =>
   await page.waitForSelector('#shop-grid .skin-card');
   st = await skinsState(page);
   ok(!!st.owned.supernova && st.equipped === 'supernova', '(5) posse e skin equipada persistem após reload');
+
+  // (5b) equipar pelo botão do DETALHE — regressão: o botão saía sem data-id
+  // e o handler lia el.dataset.id = undefined => equipSkin(undefined) falhava
+  // em silêncio (skin comprada nunca equipava).
+  await page.click('[data-id="oceano"]');
+  await page.waitForSelector('#shop-detail:not([hidden])');
+  await page.click('#detail-actions [data-shop="equip"]');
+  await page.waitForTimeout(300);
+  st = await skinsState(page);
+  ok(st.equipped === 'oceano', '(5b) "Equipar" do detalhe equipa a skin possuída');
+  ok((await page.locator('#detail-actions .chip-success').textContent()).includes('Equipada'),
+    '(5b) detalhe troca o botão pelo chip "Equipada"');
+  ok((await page.locator('[data-id="oceano"] .skin-card-state').textContent()).includes('Equipada'),
+    '(5b) card da grade marca "Equipada"');
+  await page.click('#shop-detail [data-shop="back"]');
+  await page.waitForSelector('#shop-grid .skin-card', { state: 'visible' });
 
   // (6) pacote Coleção Completa
   await page.click('[data-shop="bundle"]');

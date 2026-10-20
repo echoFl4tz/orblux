@@ -248,6 +248,7 @@ function renderDetailActions() {
     b.className = `btn ${cls}`;
     b.textContent = label;
     b.dataset.shop = action;
+    b.dataset.id = detailId;           // id da skin aberta (o handler lê data-id)
     return b;
   };
 
@@ -681,7 +682,8 @@ function onShopClick(e) {
   initAudio(); resumeAudio();
   if (state.settings.haptics && navigator.vibrate) { try { navigator.vibrate(10); } catch { /* ok */ } }
   const val = el.dataset.val;
-  const id = el.dataset.id;
+  // ações do detalhe podem vir sem data-id: caem na skin aberta (detailId)
+  const id = el.dataset.id || detailId;
 
   switch (el.dataset.shop) {
     case 'filter': {
