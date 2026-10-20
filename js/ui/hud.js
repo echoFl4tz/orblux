@@ -26,6 +26,7 @@ const CHIP_MAP = {
   // drops novos (1.1.0) entram aqui junto do drop correspondente
   ima: { icone: 'ic-magnet', label: 'ÍMÃ' },
   coracao: { icone: 'ic-repair', label: 'REPARO' },
+  fantasma: { icone: 'ic-phase', label: 'FASE' },
 };
 
 /** Flash vermelho rápido nas bordas ao levar dano (respeita mov. reduzido no CSS). */

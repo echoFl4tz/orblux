@@ -324,3 +324,16 @@ test('drop reparo: +1 vida (máx 3); some com vida cheia; dobra com 1 vida', () 
   assert.equal(g.lives, 3, 'nunca passa do máximo');
   assert.equal(g.score, 50, 'com vida cheia vira +50 pontos');
 });
+
+test('drop fantasma: atravessa obstáculos por 4s e expira limpo', () => {
+  const cfg = drops.DROP_CONFIG.find((c) => c.id === 'fantasma');
+  assert.ok(cfg, 'config do fantasma deve existir');
+  assert.equal(cfg.nivelMin, 3);
+  const g = fakeG();
+  drops.ativarFx(g, 'fantasma', cfg.dur);
+  assert.equal(drops.fx(g, 'fantasma'), 4);
+  drops.updateDrops(g, 2);
+  assert.ok(drops.fx(g, 'fantasma') > 0, 'ainda ativo no meio da duração');
+  drops.updateDrops(g, 2.01);
+  assert.equal(drops.fx(g, 'fantasma'), 0, 'expira e sai do mapa de efeitos');
+});

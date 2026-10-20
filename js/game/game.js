@@ -12,7 +12,7 @@ import {
   circleRectHit, circlesHit, COLORS,
 } from './entities.js';
 import { difficultyParams, spawnObstacles, spawnPickupWave, spawnPowerup, resetSpawner, setSpawnerRng, nextSpawnTimer, nextPickupTimer, nextPowerTimer } from './spawner.js';
-import { resetDrops, updateDrops, spawnDrop, drawDrops, tryCollectDrop, nextDropTimer, dropsAtivos, setDropsRng, atracaoRaio } from './drops.js';
+import { resetDrops, updateDrops, spawnDrop, drawDrops, tryCollectDrop, nextDropTimer, dropsAtivos, setDropsRng, atracaoRaio, fx } from './drops.js';
 import { hashSeed, mulberry32 } from '../../net/rng.js';
 import { SCORE, waveForTime, waveBonus } from '../../net/rules.js';
 import { equippedLook, skinCollectFx } from './skinrender.js';
@@ -650,7 +650,8 @@ export function update(dt) {
       }
     }
 
-    if (!hit || p.invuln > 0) continue;
+    // Fase (1.1.0): enquanto ativa, atravesca obstáculos sem levar dano
+    if (!hit || p.invuln > 0 || fx(g, 'fantasma') > 0) continue;
 
     if (p.shield) {
       p.shield = false;
@@ -870,7 +871,18 @@ export function render(time) {
         ctx.globalCompositeOperation = 'source-over';
       }
     }
-    drawPlayer(ctx, g.player, time, g.reduceMotion, equippedLook());
+    // Fase (1.1.0): orbe translúcida; pisca suave nos últimos 1,5 s
+    const faseResto = fx(g, 'fantasma');
+    if (faseResto > 0) {
+      ctx.save();
+      ctx.globalAlpha = faseResto < 1.5
+        ? 0.55 + 0.28 * Math.sin(time / 143)   // ~1,1 Hz: abaixo do teto de flashes
+        : 0.55;
+      drawPlayer(ctx, g.player, time, g.reduceMotion, equippedLook());
+      ctx.restore();
+    } else {
+      drawPlayer(ctx, g.player, time, g.reduceMotion, equippedLook());
+    }
     drawParticles(ctx);
     drawTexts(ctx);
   } else {

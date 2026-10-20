@@ -51,6 +51,14 @@ export const DROP_CONFIG = [
     dobroVidaBaixa: true,     // com 1 vida a chance dobra
     som: 'drop_prot',
   },
+  {
+    id: 'fantasma',
+    nome: 'Fase',
+    desc: 'Atravessa obstáculos por alguns segundos',
+    icone: 'ic-phase',
+    cor: '#B18CFF',
+    dur: 4, raridade: 'rara', peso: 8, nivelMin: 3, cd: 14,
+  },
   // próximos drops entram aqui um por commit
 ];
 
@@ -100,6 +108,19 @@ GLIFOS.coracao = (ctx, x, y, r) => {
   ctx.lineTo(x + r * 0.5, y - r * 0.8);
   ctx.lineTo(x + r * 0.95, y - r * 0.05);
   ctx.closePath();
+  ctx.stroke();
+};
+
+// ---------- Fase ----------
+EFEITOS.fantasma = (g, cfg) => ativarFx(g, 'fantasma', cfg.dur);
+
+GLIFOS.fantasma = (ctx, x, y, r) => {
+  // anel duplo (fantasma/transpor)
+  ctx.beginPath();
+  ctx.arc(x, y, r * 0.92, 0, Math.PI * 2);
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.arc(x, y, r * 0.45, 0, Math.PI * 2);
   ctx.stroke();
 };
 
