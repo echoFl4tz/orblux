@@ -26,6 +26,10 @@ export const ACHIEVEMENTS = [
   { id: 'record', icon: 'ic-trophy', name: 'Campeão', desc: 'Bata seu próprio recorde', tier: 'media', test: (r) => r.isRecord },
   { id: 'missions_all', icon: 'ic-check', name: 'Dedicado', desc: 'Complete todas as missões do dia', tier: 'media', test: (r) => r.missionsAll },
   { id: 'revive', icon: 'ic-heart', name: 'Segunda chance', desc: 'Reviva com um anúncio', tier: 'pequena', test: (r) => r.revived },
+  // 1.1.0 — eventos e drops (camada aditiva)
+  { id: 'event_first', icon: 'ic-flag', name: 'Primeiro evento', desc: 'Complete seu primeiro evento de partida', tier: 'pequena', test: (r) => (r.events || 0) >= 1 },
+  { id: 'event_clean', icon: 'ic-shield', name: 'Sem arranhão', desc: 'Sobreviva a uma Tempestade de Barreiras sem bater', tier: 'media', test: (r) => (r.eventsClean || 0) >= 1 },
+  { id: 'drop_kinds', icon: 'ic-magnet', name: 'Colecionador de drops', desc: 'Pegue cada tipo de drop pelo menos uma vez', tier: 'media', test: (r) => Object.keys(r.stats.dropKinds || {}).length >= 8 },
 ];
 
 export function initAchievements() {

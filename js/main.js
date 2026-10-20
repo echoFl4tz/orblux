@@ -131,6 +131,8 @@ function boot() {
     const kinds = run.dropsByKind || {};
     st.dropKinds = st.dropKinds || {};
     for (const k of Object.keys(kinds)) st.dropKinds[k] = (st.dropKinds[k] || 0) + kinds[k];
+    st.eventsCompleted = (st.eventsCompleted || 0) + (run.events || 0);
+    st.eventsClean = (st.eventsClean || 0) + (run.eventsClean || 0);
     const bestAnterior = st.best;
     const isRecord = run.score > st.best;
     if (isRecord) st.best = run.score;

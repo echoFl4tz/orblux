@@ -20,6 +20,10 @@ const TEMPLATES = [
   { id: 'survive45', icon: 'ic-clock', text: 'Sobreviva 45 segundos', target: 45, field: 'elapsed', mode: 'max', d: 'facil' },
   { id: 'play3', icon: 'ic-play', text: 'Jogue 3 partidas', target: 3, field: 'runs', mode: 'sum', d: 'facil' },
   { id: 'powerups2', icon: 'ic-shield', text: 'Pegue 2 power-ups', target: 2, field: 'powerups', mode: 'sum', d: 'medio' },
+  // 1.1.0 — drops/eventos (sem mudar as recompensas: tiers já existentes)
+  { id: 'magnets3', icon: 'ic-magnet', text: 'Pegue 3 Ímãs', target: 3, field: 'magnets', mode: 'sum', d: 'medio' },
+  { id: 'events2', icon: 'ic-flag', text: 'Complete 2 eventos', target: 2, field: 'events', mode: 'sum', d: 'medio' },
+  { id: 'stormClean', icon: 'ic-shield', text: 'Sobreviva a uma Tempestade sem bater', target: 1, field: 'stormClean', mode: 'sum', d: 'dificil' },
 ];
 
 /** Pick determinístico por dia (sem aleatoriedade entre recargas). */
@@ -108,6 +112,10 @@ function reportRun(run) {
   applyProgress('maxCombo', run.maxCombo, 'max');
   applyProgress('elapsed', run.elapsed, 'max');
   applyProgress('powerups', run.powerups, 'sum');
+  // 1.1.0 — drops/eventos (camada aditiva; sem recompensa nova)
+  applyProgress('magnets', run.dropsByKind?.ima || 0, 'sum');
+  applyProgress('events', run.events || 0, 'sum');
+  applyProgress('stormClean', run.eventsClean || 0, 'sum');
   saveMissions();
 }
 

@@ -97,6 +97,7 @@ const { hashSeed, mulberry32 } = await import('../net/rng.js');
 const drops = await import('../js/game/drops.js');
 const eventos = await import('../js/game/eventos.js');
 const { on } = await import('../js/core/events.js');
+const { state } = await import('../js/core/state.js');
 
 const DT = 1 / 60;
 
@@ -627,4 +628,22 @@ test('evento apagão: véu escuro + halo dos pulsos com sprite em cache', () => 
   g.pickups.push({ x: 300, y: 100, r: 10 });
   eventos.EFEITOS.apagao.desenhar(ctx, g);
   assert.equal(drawCalls, 3, 'halo acompanha a quantidade de pulsos');
+});
+
+// ---------------------------------------------------------
+//  Integrações (missões, conquistas, stats, ajuste)
+// ---------------------------------------------------------
+//  Integrações (stats, ajuste, payload)
+// ---------------------------------------------------------
+test('integrações: stats novos no estado e ajuste Eventos ligado por padrão', () => {
+  for (const k of ['totalDrops', 'dropKinds', 'eventsCompleted', 'eventsClean', 'vistoDrops', 'vistoEventos']) {
+    assert.ok(k in state.stats, `state.stats.${k} deve existir`);
+  }
+  assert.notEqual(state.settings.eventos, false, 'eventos ligado por padrão');
+});
+
+test('integrações: runStats vira payload serializável do fim de jogo', () => {
+  const g = fakeG();
+  drops.resetDrops(g);
+  assert.deepEqual(g.runStats, { pickups: 0, maxCombo: 1, powerups: 0, nearMiss: 0, drops: 0, crystals: 0, dropsByKind: {} });
 });

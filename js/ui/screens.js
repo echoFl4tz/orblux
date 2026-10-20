@@ -206,7 +206,7 @@ export function returnToMenu() {
 }
 
 /** Tela de fim de jogo com contagem animada do placar. */
-export function showGameOver({ score, best, bestAnterior, isRecord, position, elapsed, pickups, maxCombo, level, wave, nearMiss, revived }) {
+export function showGameOver({ score, best, bestAnterior, isRecord, position, elapsed, pickups, maxCombo, level, wave, nearMiss, revived, drops = 0, events = 0 }) {
   const scoreEl = document.getElementById('go-score');
   document.getElementById('go-best').textContent = (best || 0).toLocaleString('pt-BR');
   document.getElementById('go-record').hidden = !isRecord;
@@ -230,6 +230,8 @@ export function showGameOver({ score, best, bestAnterior, isRecord, position, el
     <div class="go-stat">${icon('ic-clock')}<b>${mins}:${String(secs).padStart(2, '0')}</b>${revived ? '<span class="go-revived">reviveu</span>' : ''}</div>
     <div class="go-stat">${icon('ic-pulse')}<b>${pickups}</b> pulsos</div>
     <div class="go-stat">${icon('ic-flame')}máx <b>x${maxCombo}</b></div>
+    ${drops > 0 ? `<div class="go-stat">${icon('ic-magnet')}<b>${drops}</b> drops</div>` : ''}
+    ${events > 0 ? `<div class="go-stat">${icon('ic-flag')}<b>${events}</b> eventos</div>` : ''}
     ${position && position <= 5 ? `<div class="go-stat go-rank">${icon('ic-trophy')}<b>${position}º</b> lugar</div>` : ''}`;
 
   // com recorde, Compartilhar vira primário ao lado do replay (P1-5)
@@ -615,6 +617,7 @@ function bindSettings() {
   const haptics = document.getElementById('set-haptics');
   const reduce = document.getElementById('set-reduce');
   const tut = document.getElementById('set-tutorial');
+  const evts = document.getElementById('set-eventos');
   const contrast = document.getElementById('set-contrast');
   const quality = document.getElementById('set-quality');
 
@@ -639,6 +642,11 @@ function bindSettings() {
   tut.addEventListener('change', () => {
     if (tut.checked) resetTutorialFlag();
     else markTutorialDone();
+  });
+  evts.addEventListener('change', () => {
+    state.settings.eventos = evts.checked;
+    saveSettings();
+    sfx('ui');
   });
   contrast.addEventListener('change', () => {
     state.settings.highContrast = contrast.checked;
@@ -673,6 +681,7 @@ export function applySettingsToUI() {
   document.getElementById('set-contrast').checked = !!s.highContrast;
   document.getElementById('set-quality').value = s.imageQuality || 'auto';
   document.getElementById('set-tutorial').checked = !state.tutorialDone;
+  document.getElementById('set-eventos').checked = s.eventos !== false;
   document.body.classList.toggle('reduce-motion', s.reduceMotion);
   setReduceMotion(s.reduceMotion);
   applyGlassMode();                      // P0-5
