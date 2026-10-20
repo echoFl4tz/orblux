@@ -388,3 +388,26 @@ test('drop nova: limpa a tela, pontua (teto 10 itens) e some após 3 por partida
     drops.DROP_CONFIG.push(...backup);
   }
 });
+
+test('drop surto: fileira de 3 pulsos à frente, determinística pelo rng próprio', () => {
+  const cfg = drops.DROP_CONFIG.find((c) => c.id === 'surto');
+  assert.ok(cfg, 'config do surto deve existir');
+  const rodada = () => {
+    drops.setDropsRng('surto-teste');
+    const g = fakeG({ pickups: [], player: { x: 100, y: 300, r: 15 } });
+    drops.EFEITOS.surto(g, cfg, { x: 100, y: 300 });
+    return g;
+  };
+  const g = rodada();
+  assert.equal(g.pickups.length, 3, 'fileira de 3 pulsos');
+  for (const pk of g.pickups) {
+    assert.ok(pk.y < g.player.y, 'nascem à frente (acima) do jogador');
+    assert.ok(pk.y >= -40 * g.S - 1, 'nunca acima do topo da tela');
+  }
+  const g2 = rodada();
+  assert.deepEqual(
+    g2.pickups.map((p2) => [p2.x, p2.y, p2.vy]),
+    g.pickups.map((p2) => [p2.x, p2.y, p2.vy]),
+    'mesma semente ⇒ mesmas posições/velocidades (rng próprio)',
+  );
+});

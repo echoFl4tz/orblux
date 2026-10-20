@@ -85,7 +85,15 @@ export const DROP_CONFIG = [
     dur: 0, raridade: 'rara', peso: 7, nivelMin: 3, cd: 15,
     teto: 3,               // no máximo 3 Novas por partida
   },
-  // próximos drops entram aqui um por commit
+  {
+    id: 'surto',
+    nome: 'Surto de pulsos',
+    desc: 'Solta uma fileira de pulsos à sua frente',
+    icone: 'ic-surge',
+    cor: '#22E6FF',
+    dur: 0, raridade: 'incomum', peso: 15, nivelMin: 1, cd: 6,
+  },
+  // próximo drop entra aqui (cristal, último)
 ];
 
 /** Efeito por id (adicionado junto do drop correspondente). */
@@ -205,6 +213,33 @@ GLIFOS.nova = (ctx, x, y, r) => {
   ctx.beginPath();
   ctx.arc(x, y, r * 0.28, 0, Math.PI * 2);
   ctx.stroke();
+};
+
+// ---------- Surto de pulsos ----------
+EFEITOS.surto = (g, cfg) => {
+  const S = g.S;
+  const base = 46 * S;
+  const cx = Math.max(base, Math.min(g.W - base, g.player.x));
+  const y = Math.max(-40 * S, g.player.y - 140 * S);
+  // fileira de 3 pulsos acima do jogador (velocidades com jitter do rng próprio)
+  for (let i = -1; i <= 1; i++) {
+    g.pickups.push(createPickup(cx + i * base, y - Math.abs(i) * 18 * S, S, rngDrops));
+  }
+};
+
+GLIFOS.surto = (ctx, x, y, r) => {
+  // fileira de 3 losangos (pulsos extras)
+  for (let i = -1; i <= 1; i++) {
+    const lx = x + i * r * 0.78;
+    const rr = i === 0 ? r * 0.52 : r * 0.42;
+    ctx.beginPath();
+    ctx.moveTo(lx, y - rr);
+    ctx.lineTo(lx + rr * 0.72, y);
+    ctx.lineTo(lx, y + rr);
+    ctx.lineTo(lx - rr * 0.72, y);
+    ctx.closePath();
+    ctx.stroke();
+  }
 };
 
 function byId(id) {

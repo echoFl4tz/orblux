@@ -30,6 +30,7 @@ const CHIP_MAP = {
   tempo: { icone: 'ic-slow', label: 'CÂMARA' },
   combo: { icone: 'ic-lock', label: 'TRAVA' },
   nova: { icone: 'ic-nova', label: 'NOVA' },
+  surto: { icone: 'ic-surge', label: 'SURTO' },
 };
 
 /** Flash vermelho rápido nas bordas ao levar dano (respeita mov. reduzido no CSS). */
