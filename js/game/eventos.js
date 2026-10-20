@@ -48,6 +48,13 @@ export const EVENT_CONFIG = [
     cor: '#FF6B6B',
     dur: 12, nivelMin: 3, cd: 55,
   },
+  {
+    id: 'hora_dourada',
+    nome: 'Hora Dourada',
+    desc: 'Cada pulso coletado vale 50% a mais de pontos',
+    cor: '#FFD54A',
+    dur: 8, nivelMin: 2, cd: 45,
+  },
   // próximos eventos entram aqui um por commit
 ];
 
@@ -134,6 +141,25 @@ EFEITOS.tempestade = {
     ctx.fillStyle = 'rgba(255, 107, 107, 0.55)';
     ctx.fillRect(gl - 2 * S, alvo.y, 2 * S, g.H - alvo.y);
     ctx.fillRect(gr, alvo.y, 2 * S, g.H - alvo.y);
+    ctx.restore();
+  },
+};
+
+// ---------- Hora Dourada ----------
+EFEITOS.hora_dourada = {
+  inicio(g) {
+    // só a coleta vale ×1,5 (bônus fixos e near-miss intactos; cap pela
+    // duração de8 s — nunca multiplica pontos/segundo indefinidamente)
+    g.eventoMod = { goldMul: 1.5 };
+  },
+  fim(g) {
+    g.eventoMod = null;
+  },
+  desenhar(ctx, g) {
+    // tom quente sutil no mundo (≤8% de alfa — nunca ofusca o jogo)
+    ctx.save();
+    ctx.fillStyle = 'rgba(255, 196, 64, 0.07)';
+    ctx.fillRect(0, 0, g.W, g.H);
     ctx.restore();
   },
 };

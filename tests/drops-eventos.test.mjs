@@ -578,3 +578,18 @@ test('evento tempestade: rota segura garantida em 500+ sementes', () => {
   }
   assert.ok(total >= 500, `barreiras validadas: ${total} (mínimo 500)`);
 });
+
+test('evento hora dourada: coleta ×1,5 durante 8s e some limpo', () => {
+  const cfg = eventos.EVENT_CONFIG.find((c) => c.id === 'hora_dourada');
+  assert.ok(cfg, 'config da hora dourada deve existir');
+  assert.equal(cfg.nivelMin, 2);
+  assert.equal(cfg.dur, 8, 'duração curta: o bônus tem teto pelo tempo');
+  const g = fakeG({ level: 2 });
+  g.evento = { id: 'hora_dourada', cfg, fase: 'ativo', resto: cfg.dur, dur: cfg.dur };
+  eventos.EFEITOS.hora_dourada.inicio(g);
+  assert.equal(g.eventoMod.goldMul, 1.5);
+  // espelha o cálculo do game.js: pulso 10 × multiplicador 2 × x2 × 1,5
+  assert.equal(Math.round(10 * 2 * 2 * g.eventoMod.goldMul), 60);
+  eventos.EFEITOS.hora_dourada.fim(g);
+  assert.equal(g.eventoMod, null, 'fim: mods zerados');
+});
