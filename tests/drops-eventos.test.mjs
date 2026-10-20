@@ -593,3 +593,19 @@ test('evento hora dourada: coleta ×1,5 durante 8s e some limpo', () => {
   eventos.EFEITOS.hora_dourada.fim(g);
   assert.equal(g.eventoMod, null, 'fim: mods zerados');
 });
+
+test('evento frenesi de combo: janela 6s, pulso extra por 1,2s e fim limpo', () => {
+  const cfg = eventos.EVENT_CONFIG.find((c) => c.id === 'comboFrenesi');
+  assert.ok(cfg, 'config do frenesi deve existir');
+  assert.equal(cfg.nivelMin, 2);
+  const g = fakeG({ level: 2, pickups: [] });
+  g.evento = { id: 'comboFrenesi', cfg, fase: 'ativo', resto: cfg.dur, dur: cfg.dur };
+  eventos.EFEITOS.comboFrenesi.inicio(g);
+  assert.equal(g.eventoMod.comboWindow, 6, 'janela de3,5 para6 s');
+  const antes = g.pickups.length;
+  for (let i = 0; i < 60; i++) eventos.EFEITOS.comboFrenesi.tick(g, 1 / 60);  // 1 s
+  assert.ok(g.pickups.length >= antes + 1 && g.pickups.length <= antes + 2,
+    'um pulso extra a cada1,2 s (moderado)');
+  eventos.EFEITOS.comboFrenesi.fim(g);
+  assert.equal(g.eventoMod, null, 'fim: mods zerados');
+});

@@ -55,6 +55,13 @@ export const EVENT_CONFIG = [
     cor: '#FFD54A',
     dur: 8, nivelMin: 2, cd: 45,
   },
+  {
+    id: 'comboFrenesi',
+    nome: 'Frenesi de Combo',
+    desc: 'Janela do combo dobrada — mantenha a sequência viva',
+    cor: '#B6FF3D',
+    dur: 10, nivelMin: 2, cd: 45,
+  },
   // próximos eventos entram aqui um por commit
 ];
 
@@ -161,6 +168,29 @@ EFEITOS.hora_dourada = {
     ctx.fillStyle = 'rgba(255, 196, 64, 0.07)';
     ctx.fillRect(0, 0, g.W, g.H);
     ctx.restore();
+  },
+};
+
+// ---------- Frenesi de Combo ----------
+EFEITOS.comboFrenesi = {
+  inicio(g) {
+    g.eventoMod = { comboWindow: 6 };      // janela 3,5 →6 s (collectPulse lê)
+    g.evAcc = 0.6;
+  },
+  tick(g, dt) {
+    // um pulso extra a cada1,2 s com o rng dos eventos (combo sem fome)
+    g.evAcc -= dt;
+    if (g.evAcc <= 0) {
+      g.evAcc = 1.2;
+      const S = g.S;
+      const margem = 40 * S;
+      g.pickups.push(createPickup(
+        margem + rngEventos() * (g.W - margem * 2), -40 * S, S, rngEventos,
+      ));
+    }
+  },
+  fim(g) {
+    g.eventoMod = null;
   },
 };
 
