@@ -4,11 +4,12 @@ Jogo arcade neon para navegador — **colete pulsos, acumule combos (até ×5) e
 Partidas de 1 a 3 minutos, grátis, leve, funciona no celular e no computador.
 100% HTML + CSS + JavaScript puro (sem frameworks, sem dependências, fontes auto-hospedadas).
 
-A partir da **1.1.0** a partida ganha **8 drops** (Ímã, Reparo, Fase, Câmara lenta, Trava de
-combo, Nova, Surto de pulsos e Cristal) e **5 eventos** (Chuva de Pulsos, Tempestade de
-Barreiras, Hora Dourada, Frenesi de Combo e Apagão), todos com aviso, regras de teto e
-desligáveis em Ajustes. Tudo numa camada aditiva: o spawner original é intocado e a
-Corrida do Dia continua bit a bit idêntica (há teste de determinismo).
+A partir da **1.1.0** a partida ganha **11 drops** (Ímã, Reparo, Fase, Turbo, Câmara lenta,
+Trava de combo, Escudo de pulso, Dreno, Nova, Surto de pulsos e Cristal) e **5 eventos**
+(Chuva de Pulsos, Tempestade de Barreiras, Hora Dourada, Frenesi de Combo e Apagão),
+todos com aviso, regras de teto e desligáveis em Ajustes. Tudo numa camada aditiva: o
+spawner original é intocado e a Corrida do Dia continua bit a bit idêntica (há teste de
+determinismo).
 
 > 📌 Renomeado de "Pulso Neon" para **ORBLUX**. O prefixo das chaves do `localStorage`
 > permanece `pn_` de propósito, para não apagar o progresso de jogadores antigos.
@@ -156,7 +157,7 @@ pulso-neon/
 3. **Missões semanais** além das diárias, com medalha exclusiva.
 4. **Novos obstáculos**: lasers horizontais, perseguidores e paredes com portais.
 5. **Mais 3 eventos** (backlog da 1.1.0): Ondas de Drones, Gravidade Invertida e Chefe Final.
-6. **Mais drops** com sinergia (bússola, multiplicador de cristal, escudo de pulso).
+6. **Mais drops** com sinergia (bússola, multiplicador de cristal).
 7. **Conquistas sociais**: "superei o recorde de X" com link direto.
 8. **Board de recordes mundial** com nomes curtos (já com estrutura Supabase pronta).
 9. **Beta PWA completo**: tela de "atualização disponível" e botão de instalar mais visível.

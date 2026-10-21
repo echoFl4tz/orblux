@@ -32,6 +32,10 @@ const CHIP_MAP = {
   nova: { icone: 'ic-nova', label: 'NOVA' },
   surto: { icone: 'ic-surge', label: 'SURTO' },
   cristal: { icone: 'ic-crystal', label: 'CRISTAL' },
+  // 1.1.0 — drops extras
+  turbo: { icone: 'ic-turbo', label: 'TURBO' },
+  escudo_pulso: { icone: 'ic-shield', label: 'ESCUDO', ateUsar: true },
+  dreno: { icone: 'ic-dreno', label: 'DRENO' },
 };
 
 /** Flash vermelho rápido nas bordas ao levar dano (respeita mov. reduzido no CSS). */
@@ -173,13 +177,18 @@ export function initHud() {
     chip.innerHTML = `
       <svg class="ic ic-sm" aria-hidden="true"><use href="#${info.icone}"/></svg>
       <span class="chip-label">${info.label}</span>
-      ${duration ? `<span class="chip-time">${Number(duration).toFixed(1)}s</span>` : ''}`;
+      ${duration && !info.ateUsar ? `<span class="chip-time">${Number(duration).toFixed(1)}s</span>` : ''}`;
     chip._p = 1;                          // cache da contagem radial (--p, P1-4)
     el.powerups.appendChild(chip);
-    // drops instantâneos (duration 0): chip de confirmação que some sozinho
-    if (!duration) setTimeout(() => chip.remove(), 1600);
+    // drops instantâneos (duration === 0 EXATO): chip de confirmação que some
+    // sozinho. Escudo legado emite sem duration (undefined) e "até usar" não
+    // pode sumir — ambos ficam até o evento game:shield / powerup:end.
+    if (duration === 0 && !info.ateUsar) setTimeout(() => chip.remove(), 1600);
   });
-  on('game:shield', () => document.getElementById('power-shield')?.remove());
+  on('game:shield', () => {
+    document.getElementById('power-shield')?.remove();
+    document.getElementById('power-escudo_pulso')?.remove();   // drop "até usar"
+  });
   on('game:powerup:end', ({ kind }) => document.getElementById(`power-${kind}`)?.remove());
 
   const hideHud = () => { el.hud.hidden = true; el.tutorial.hidden = true; };

@@ -68,8 +68,11 @@ da tela, nenhuma peça invade a passagem).
 | `nova` | Nova | remove obstáculos/drones da tela; +30/item (teto 10 itens) | instant. | rara | 7 | 3 | 15 s | 3/partida |
 | `surto` | Surto de pulsos | fileira de 3 pulsos à frente | instant. | incomum | 15 | 1 | 6 s | — |
 | `cristal` | Cristal | +3 moedas da partida | instant. | incomum | 10 | 2 | 12 s | 5/partida |
+| `turbo` | Turbo | velocidade do jogador +35% | 5 s | incomum | 13 | 1 | 9 s | — |
+| `escudo_pulso` | Escudo de pulso | absorve a próxima batida (reusa o escudo legado; chip sem prazo) | até usar | incomum | 9 | 2 | 13 s | — |
+| `dreno` | Dreno | +12 fixos por pulso coletado (não multiplica com goldMul/x2) | 6 s | incomum | 12 | 2 | 10 s | — |
 
-Spawn: primeiro ~7 s, depois 9–13 s (timer próprio). Nasce a ≥90×S de
+Spawn: primeiro ~6 s, depois 7–10 s (timer próprio; 11 tipos no total). Nasce a ≥90×S de
 qualquer obstáculo (4 tentativas, senão desiste). Forma = categoria, cor =
 papel (nunca vermelho em drop positivo). Toast curto na primeira vez de cada
 um (`state.stats.vistoDrops`).

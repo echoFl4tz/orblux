@@ -274,10 +274,10 @@ test('drops: coleta conta runStats e toast de novelty é único', () => {
   }
 });
 
-test('drops: resetDrops — 7 s sem semente; Infinity na corrida do dia', () => {
+test('drops: resetDrops — 6 s sem semente; Infinity na corrida do dia', () => {
   const gA = fakeG();
   drops.resetDrops(gA);
-  assert.equal(gA.dropTimer, 7);
+  assert.equal(gA.dropTimer, 6);
   const gB = fakeG({ runSeed: 'dia' });
   drops.resetDrops(gB);
   assert.equal(gB.dropTimer, Infinity);
@@ -429,6 +429,60 @@ test('drop cristal: credita moedas no fim com teto de 5 por partida', () => {
     assert.equal(drops.spawnDrop(fakeG({ level: 2, dropCounts: { cristal: 5 } })), false, 'teto: não nasce mais');
     assert.equal(drops.spawnDrop(fakeG({ level: 1 })), false, 'nível 1: incomuns exigem nível 2');
   } finally { drops.DROP_CONFIG.length = 0; drops.DROP_CONFIG.push(...backup); }
+});
+
+// ---------------------------------------------------------
+//  Drops extras 1.1.0 — Turbo, Escudo de pulso, Dreno
+// ---------------------------------------------------------
+test('drops 1.1.0 extras: config/efeitos/glifos dos 3 novos e frequência 7–10 s', () => {
+  for (const id of ['turbo', 'escudo_pulso', 'dreno']) {
+    const cfg = drops.DROP_CONFIG.find((c) => c.id === id);
+    assert.ok(cfg, `config de ${id} existe`);
+    assert.ok(cfg.desc && cfg.icone, `${id} tem desc e ícone (toast de novelty)`);
+    assert.ok(drops.EFEITOS[id], `efeito de ${id} existe`);
+    assert.ok(drops.GLIFOS[id], `glifo de ${id} existe`);
+    assert.ok(cfg.peso > 0 && cfg.nivelMin >= 1 && cfg.cd >= 0);
+  }
+  // frequência: 1º aos 6 s e intervalos de 7–10 s
+  drops.setDropsRng('freq-111');
+  const g = fakeG();
+  drops.resetDrops(g);
+  assert.equal(g.dropTimer, 6, 'primeiro drop aos 6 s');
+  for (let i = 0; i < 200; i++) {
+    const t = drops.nextDropTimer();
+    assert.ok(t >= 7 && t <= 10, `intervalo ${t.toFixed(2)} dentro de 7–10 s`);
+  }
+});
+
+test('drop turbo: acelera 35% e expira junto do efeito', () => {
+  const cfg = drops.DROP_CONFIG.find((c) => c.id === 'turbo');
+  const g = fakeG();
+  assert.equal(drops.velocidadeMul(g), 1, 'sem turbo: velocidade normal');
+  drops.EFEITOS.turbo(g, cfg);
+  assert.equal(drops.fx(g, 'turbo'), cfg.dur);
+  assert.equal(drops.velocidadeMul(g), 1.35, 'com turbo: +35%');
+  drops.updateDrops(g, cfg.dur + 0.01);
+  assert.equal(drops.velocidadeMul(g), 1, 'expira e volta ao normal');
+});
+
+test('drop escudo de pulso: arma o escudo legado; protegido vira +50', () => {
+  const cfg = drops.DROP_CONFIG.find((c) => c.id === 'escudo_pulso');
+  assert.equal(cfg.ateUsar, true, 'marcado como "até usar" (chip sem prazo)');
+  const g = fakeG();
+  drops.EFEITOS.escudo_pulso(g, cfg);
+  assert.equal(g.player.shield, true, 'escudo legado armado (onHit absorve)');
+  drops.EFEITOS.escudo_pulso(g, cfg);
+  assert.equal(g.score, 50, 'já protegido: vira +50 (nunca desperdiça)');
+});
+
+test('drop dreno: +12 fixos por coleta, sem multiplicar pelo goldMul', () => {
+  const cfg = drops.DROP_CONFIG.find((c) => c.id === 'dreno');
+  const g = fakeG();
+  assert.equal(drops.bonusDreno(g), 0, 'sem dreno: sem bônus');
+  drops.EFEITOS.dreno(g, cfg);
+  assert.equal(drops.bonusDreno(g), 12, 'com dreno: +12 por coleta');
+  drops.updateDrops(g, cfg.dur + 0.01);
+  assert.equal(drops.bonusDreno(g), 0, 'expira e volta a zero');
 });
 
 // ---------------------------------------------------------

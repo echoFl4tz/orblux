@@ -2,15 +2,19 @@
 
 ## 1.1.0 — 20/10/2026 (eventos de partida + drops)
 
-### Novos drops (8, camada aditiva — o jogo base continua igual)
+### Novos drops (11, camada aditiva — o jogo base continua igual)
 - **Ímã** (comum, nível 1): atrai pulsos próximos por 7 s.
 - **Reparo** (rara, nível 2): recupera 1 vida; some com vida cheia, chance dobra com 1 vida.
 - **Fase** (rara, nível 3): atravessa obstáculos por 4 s (orbe translúcida).
+- **Turbo** (incomum, nível 1): velocidade do jogador +35% por 5 s.
 - **Câmara lenta** (incomum, nível 2): mundo a 70% por 5 s — a pontuação não muda.
 - **Trava de combo** (incomum, nível 2): congela a janela do combo por 8 s.
+- **Escudo de pulso** (incomum, nível 2): absorve a próxima batida; fica armado até usar.
+- **Dreno** (incomum, nível 2): +12 fixos por pulso coletado por 6 s (não multiplica com x2/Hora Dourada).
 - **Nova** (rara, nível 3): limpa a tela; +30 por item (teto de 10 itens); no máximo 3 por partida.
 - **Surto de pulsos** (incomum, nível 1): solta uma fileira de 3 pulsos.
 - **Cristal** (incomum, nível 2): vale 3 moedas ao fim da partida (teto de 5).
+- Spawn: primeiro ~6 s, depois a cada 7–10 s.
 - Regras: no máximo 3 efeitos simultâneos (renovar não empilha), spawn nunca sobre barreira, RNG próprio separado do spawner (determinismo bit a bit do jogo base garantido por teste).
 
 ### Novos eventos de partida (5, com aviso de 2 s)
@@ -29,9 +33,13 @@
 - Estatísticas novas salvas: total de drops, tipos coletados, eventos completados e sem arranhão.
 - Corrida do Dia (partida semeada) mantém tudo novo desligado — mesma semente, mesma corrida para todos.
 
+### Correções (20/10/2026)
+- Loja de skins: botão **Equipar** na tela de detalhe da skin não equipava (faltava `data-id` no botão); corrigido e coberto por teste de regressão.
+- Chip do escudo do HUD: o escudo "até usar" não pode mais sumir do chip após 1,6 s (colateral do chip de confirmação de drops instantâneos).
+
 ### Técnico
-- Service worker cache v13 (inclui `js/game/drops.js` e `js/game/eventos.js`).
-- 26 testes novos (determinismo, cap de efeitos, rota segura em 500 sementes, scheduler) + smoke 62/62.
+- Service worker cache v14 (inclui `js/game/drops.js` e `js/game/eventos.js`; força atualização nos clientes).
+- 33 testes novos (determinismo, cap de efeitos, rota segura em 500 sementes, scheduler, drops extras) + smoke 62/62.
 
 ## 1.0.0 — 18/10/2026 (lançamento)
 

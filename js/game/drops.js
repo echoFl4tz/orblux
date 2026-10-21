@@ -102,6 +102,33 @@ export const DROP_CONFIG = [
     dur: 0, raridade: 'incomum', peso: 10, nivelMin: 2, cd: 12,
     teto: 5,               // no máximo 5 por partida (recompensa com teto)
   },
+  // ---- 1.1.0: 3 drops extras (mais variedade na partida) ----
+  {
+    id: 'turbo',
+    nome: 'Turbo',
+    desc: 'Você corre mais rápido por alguns segundos',
+    icone: 'ic-turbo',
+    cor: '#7CFF6B',
+    dur: 5, raridade: 'incomum', peso: 13, nivelMin: 1, cd: 9,
+  },
+  {
+    id: 'escudo_pulso',
+    nome: 'Escudo de pulso',
+    desc: 'Absorve a próxima batida — fica até usar',
+    icone: 'ic-shield',
+    cor: '#6BFFC3',
+    dur: 0, raridade: 'incomum', peso: 9, nivelMin: 2, cd: 13,
+    ateUsar: true,         // sem prazo: o chip fica armado até a batida
+    som: 'drop_prot',
+  },
+  {
+    id: 'dreno',
+    nome: 'Dreno',
+    desc: 'Cada pulso coletado vale +12 pontos por alguns segundos',
+    icone: 'ic-dreno',
+    cor: '#FF9D5C',
+    dur: 6, raridade: 'incomum', peso: 12, nivelMin: 2, cd: 10,
+  },
 ];
 
 /** Efeito por id (adicionado junto do drop correspondente). */
@@ -274,6 +301,70 @@ GLIFOS.cristal = (ctx, x, y, r) => {
   ctx.stroke();
 };
 
+// ---------- Turbo (1.1.0) ----------
+EFEITOS.turbo = (g, cfg) => ativarFx(g, 'turbo', cfg.dur);
+
+GLIFOS.turbo = (ctx, x, y, r) => {
+  // chevrons duplos apontando para baixo (acelerômetro)
+  for (const off of [-0.55, 0.25]) {
+    ctx.beginPath();
+    ctx.moveTo(x - r * 0.7, y + r * off);
+    ctx.lineTo(x, y + r * (off + 0.55));
+    ctx.lineTo(x + r * 0.7, y + r * off);
+    ctx.stroke();
+  }
+};
+
+// ---------- Escudo de pulso (1.1.0) — reusa a mecânica do escudo legado ----------
+EFEITOS.escudo_pulso = (g) => {
+  if (g.player && !g.player.shield) {
+    g.player.shield = true;           // onHit legado absorve e quebra o escudo
+    floatText(g.player.x, g.player.y - 30 * g.S, 'ESCUDO ARMADO', '#6BFFC3', 16);
+  } else {
+    g.score += 50;                    // já protegido: nunca desperdiça o drop
+  }
+};
+
+GLIFOS.escudo_pulso = (ctx, x, y, r) => {
+  // hexágono de escudo
+  ctx.beginPath();
+  for (let i = 0; i < 6; i++) {
+    const a = Math.PI / 6 + (i * Math.PI) / 3;
+    const px = x + Math.cos(a) * r * 0.92;
+    const py = y + Math.sin(a) * r * 0.92;
+    if (i === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+  }
+  ctx.closePath();
+  ctx.stroke();
+};
+
+// ---------- Dreno (1.1.0) ----------
+EFEITOS.dreno = (g, cfg) => ativarFx(g, 'dreno', cfg.dur);
+
+GLIFOS.dreno = (ctx, x, y, r) => {
+  // círculo central com raios convergindo (absorve pontos)
+  ctx.beginPath();
+  ctx.arc(x, y, r * 0.38, 0, Math.PI * 2);
+  ctx.stroke();
+  for (let i = 0; i < 4; i++) {
+    const a = Math.PI / 4 + (i * Math.PI) / 2;
+    ctx.beginPath();
+    ctx.moveTo(x + Math.cos(a) * r, y + Math.sin(a) * r);
+    ctx.lineTo(x + Math.cos(a) * r * 0.62, y + Math.sin(a) * r * 0.62);
+    ctx.stroke();
+  }
+};
+
+/** Multiplicador de velocidade do jogador (Turbo: +35%; lê g.dropFx). */
+export function velocidadeMul(g) {
+  return fx(g, 'turbo') > 0 ? 1.35 : 1;
+}
+
+/** Bônus fixo por coleta enquanto o Dreno está ativo (+12; bônus NÃO multiplica). */
+export function bonusDreno(g) {
+  return fx(g, 'dreno') > 0 ? 12 : 0;
+}
+
 function byId(id) {
   return DROP_CONFIG.find((c) => c.id === id) || null;
 }
@@ -298,9 +389,9 @@ export function setDropsRng(seed) {
   rngDrops = seed != null ? mulberry32(hashSeed(String(seed) + '|drops')) : Math.random;
 }
 
-/** Próximo intervalo entre drops (9–13 s, pelo rng próprio). */
+/** Próximo intervalo entre drops (7–10 s, pelo rng próprio). */
 export function nextDropTimer() {
-  return 9 + rngDrops() * 4;
+  return 7 + rngDrops() * 3;
 }
 
 // ---------------------------------------------------------
@@ -312,7 +403,7 @@ export function resetDrops(g) {
   g.dropCd = {};
   g.dropCounts = {};
   g.dropSemTempo = 0;
-  g.dropTimer = dropsAtivos(g) ? 7 : Infinity;
+  g.dropTimer = dropsAtivos(g) ? 6 : Infinity;
   if (g.runStats) {
     g.runStats.drops = 0;
     g.runStats.crystals = 0;

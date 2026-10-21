@@ -8,7 +8,7 @@
    Atualize CACHE_VERSION quando a lista PRECACHE mudar.
    ========================================================= */
 
-const CACHE_VERSION = 'orblux-v13';
+const CACHE_VERSION = 'orblux-v14';
 
 const PRECACHE = [
   './',

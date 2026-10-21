@@ -12,7 +12,7 @@ import {
   circleRectHit, circlesHit, COLORS,
 } from './entities.js';
 import { difficultyParams, spawnObstacles, spawnPickupWave, spawnPowerup, resetSpawner, setSpawnerRng, nextSpawnTimer, nextPickupTimer, nextPowerTimer } from './spawner.js';
-import { resetDrops, updateDrops, spawnDrop, drawDrops, tryCollectDrop, nextDropTimer, dropsAtivos, setDropsRng, atracaoRaio, fx } from './drops.js';
+import { resetDrops, updateDrops, spawnDrop, drawDrops, tryCollectDrop, nextDropTimer, dropsAtivos, setDropsRng, atracaoRaio, fx, velocidadeMul, bonusDreno } from './drops.js';
 import { updateEventos, drawEventoOverlay, resetEventos, setEventosRng } from './eventos.js';
 import { hashSeed, mulberry32 } from '../../net/rng.js';
 import { SCORE, waveForTime, waveBonus } from '../../net/rules.js';
@@ -555,7 +555,7 @@ export function update(dt) {
 
   // ---------- jogador ----------
   const p = g.player;
-  const speed = PLAYER_SPEED * S;
+  const speed = PLAYER_SPEED * S * velocidadeMul(g);   // Turbo: +35% por 5 s
   const ptr = getPointer();
   let moving = false;
 
@@ -785,8 +785,9 @@ function collectPulse(pk) {
   const prevMult = g.multiplier;
   g.multiplier = Math.min(MAX_MULT, 1 + Math.floor(g.combo / 4));
   // Hora Dourada multiplica só a coleta (goldMul), nunca os bônus fixos
+  // (o +12 do Dreno entra depois da multiplicação, como o x2)
   const points = Math.round(SCORE.PICKUP * g.multiplier
-    * (g.x2Timer > 0 ? SCORE.X2_FACTOR : 1) * (g.eventoMod?.goldMul || 1));
+    * (g.x2Timer > 0 ? SCORE.X2_FACTOR : 1) * (g.eventoMod?.goldMul || 1)) + bonusDreno(g);
   g.score += points;
   g.runStats.pickups += 1;
   g.runStats.maxCombo = Math.max(g.runStats.maxCombo, g.multiplier);
