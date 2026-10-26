@@ -5,6 +5,15 @@
 
 let container = null;
 
+/**
+ * Escapa dado de usuário/rede ANTES de entrar no innerHTML do toast.
+ * (defesa em profundidade: hoje todo texto que chega aqui já veio
+ * validado ou de catálogo estático, mas o toast é um sink genérico)
+ */
+function esc(s) {
+  return String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+}
+
 export function initToasts() {
   container = document.getElementById('toasts');
 }
@@ -21,13 +30,15 @@ export function showToast({ icon = 'ic-medal', title, desc = '', action = null, 
   if (document.body?.dataset?.screen === 'gameover' && container.children.length >= 1) return;
   const div = document.createElement('div');
   div.className = 'toast';
+  // icon precisa ser id de symbol do sprite (whitelist) — nunca dado da rede
+  const icone = /^[a-z0-9_-]{1,40}$/.test(String(icon)) ? String(icon) : 'ic-medal';
   div.innerHTML = `
-    <svg class="ic" aria-hidden="true"><use href="#${icon}"/></svg>
+    <svg class="ic" aria-hidden="true"><use href="#${icone}"/></svg>
     <div class="toast-body">
-      <div class="toast-title">${title}</div>
-      ${desc ? `<div class="toast-desc">${desc}</div>` : ''}
+      <div class="toast-title">${esc(title)}</div>
+      ${desc ? `<div class="toast-desc">${esc(desc)}</div>` : ''}
     </div>
-    ${action ? `<button class="btn btn-small toast-action">${action.label}</button>` : ''}
+    ${action ? `<button class="btn btn-small toast-action">${esc(action.label)}</button>` : ''}
     <span class="toast-bar"></span>`;
   if (action) {
     div.querySelector('.toast-action')?.addEventListener('click', () => {

@@ -1,0 +1,65 @@
+# =========================================================
+# ORBLUX — deploy SOMENTE dos arquivos do jogo no GitHub Pages.
+#
+# AUDITORIA 26/10/2026 (docs/REVISAO_COMPLETA.md S7): o Pages
+# publica hoje a raiz INTEIRA do repositório (tests/, tools/,
+# dev/, docs/, supabase/, *.md, .env.example). Este workflow
+# monta um artefato só com os arquivos jogáveis.
+#
+# COMO ATIVAR (manual — nada aqui roda sozinho):
+#   1. Revisão: decida se o deploy sobe por este workflow;
+#   2. Settings → Pages → Source: "GitHub Actions";
+#   3. Para disparar: Actions → "Deploy Pages (jogo)" → Run;
+#   4. Para publicar a cada push, descomente o bloco `push:`.
+# =========================================================
+
+name: Deploy Pages (jogo)
+
+on:
+  workflow_dispatch:
+  # push:
+  #   branches: [master]
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # Lista EXPLÍCITA do que vai ao ar (nada de tests/tools/docs/
+      # supabase/dev/*.md/.env.example — ver relatório da auditoria).
+      - name: Monta o pacote do jogo
+        run: |
+          mkdir -p site
+          for item in \
+            index.html privacy.html termos.html \
+            sw.js manifest.webmanifest favicon.svg logo.svg \
+            css js net vendor assets icons \
+          ; do
+            cp -r "$item" site/
+          done
+          # trava de segurança: nada fora da lista branca
+          find site -name '*.md' -o -name '.env*' -o -name '*.example' | xargs -r rm -f
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: site
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

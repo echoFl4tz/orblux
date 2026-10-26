@@ -2,6 +2,10 @@
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8">
+  <!-- CSP (auditoria 26/10/2026): sem scripts externos/inline hoje; os
+       domínios de anúncio já entram liberados para quando o snippet do
+       AdSense (comentado no fim do <head>) for ativado. Ver REVISAO_COMPLETA.md. -->
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://*.googlesyndication.com https://*.googleadservices.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https://*.googlesyndication.com https://*.doubleclick.net; font-src 'self'; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://*.googlesyndication.com; media-src 'self' blob: data:; worker-src 'self' blob:; frame-src https://*.googlesyndication.com https://*.doubleclick.net https://*.googleadservices.com; object-src 'none'; base-uri 'self'; form-action 'self'">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <title>ORBLUX — jogo arcade neon grátis no navegador</title>
   <meta name="description" content="ORBLUX é um jogo arcade neon rápido e viciante: colete pulsos, acumule combos e desvie das barreiras. Grátis, funciona no celular e no computador.">
