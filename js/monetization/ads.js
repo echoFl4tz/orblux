@@ -100,12 +100,16 @@ export function onRunEnd() {
 export function showInterstitial() {
   const modal = document.getElementById('ad-interstitial');
   const btn = document.getElementById('btn-close-ad');
-  const cd = document.getElementById('ad-countdown');
   if (!modal || !btn) return;
 
   modal.hidden = false;
   let secs = 5;
   btn.disabled = true;
+  // restaura o template ANTES de localizar a contagem: no fim da
+  // rodada anterior o innerHTML foi trocado e o span #ad-countdown
+  // antigo ficava "desanexado" — o novo countdown não aparecia
+  btn.innerHTML = AD_CLOSE_HTML;
+  const cd = document.getElementById('ad-countdown');
   cd.textContent = secs;
   clearInterval(countdownTimer);
   countdownTimer = setInterval(() => {
@@ -128,13 +132,15 @@ export function showInterstitial() {
 export function showRewarded(onReward) {
   const modal = document.getElementById('ad-reward');
   const btn = document.getElementById('btn-claim-reward');
-  const cd = document.getElementById('reward-countdown');
   const text = document.getElementById('reward-ad-text');
   if (!modal || !btn) return;
 
   modal.hidden = false;
   let secs = 5;
   btn.disabled = true;
+  // idem intersticial: template restaurado ANTES de achar o span da contagem
+  btn.innerHTML = AD_CLAIM_HTML;
+  const cd = document.getElementById('reward-countdown');
   cd.textContent = secs;
   text.innerHTML = 'Anúncio de exemplo rodando…<br>(no modo real, o vídeo do AdSense/AdSterra aparece aqui)';
   clearInterval(countdownTimer);

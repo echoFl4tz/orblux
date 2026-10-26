@@ -9,6 +9,7 @@ const keys = new Set();
 
 // Estado do ponteiro (arrastar): posição-alvo em coordenadas do canvas (CSS px)
 const pointer = { active: false, x: 0, y: 0 };
+let pointerId = null;      // só o DEDO/ MOUSE que começou o arrasto manda
 let canvas = null;
 
 const KEY_MAP = {
@@ -49,7 +50,11 @@ export function initInput(canvasEl) {
   });
 
   // Zera direções ao perder o foco (evita "andar sozinho" ao voltar p/ aba)
-  window.addEventListener('blur', () => keys.clear());
+  window.addEventListener('blur', () => { keys.clear(); pointer.active = false; pointerId = null; });
+  // mobile: visibilitychange pode vir sem blur — limpa igualmente
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden) { keys.clear(); pointer.active = false; pointerId = null; }
+  });
 
   // ---- Ponteiro (mouse + toque) ----
   const setTargetFromEvent = (e) => {
@@ -59,21 +64,29 @@ export function initInput(canvasEl) {
   };
 
   canvas.addEventListener('pointerdown', (e) => {
+    if (pointer.active) return;          // segundo dedo/mouse: ignora (1 dedo só)
     pointer.active = true;
+    pointerId = e.pointerId;
     setTargetFromEvent(e);
     canvas.setPointerCapture?.(e.pointerId);
     e.preventDefault();
   }, { passive: false });
 
   canvas.addEventListener('pointermove', (e) => {
-    if (!pointer.active) return;
+    if (!pointer.active || e.pointerId !== pointerId) return;
     setTargetFromEvent(e);
     e.preventDefault();
   }, { passive: false });
 
-  const endPointer = () => { pointer.active = false; };
+  const endPointer = (e) => {
+    if (e && e.pointerId !== undefined && e.pointerId !== pointerId) return;
+    pointer.active = false;
+    pointerId = null;
+  };
   canvas.addEventListener('pointerup', endPointer);
   canvas.addEventListener('pointercancel', endPointer);
+  // captura solta sem pointerup (ex.: janela de permissão de toque)
+  canvas.addEventListener('lostpointercapture', endPointer);
   canvas.addEventListener('pointerleave', endPointer);
 
   // Bloqueia zoom de duplo-toque e rolagem acidental dentro do canvas
@@ -103,6 +116,7 @@ export function getPointer() {
 export function resetInput() {
   keys.clear();
   pointer.active = false;
+  pointerId = null;
 }
 
 export function isTouchDevice() {

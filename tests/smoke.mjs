@@ -267,9 +267,12 @@ assert(game.mode === 'gameover', 'modo gameover ao zerar vidas');
 assert(overPayload && typeof overPayload.score === 'number', 'evento game:over emitido com resumo');
 assert(typeof overPayload.wave === 'number' && overPayload.wave >= 1, 'game:over inclui a onda da partida');
 assert(typeof overPayload.nearMiss === 'number' && overPayload.nearMiss >= 0, 'game:over inclui os desvios (near miss)');
-assert(state.stats.runs === 1, 'estatística de partidas incrementada');
-assert(state.ranking.length === 1, 'partida salva no ranking local');
-assert(state.achievements.first_run !== undefined, 'conquista "Primeiro pulso" desbloqueada');
+// auditoria 26/10: contabilidade ÚNICA por corrida (js/core/run-flow.js).
+// A 1ª morte deixa o revive pendente e NÃO contabiliza ainda.
+assert(typeof overPayload.runId === 'number' && overPayload.revivePossible === true,
+  'game:over carrega runId e revivePossible');
+assert(state.stats.runs === 0, 'contabilidade adiada (revive pendente não conta em dobro)');
+assert(state.ranking.length === 0, 'corrida pendente ainda não entrou no ranking');
 assert(getEl('screen-gameover').classList.contains('active'), 'tela de fim de jogo exibida');
 assert(getEl('hud').hidden === true, 'HUD escondido no fim de jogo');
 
@@ -286,8 +289,10 @@ game.lives = 1;
 game.obstacles.push(createObstacle('drone', game.player.x, game.player.y, game.S, 0));
 OX.advance(0.2);
 assert(game.mode === 'gameover', 'segundo game over ok');
-assert(state.stats.runs === 2, '2 partidas registradas');
-assert(state.ranking.length === 2, 'ranking com 2 entradas');
+assert(overPayload.revivePossible === false, 'morte final não oferece revive');
+assert(state.stats.runs === 1, '1 corrida registrada (morrer+reviver = UMA corrida)');
+assert(state.ranking.length === 1, 'ranking com 1 entrada (a pontuação final)');
+assert(state.achievements.first_run !== undefined, 'conquista "Primeiro pulso" desbloqueada');
 assert(state.achievements.revive !== undefined, 'conquista "Segunda chance" desbloqueada');
 quitToMenu();
 assert(game.mode === 'menu', 'sair para o menu funciona');
@@ -301,7 +306,8 @@ assert(t >= 5, 'não é game over instantâneo (dá reação)');
 assert(t <= 110, 'não é impossível sobreviver um tempo com jogo ativo');
 
 console.log('\n— Etapa K: persistência e reset —');
-assert(state.stats.runs >= 3, 'estatísticas continuam acumulando');
+quitToMenu();                                  // desiste do revive: pendente é contabilizada
+assert(state.stats.runs === 2, 'sair do menu descarrega a corrida pendente (2 corridas no total)');
 resetAllProgress();
 assert(state.stats.runs === 0 && state.ranking.length === 0, 'reset de progresso limpa tudo');
 

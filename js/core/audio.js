@@ -7,12 +7,20 @@ import { state } from './state.js';
 
 let ctx = null;            // AudioContext (criado no 1º gesto do usuário)
 let master = null;         // gain master (volume do usuário)
+let comp = null;           // compressor no master (limita picos de vozes)
 let musicGain = null;      // gain da música
 let sfxGain = null;        // gain dos efeitos
 let musicTimer = null;     // timer do sequenciador
 let musicStep = 0;
 let stepAt = -1e9;         // instante do último passo (para o fundo reativo)
 let available = true;      // false se Web Audio não existir
+let vozes = 0;             // osciladores vivos (teto p/ aparelho modesto)
+
+const MAX_VOZES = 24;      // vozes simultâneas de SFX
+// intervalo mínimo entre repetições do MESMO efeito (evita "buzina"
+// quando o jogo dispara muitos sinais juntos, ex.: ímã + combos)
+const SFX_GAP = { pickup: 45, drop: 60, drop_prot: 60, ui: 40, evento: 120 };
+const ultimoSfx = new Map();
 
 /** Deve ser chamado a partir de um gesto do usuário (política de autoplay). */
 export function initAudio() {
@@ -22,7 +30,9 @@ export function initAudio() {
     if (!AC) { available = false; return; }
     ctx = new AC();
     master = ctx.createGain();
-    master.connect(ctx.destination);
+    comp = ctx.createDynamicsCompressor();   // master compressor (auditoria Fase 2)
+    master.connect(comp);
+    comp.connect(ctx.destination);
     musicGain = ctx.createGain();
     sfxGain = ctx.createGain();
     musicGain.connect(master);
@@ -52,6 +62,7 @@ export function resumeAudio() {
 // ---------------------------------------------------------
 function tone({ freq = 440, freqEnd = null, type = 'sine', dur = 0.15, gain = 0.5, delay = 0, dest = null }) {
   if (!ctx || !available || !state.settings.sound) return;
+  if (vozes >= MAX_VOZES) return;          // teto de vozes simultâneas
   try {
     const t0 = ctx.currentTime + delay;
     const osc = ctx.createOscillator();
@@ -64,6 +75,8 @@ function tone({ freq = 440, freqEnd = null, type = 'sine', dur = 0.15, gain = 0.
     g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
     osc.connect(g);
     g.connect(dest || sfxGain);
+    vozes++;
+    osc.onended = () => { vozes = Math.max(0, vozes - 1); };
     osc.start(t0);
     osc.stop(t0 + dur + 0.05);
   } catch { /* áudio nunca derruba o jogo */ }
@@ -73,6 +86,11 @@ function tone({ freq = 440, freqEnd = null, type = 'sine', dur = 0.15, gain = 0.
 export function sfx(name, opts = {}) {
   if (!ctx || !available || !state.settings.sound) return;
   resumeAudio();
+  // mesmo efeito não repete rápido demais (auditoria Fase 2)
+  const agora = performance.now();
+  const gap = SFX_GAP[name] ?? 35;
+  if (agora - (ultimoSfx.get(name) || -1e9) < gap) return;
+  ultimoSfx.set(name, agora);
   switch (name) {
     case 'pickup': {
       const step = Math.min(opts.combo || 0, 16);
@@ -188,6 +206,7 @@ function scheduleMusicStep() {
 
 export function startMusic() {
   if (!ctx || musicTimer || !state.settings.music) return;
+  resumeAudio();              // contexto suspenso (iOS/Safari): sem resume, silêncio
   musicTimer = setInterval(scheduleMusicStep, STEP_TIME * 1000);
   if (musicGain) musicGain.gain.value = 0.35;
 }

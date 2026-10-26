@@ -27,7 +27,7 @@
 insert into public.app_rules (k, v) values
   ('run_max_pps', '3000'),        -- teto de pontos por segundo da partida
   ('run_pps_slack', '10000'),     -- folga de arranque (segundos × pps + slack)
-  ('run_submit_gap_s', '9')       -- segundos mínimos entre 2 envios (relógio do servidor)
+  ('run_submit_gap_s', '7')       -- segundos mínimos entre 2 envios (relógio do servidor; 7 < ~8s do ciclo mínimo reviver legítimo)
 on conflict (k) do update set v = excluded.v;
 
 -- =========================================================
@@ -66,8 +66,9 @@ begin
 
   -- NOVO (auditoria): rate limit por usuário no RELÓGIO DO SERVIDOR
   -- (o campo seconds é do cliente e não prova tempo decorrido).
-  -- 9 s < run_min_seconds (10 s), então quem joga de verdade
-  -- nunca esbarra; quem spamma envio cai aqui.
+  -- 7 s < ciclo mínimo do fluxo legítimo com reviver (anúncio 5 s +
+  -- invuln 2,6 s + nova morte ≈ 8 s) — quem joga de verdade nunca
+  -- esbarra; quem spamma envio cai aqui.
   select max(r.created_at) into last_at from public.runs r where r.user_id = p.id;
   if last_at is not null
      and now() - last_at < make_interval(secs => public.app_rule_i('run_submit_gap_s')) then

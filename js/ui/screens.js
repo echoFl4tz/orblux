@@ -67,6 +67,10 @@ export function initScreens() {
   window.addEventListener('blur', () => {
     if (game.mode === 'playing') { pausedByBlur = true; pauseGame(); showScreen('pause'); }
   });
+  // bfcache/navegação: nunca morrer em segundo plano (auditoria Fase 2)
+  window.addEventListener('pagehide', () => {
+    if (game.mode === 'playing') { pausedByBlur = true; pauseGame(); showScreen('pause'); }
+  });
 
   // atalhos de teclado
   on('input:pause', () => {

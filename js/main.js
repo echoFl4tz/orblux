@@ -28,6 +28,7 @@ import { initBilling, syncPurchases } from './monetization/billing.js';
 import * as wallet from './core/wallet.js';
 import * as economy from './core/economy.js';
 import { getApi } from '../net/api.js';
+import { createRunFlow } from './core/run-flow.js';
 import { burst, ring, shockwave, floatText, comboText, levelBanner, setPoolMax, countActive } from './game/particles.js';
 
 /**
@@ -118,7 +119,13 @@ function boot() {
   });
 
   // ---- fim de partida: estatísticas, ranking, missões, conquistas ----
-  on('game:over', (run) => {
+  // Contabilidade ÚNICA por corrida (run-flow.js): a 1ª morte mostra o
+  // painel com o reviver pendente; stats/moedas/missões/ranking só
+  // rodamos na morte FINAL (ou quando o jogador desiste do revive).
+  const runFlow = createRunFlow();
+
+  /** Contabilidade completa de uma corrida (1× por runId). */
+  const accountRun = (run) => {
     const st = state.stats;
     st.runs += 1;
     st.totalPickups += run.pickups;
@@ -138,10 +145,6 @@ function boot() {
     if (isRecord) st.best = run.score;
 
     // ---- moedas da partida (ECONOMIA.md) ----
-    // A fórmula pura já existia (calcRunCoins) mas NUNCA foi ligada aqui:
-    // agora o fim de jogo credita de verdade e o bloco "Você ganhou N
-    // moedas" recebe o payload (wallet:run-coins). Bônus de recorde só
-    // quando JÁ existia um recorde; 1ª partida do dia via lastRunDay.
     const hoje = todayKey();
     const primeiraDoDia = st.lastRunDay !== hoje;
     st.lastRunDay = hoje;
@@ -155,7 +158,6 @@ function boot() {
       firstRunToday: primeiraDoDia,
     });
     const creditado = wallet.earn(ganho + cristais * 3, 'partida', `run-${st.runs}`);
-    emit('wallet:run-coins', { coins: creditado.ok ? creditado.granted : 0 });
 
     saveStats();
 
@@ -171,14 +173,50 @@ function boot() {
       const nick = state.profile?.nickname || 'Jogador';
       showToast({ icon: 'ic-trophy', title: `Novo recorde, ${nick}!`, desc: `${run.score.toLocaleString('pt-BR')} pontos` });
     }
+    return { position, bestAnterior, isRecord, granted: creditado.ok ? creditado.granted : 0 };
+  };
 
-    showGameOver({ ...run, best: state.stats.best, bestAnterior, isRecord, position });
+  on('game:over', (run) => {
+    // leitura SEM mutar: o painel da 1ª morte precisa de recorde/gap
+    const bestAnterior = state.stats.best;
+    const isRecord = run.score > bestAnterior;
+
+    const res = runFlow.onGameOver(run);
+    if (res.flush) accountRun(res.flush);            // corrida abandonada antes do revive
+    const fin = res.account && res.run ? accountRun(res.run) : null;
+
+    // painel "Você ganhou N moedas" + dobrar: só quando creditamos de
+    // verdade (morte final). Projeto exibido sem creditar abriria o
+    // caminho dobrar+reviver = 3× as moedas.
+    const projetado = economy.calcRunCoins({
+      pickups: run.pickups, score: run.score, seconds: run.elapsed,
+      recordBroken: isRecord && bestAnterior > 0,
+      firstRunToday: state.stats.lastRunDay !== todayKey(),
+    }) + Math.min(run.crystals || 0, 5) * 3;
+    emit('wallet:run-coins', { coins: fin ? projetado : 0 });
+
+    // melhor valor para o painel: com contabilidade, o novo recorde já
+    // está gravado; sem (revive pendente), simula o efeito do placar
+    const best = fin ? state.stats.best
+      : (isRecord ? run.score : bestAnterior);
+    showGameOver({
+      ...run, best, bestAnterior, isRecord,
+      position: fin ? fin.position : null,
+    });
     adsOnRunEnd();
 
     // ranking global (camada social): fire-and-forget — flag desligada,
-    // sem perfil ou sem rede = silencioso; nunca atrasa nem falha a UI
+    // sem perfil ou sem rede = silencioso; nunca atrasa nem falha a UI.
+    // Enviamos SEMPRE (inclusive a 1ª morte): o servidor guarda o melhor
+    // e o intervalo (7 s) cobre o ciclo mínimo do revive.
     submitRunGlobal(run);
   });
+
+  // jogador desistiu do revive (menu/replay): a corrida pendente é
+  // contabilizada na hora, antes da próxima partida começar
+  const flushPendente = () => { const f = runFlow.onRunBoundary(); if (f) accountRun(f); };
+  on('game:start', flushPendente);
+  on('game:quit', flushPendente);
 
   // ---- reviver via anúncio recompensado ----
   on('ads:rewarded-revive', () => {
@@ -195,9 +233,8 @@ function boot() {
     }, 900);
   }
 
-  // ---- game loop (60 FPS com delta time) ----
-  // hudTick por frame mantém o HUD em sincronia (contagem do x2, perigo)
-  startLoop((dt) => { update(dt); hudTick(); }, render);
+  // ---- game loop (passo fixo 1/60; hudTick 1× por QUADRO, não por passo) ----
+  startLoop((dt) => { update(dt); }, (t) => { hudTick(); render(t); });
 
   // ---- sonda de qualidade (A8): depois do 1º quadro, sem atrasar o boot ----
   requestAnimationFrame(() => setTimeout(sondaQualidade, 350));
@@ -323,6 +360,13 @@ try {
   boot();
 } catch (err) {
   console.error('[boot] falha ao iniciar:', err);
-  document.body.insertAdjacentHTML('beforeend',
-    '<div style="position:fixed;inset:0;display:flex;align-items:center;justify-content:center;color:#fff;background:#05060f;font-family:sans-serif;padding:20px;text-align:center;z-index:99">Ops! Algo deu errado ao iniciar o jogo.<br>Recarregue a página.</div>');
+  const overlay = document.createElement('div');
+  overlay.style.cssText = 'position:fixed;inset:0;display:flex;flex-direction:column;gap:16px;align-items:center;justify-content:center;color:#fff;background:#05060f;font-family:sans-serif;padding:20px;text-align:center;z-index:99';
+  overlay.textContent = 'Ops! Algo deu errado ao iniciar o jogo.';
+  const btn = document.createElement('button');   // sem onclick inline (CSP)
+  btn.textContent = 'Recarregar';
+  btn.style.cssText = 'padding:12px 24px;font-size:1rem;color:#05060f;background:#22e6ff;border:0;border-radius:8px;cursor:pointer';
+  btn.addEventListener('click', () => location.reload());
+  overlay.appendChild(btn);
+  document.body.appendChild(overlay);
 }

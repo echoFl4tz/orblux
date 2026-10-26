@@ -153,7 +153,9 @@ async function newPage(browser, size, query) {
   ok(await mp.evaluate(() => OX.game.score) === 0, 'partida começa com 0 pontos (sem bônus de missão)');
 
   // (7) moedas da PARTIDA ligadas (ECONOMIA.md): 12 s paga e mostra o ganho
-  await mp.evaluate(() => { OX.game.player.invuln = 999; OX.advance(12); OX.endRun(); });
+  // reviveUsed=true simula a morte FINAL (com reviver pendente a
+  // contabilidade espera — ver js/core/run-flow.js)
+  await mp.evaluate(() => { OX.game.player.invuln = 999; OX.advance(12); OX.game.reviveUsed = true; OX.endRun(); });
   await mp.waitForSelector('#screen-gameover.active');
   const goCoins = await mp.evaluate(() => {
     const box = document.getElementById('go-coins');
@@ -173,7 +175,7 @@ async function newPage(browser, size, query) {
     `barra da próxima skin (${prog.skinLabel})`);
   ok(/\/3$/.test(prog.misFrac), `barra das missões do dia (${prog.misFrac})`);
   // partida curta (< 10 s) não paga e NUNCA mostra "Você ganhou 0 moedas"
-  await mp.evaluate(() => { OX.start({ tutorial: false }); OX.advance(5); OX.endRun(); });
+  await mp.evaluate(() => { OX.start({ tutorial: false }); OX.advance(5); OX.game.reviveUsed = true; OX.endRun(); });
   await mp.waitForTimeout(200);
   ok(await mp.evaluate(() => document.getElementById('go-coins').hidden),
     'partida de 5 s não paga (sem bloco "ganhou 0 moedas")');

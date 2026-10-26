@@ -66,7 +66,7 @@ test('migration: rate limit por usuário no relógio do servidor', () => {
 
 test('migration: réguas novas em app_rules (idempotente, on conflict)', () => {
   for (const [k, v] of [['run_max_pps', '3000'], ['run_pps_slack', '10000'],
-    ['run_submit_gap_s', '9']]) {
+    ['run_submit_gap_s', '7']]) {
     assert.ok(SQL.includes(`('${k}', '${v}')`), `app_rules['${k}'] = ${v} ausente`);
   }
   assert.ok(SQL.includes('on conflict (k) do update'), 'semeadura precisa ser idempotente');

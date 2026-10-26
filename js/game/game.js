@@ -56,6 +56,7 @@ export const game = {
   lives: LIVES_START, level: 1, wave: 1,
   elapsed: 0, sinceHit: 0,
   x2Timer: 0, reviveUsed: false, moved: false,
+  runSeq: 0,                    // contador de corridas (runId p/ contabilidade única)
   runStats: { pickups: 0, maxCombo: 1, powerups: 0, nearMiss: 0, drops: 0, crystals: 0, dropsByKind: {} },
 
   stars: [], bgOffset: 0,
@@ -98,7 +99,12 @@ export function resize() {
   const g = game;
   const w = window.innerWidth || document.documentElement.clientWidth;
   const h = window.innerHeight || document.documentElement.clientHeight;
-  g.dpr = Math.min(window.devicePixelRatio || 1, 2); // limita a 2 (performance)
+  // teto de devicePixelRatio POR QUALIDADE (auditoria Fase 2):
+  // alta ≤3 (nítida, opt-in), média ≤2 (padrão/automática), baixa =1
+  // (celular modesto: menos pixels para a GPU preencher)
+  const dprMax = state.settings.imageQuality === 'alta' ? 3
+    : state.settings.imageQuality === 'baixa' ? 1 : 2;
+  g.dpr = Math.min(window.devicePixelRatio || 1, dprMax);
   g.W = w; g.H = h;
   g.canvas.width = Math.round(w * g.dpr * g.resScale);
   g.canvas.height = Math.round(h * g.dpr * g.resScale);
@@ -296,6 +302,7 @@ export function startGame(opts = {}) {
   g.wave = 1;
   g.elapsed = 0; g.sinceHit = 0;
   g.x2Timer = 0; g.reviveUsed = false; g.moved = false;
+  g.runSeq += 1;                // corrida nova = id novo (contabilidade em run-flow.js)
   g.runStats = { pickups: 0, maxCombo: 1, powerups: 0, nearMiss: 0, drops: 0, crystals: 0, dropsByKind: {} };
   // Corrida do Dia: mesma semente ⇒ MESMA sequência de obstáculos para
   // todo mundo (net/rng.js). Sem semente = Math.random (partida normal).
@@ -392,6 +399,8 @@ function gameOver() {
     eventsClean: g.runStats.eventsClean,
     revived: g.reviveUsed,
     seed: g.runSeed || null,          // Corrida do Dia: semente usada (null = normal)
+    runId: g.runSeq,                  // identificador da corrida (contabilidade única)
+    revivePossible: !g.reviveUsed,    // ainda dá para reviver? (1ª morte = painel de revive)
   });
 }
 
