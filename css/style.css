@@ -677,8 +677,45 @@ body.reduce-motion .menu-main > * { animation: none; }
 }
 .top3-pts { color: var(--text-1); font-variant-numeric: tabular-nums; }
 .top3-row.muted { color: var(--text-2); }
-.menu-skin { margin: var(--s2) 0 0; font-size: var(--fs-caption); color: var(--text-2); }
-.menu-skin b { color: var(--primary); }
+/* P2: skin equipada — card visual clicável que abre a loja de skins */
+.menu-skin-card {
+  display: flex;
+  align-items: center;
+  gap: var(--s3);
+  width: 100%;
+  padding: var(--s2) var(--s3);
+  background: var(--surface-ghost);
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  cursor: pointer;
+  text-align: left;
+  font: inherit;
+  color: inherit;
+  transition: border-color var(--dur-2) var(--ease), background var(--dur-2) var(--ease);
+}
+.menu-skin-card:hover { border-color: var(--primary); background: var(--surface-2); }
+.menu-skin-orb {
+  width: 44px;
+  height: 44px;
+  flex: none;
+  filter: drop-shadow(0 0 8px var(--skin-glow, rgba(34, 230, 255, 0.45)));
+}
+.menu-skin-text { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.menu-skin-label {
+  font-size: var(--fs-caption);
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--text-2);
+  font-weight: 600;
+}
+.menu-skin-name {
+  color: var(--primary);
+  font-size: 0.95rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.menu-skin-card .ic { color: var(--text-2); transform: rotate(-90deg); }
 @media (max-width: 959px) { .menu-top3 { display: none; } }   /* desktop-only */
 
 /* Espaço de anúncio (altura reservada = sem layout shift) */

@@ -260,11 +260,20 @@
           <ul id="missions-list" class="missions-list"></ul>
         </section>
 
-        <!-- P2: pódio local + skin equipada — só na coluna do desktop -->
+        <!-- P2: skin equipada — card visual clicável (abre a loja de skins) -->
+        <button id="menu-skin-card" class="menu-skin-card" data-action="skins" type="button">
+          <canvas id="menu-skin-orb" class="menu-skin-orb" width="96" height="96" aria-hidden="true"></canvas>
+          <span class="menu-skin-text">
+            <span class="menu-skin-label">Skin equipada</span>
+            <b id="menu-skin-name" class="menu-skin-name">Orbe</b>
+          </span>
+          <svg class="ic" aria-hidden="true"><use href="#ic-chevron"/></svg>
+        </button>
+
+        <!-- P2: pódio local — só na coluna do desktop -->
         <section id="menu-top3" class="menu-top3" aria-label="Melhores pontuações" hidden>
           <p class="menu-top3-title">Top local</p>
           <ol id="menu-top3-list" class="top3-list"></ol>
-          <p class="menu-skin">Skin: <b id="menu-skin-name">Orbe</b></p>
         </section>
 
         <!-- Espaço de anúncio (banner). Escondido sem anúncio real/consentimento.

@@ -14,7 +14,7 @@ import { showToast, trimToasts, clearToasts } from './toasts.js';
 import { updateHudMenuBest, resetHud } from './hud.js';
 import { closeAllAds, showRewarded } from '../monetization/ads.js';
 import { renderMissions } from './missions.js';
-import { equippedLook } from '../game/skinrender.js';   // P1-1: orbe do logo = skin equipada
+import { equippedLook, getBodySprite } from '../game/skinrender.js';   // P1-1: orbe do logo = skin equipada
 
 const SCREEN_IDS = {
   menu: 'screen-menu',
@@ -85,9 +85,10 @@ export function initScreens() {
 
   on('stats:changed', updateBestDisplay);
   on('state:reset', () => { updateBestDisplay(); applySettingsToUI(); });
-  on('skins:changed', () => { applyLogoSkin(); renderMenuTop3(); });  // P1-1/P2
+  on('skins:changed', () => { applyLogoSkin(); renderMenuTop3(); renderMenuSkin(); });  // P1-1/P2
   on('wallet:run-coins', ({ coins }) => { lastRunCoins = coins || 0; });  // P1-5: dobrar
   applyLogoSkin();                           // P1-1 no boot
+  renderMenuSkin();                          // P2: card da skin equipada no menu
 }
 
 /** P1-1: a "O" do logo é a orbe da skin equipada — gradiente e anéis
@@ -448,13 +449,29 @@ function renderMenuTop3() {
       ? top.map((r, i) => `<li class="top3-row"><span class="top3-pos">${i + 1}º</span><span class="top3-name">${esc(r.name || 'Jogador')}</span><b class="top3-pts">${(r.score || 0).toLocaleString('pt-BR')}</b></li>`).join('')
       : '<li class="top3-row muted">Sem partidas ainda</li>';
   }
-  const skin = document.getElementById('menu-skin-name');
-  if (skin) {
-    let nome = 'Orbe';
-    try { nome = equippedLook()?.nome || 'Orbe'; } catch { /* skin quebrada: fica no padrão */ }
-    skin.textContent = nome;
-  }
   box.hidden = false;                       // o CSS esconde em janela estreita
+}
+
+/** P2: card da skin equipada no menu — desenha a orbe real (sprite em
+    cache offscreen) num canvas e aplica o glow da paleta no card.
+    O clique abre a loja via delegação data-action="skins". */
+function renderMenuSkin() {
+  const card = document.getElementById('menu-skin-card');
+  const cv = document.getElementById('menu-skin-orb');
+  const nome = document.getElementById('menu-skin-name');
+  if (!card || !cv || !nome) return;
+  let look = null;
+  try { look = equippedLook(); } catch { /* look indisponível: mantém padrão */ }
+  if (!look) return;
+  nome.textContent = look.nome || 'Orbe';
+  try {
+    const spr = getBodySprite(look);         // canvas 160x160 em cache
+    const g = cv.getContext('2d');
+    g.clearRect(0, 0, cv.width, cv.height);
+    g.drawImage(spr, 0, 0, cv.width, cv.height);
+  } catch { /* sem canvas/contexto: fica só o nome */ }
+  const glow = look.paleta?.brilho;
+  if (glow) card.style.setProperty('--skin-glow', glow + '73');  // glow ~45%
 }
 
 // ---------------------------------------------------------
