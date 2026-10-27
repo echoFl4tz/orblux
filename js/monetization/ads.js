@@ -49,14 +49,19 @@ export function closeAllAds() {
 export function initAds() {
   const banner = document.getElementById('ad-banner');
 
-  // LGPD: sem consentimento, esconde os slots de anúncio
-  if (state.consent === false && banner) banner.hidden = true;
+  // Só há anúncio de verdade com o AdSense habilitado E o <ins> real no
+  // index.html. Sem isso, o placeholder de desenvolvedor ("cole aqui o
+  // código") nunca aparece para o jogador.
+  const temAnuncioReal = !!(ADS.enabled && banner && banner.querySelector('ins'));
+
+  // LGPD: banner exige consentimento explícito (true)
+  if (banner) banner.hidden = !temAnuncioReal || state.consent !== true;
 
   on('consent:answer', (accepted) => {
     saveConsent(accepted);
     const bannerEl = document.getElementById('cookie-banner');
     if (bannerEl) bannerEl.hidden = true;
-    if (banner) banner.hidden = !accepted;
+    if (banner) banner.hidden = !(accepted && temAnuncioReal);
     showToast({
       icon: accepted ? 'ic-check' : 'ic-shield',
       title: accepted ? 'Obrigado!' : 'Tudo bem',
@@ -78,7 +83,7 @@ export function initAds() {
 
      O placeholder some automaticamente quando existe conteúdo real:
   ------------------------------------------------------------------ */
-  if (ADS.enabled && banner && banner.querySelector('ins')) {
+  if (temAnuncioReal) {
     const hint = banner.querySelector('.ad-hint, .ad-label');
     if (hint) hint.remove();
   }

@@ -1629,6 +1629,7 @@ body[data-screen="gameover"] .toasts {
   box-shadow: 0 0 8px rgba(34, 230, 255, 0.55);
   pointer-events: none;
 }
+#btn-skins { overflow: visible; }   /* o selo "Novo" fica na borda: não clipar */
 .chip-warn { color: var(--primary); border-color: rgba(34, 230, 255, 0.4); background: rgba(34, 230, 255, 0.1); }
 .chip-success { color: var(--success); border-color: rgba(77, 255, 158, 0.4); background: rgba(77, 255, 158, 0.1); }
 
