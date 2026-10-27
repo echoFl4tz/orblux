@@ -62,7 +62,7 @@ for (const token of ['--primary: #22e6ff', '--secondary: #ff3df0', '--reward: #f
 }
 check(/prefers-reduced-motion/.test(css) && /\.reduce-motion/.test(css), 'movimento reduzido (mídia + classe)');
 check(/focus-visible/.test(css), 'estados focus-visible estilizados');
-check(/env\(safe-area-inset/.test(css), 'safe-area insets');
+check(!/env\(safe-area-inset/.test(css), 'sem safe-area insets (desktop-only)');
 check(/dvh/.test(css), 'usa 100dvh/dvh (não só vh)');
 check(/scrollbar-width|::-webkit-scrollbar/.test(css), 'scrollbar estilizada');
 check(/backdrop-filter/.test(css) && /@supports not/.test(css), 'vidro com fallback sólido');

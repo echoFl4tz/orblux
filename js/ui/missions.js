@@ -148,12 +148,7 @@ export function renderMissions() {
     badge.textContent = `${done}/${total}`;
     badge.classList.toggle('chip-success', todas);
   }
-  // barra-resumo do mobile (P0-3): mesma contagem do card
-  const frac = document.getElementById('missions-summary-frac');
-  if (frac) frac.textContent = `${done}/${total}`;
-  const fill = document.getElementById('missions-summary-fill');
-  if (fill) fill.style.width = `${total ? Math.round((done / total) * 100) : 0}%`;
-
+  // barra-resumo antiga (mobile) removida junto com o layout mobile
   const linhas = state.missions.list.map((m) => {
     const pct = Math.min(100, Math.round((m.progress / m.target) * 100));
     return `<li class="mission-row ${m.done ? 'done' : ''}">

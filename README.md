@@ -1,7 +1,7 @@
 # 🕹️ ORBLUX
 
 Jogo arcade neon para navegador — **colete pulsos, acumule combos (até ×5) e desvie das barreiras**.
-Partidas de 1 a 3 minutos, grátis, leve, funciona no celular e no computador.
+Partidas de 1 a 3 minutos, grátis, leve — feito para o navegador do computador.
 100% HTML + CSS + JavaScript puro (sem frameworks, sem dependências, fontes auto-hospedadas).
 
 A partir da **1.1.0** a partida ganha **11 drops** (Ímã, Reparo, Fase, Turbo, Câmara lenta,

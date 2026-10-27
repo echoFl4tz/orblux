@@ -1,6 +1,7 @@
 /* =========================================================
-   Input — teclado (WASD/setas) + ponteiro (arrastar)
-   Compatível com celular e computador.
+   Input — teclado (WASD/setas) + ponteiro (mouse arrastando)
+   Foco desktop; o arrasto do mouse move a orbe como alternativa
+   ao teclado.
    ========================================================= */
 
 import { emit } from './events.js';
@@ -9,7 +10,7 @@ const keys = new Set();
 
 // Estado do ponteiro (arrastar): posição-alvo em coordenadas do canvas (CSS px)
 const pointer = { active: false, x: 0, y: 0 };
-let pointerId = null;      // só o DEDO/ MOUSE que começou o arrasto manda
+let pointerId = null;      // só o mouse que começou o arrasto manda
 let canvas = null;
 
 const KEY_MAP = {
@@ -51,12 +52,12 @@ export function initInput(canvasEl) {
 
   // Zera direções ao perder o foco (evita "andar sozinho" ao voltar p/ aba)
   window.addEventListener('blur', () => { keys.clear(); pointer.active = false; pointerId = null; });
-  // mobile: visibilitychange pode vir sem blur — limpa igualmente
+  // visibilitychange cobre troca de aba sem blur — limpa igualmente
   document.addEventListener('visibilitychange', () => {
     if (document.hidden) { keys.clear(); pointer.active = false; pointerId = null; }
   });
 
-  // ---- Ponteiro (mouse + toque) ----
+  // ---- Ponteiro (mouse arrastando) ----
   const setTargetFromEvent = (e) => {
     const r = canvas.getBoundingClientRect();
     pointer.x = e.clientX - r.left;
@@ -64,7 +65,7 @@ export function initInput(canvasEl) {
   };
 
   canvas.addEventListener('pointerdown', (e) => {
-    if (pointer.active) return;          // segundo dedo/mouse: ignora (1 dedo só)
+    if (pointer.active) return;          // segundo ponteiro: ignora
     pointer.active = true;
     pointerId = e.pointerId;
     setTargetFromEvent(e);
@@ -89,8 +90,7 @@ export function initInput(canvasEl) {
   canvas.addEventListener('lostpointercapture', endPointer);
   canvas.addEventListener('pointerleave', endPointer);
 
-  // Bloqueia zoom de duplo-toque e rolagem acidental dentro do canvas
-  canvas.addEventListener('dblclick', (e) => e.preventDefault());
+  // Sem menu de contexto dentro do canvas
   canvas.addEventListener('contextmenu', (e) => e.preventDefault());
 }
 
@@ -117,8 +117,4 @@ export function resetInput() {
   keys.clear();
   pointer.active = false;
   pointerId = null;
-}
-
-export function isTouchDevice() {
-  return window.matchMedia('(pointer: coarse)').matches;
 }

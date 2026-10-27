@@ -293,7 +293,7 @@ function renderDetailActions() {
     box.appendChild(b);
     note.hidden = false;
     note.textContent = isStoreAvailable()
-      ? 'Preço indisponível no momento. Toque em Restaurar compras ou tente mais tarde.'
+      ? 'Preço indisponível no momento. Clique em Restaurar compras ou tente mais tarde.'
       : 'Compras disponíveis apenas na Play Store (esta é uma demonstração).';
   }
 }
@@ -583,7 +583,6 @@ async function runPurchase() {
   if (res.status === 'ok') {
     closeModal('modal-buy');
     sfx('record');
-    if (state.settings.haptics && navigator.vibrate) { try { navigator.vibrate(30); } catch { /* ok */ } }
     showToast({
       icon: 'ic-check2',
       title: isBundle ? 'Coleção completa liberada!' : 'Skin comprada!',
@@ -680,7 +679,6 @@ function onShopClick(e) {
   const el = e.target.closest('[data-shop]');
   if (!el) return;
   initAudio(); resumeAudio();
-  if (state.settings.haptics && navigator.vibrate) { try { navigator.vibrate(10); } catch { /* ok */ } }
   const val = el.dataset.val;
   // ações do detalhe podem vir sem data-id: caem na skin aberta (detailId)
   const id = el.dataset.id || detailId;

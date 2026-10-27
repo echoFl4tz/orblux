@@ -17,7 +17,6 @@
     { "src": "icons/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
   ],
   "screenshots": [
-    { "src": "icons/screen-1280x720.png", "sizes": "1280x720", "type": "image/png", "form_factor": "wide", "label": "Menu do ORBLUX" },
-    { "src": "icons/screen-390x844.png", "sizes": "390x844", "type": "image/png", "form_factor": "narrow", "label": "Partida no celular" }
+    { "src": "icons/screen-1280x720.png", "sizes": "1280x720", "type": "image/png", "form_factor": "wide", "label": "Menu do ORBLUX" }
   ]
 }

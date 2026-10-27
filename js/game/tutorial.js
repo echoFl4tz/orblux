@@ -12,12 +12,12 @@ const icon = (id) => `<svg class="ic" aria-hidden="true"><use href="#${id}"/></s
 const STEPS = [
   {
     id: 'move',
-    text: `${icon('ic-play')}<span><b>Arraste o dedo</b> na tela para mover a orbe.<br>No computador: <b>WASD</b> ou <b>setas</b>.</span>`,
+    text: `${icon('ic-play')}<span><b>Arraste o mouse</b> na tela para mover a orbe, ou use <b>WASD</b> / <b>setas</b>.</span>`,
     done: (g) => g.moved,
   },
   {
     id: 'collect',
-    text: `${icon('ic-pulse')}<span>Toque nos <b>pulsos brilhantes</b> para coletar pontos e aumentar o combo!</span>`,
+    text: `${icon('ic-pulse')}<span>Colete os <b>pulsos brilhantes</b> para marcar pontos e aumentar o combo!</span>`,
     done: (g) => g.runStats.pickups >= 1,
   },
   {

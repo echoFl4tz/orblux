@@ -533,9 +533,6 @@ export function collectDrop(g, pw) {
   g.dropSemTempo = 0;                    // piedade recomeça ao ganhar qualquer drop
   if (cfg.teto) g.dropCounts[cfg.id] = (g.dropCounts[cfg.id] || 0) + 1;
   sfx(cfg.som || 'drop');
-  if (state.settings.haptics && navigator.vibrate) {
-    try { navigator.vibrate(18); } catch { /* ignore */ }
-  }
   const efeito = EFEITOS[cfg.id];
   if (efeito) efeito(g, cfg, pw);
   ring(pw.x, pw.y, cfg.cor, 14, 240);

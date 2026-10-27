@@ -77,7 +77,7 @@ export function circlesHit(ax, ay, ar, bx, by, br) {
 }
 
 // ---------------------------------------------------------
-//  Sprites e glows pré-renderizados (cache offscreen — barato no mobile)
+//  Sprites e glows pré-renderizados (cache offscreen — barato por frame)
 // ---------------------------------------------------------
 const GLOW_SIZE = 96;
 const glowCache = new Map();

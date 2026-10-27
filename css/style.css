@@ -1,6 +1,6 @@
 /* =========================================================
    ORBLUX — design system e estilos
-   Tokens em :root · sem frameworks · mobile-first
+   Tokens em :root · sem frameworks · desktop
    ========================================================= */
 
 /* ---------------------------------------------------------
@@ -79,11 +79,9 @@ html, body {
   font-family: var(--font-sans);
   font-size: var(--fs-body);
   line-height: 1.5;
-  -webkit-tap-highlight-color: transparent;
   -webkit-user-select: none;
   user-select: none;
   overscroll-behavior: none;
-  touch-action: manipulation;
 }
 
 [hidden] { display: none !important; }
@@ -100,7 +98,6 @@ a:hover { text-decoration: underline; }
   height: 100%;
   display: block;
   z-index: 0;
-  touch-action: none;
 }
 
 .ic { width: 20px; height: 20px; flex: 0 0 auto; }
@@ -120,11 +117,7 @@ a:hover { text-decoration: underline; }
   display: flex;
   align-items: center;
   justify-content: center;
-  padding:
-    max(var(--s3), env(safe-area-inset-top))
-    max(var(--s3), env(safe-area-inset-right))
-    max(var(--s3), env(safe-area-inset-bottom))
-    max(var(--s3), env(safe-area-inset-left));
+  padding: var(--s3);
   opacity: 0;
   visibility: hidden;
   pointer-events: none;
@@ -187,31 +180,7 @@ body.q-baixa .power-chip {
   }
 }
 
-/* P1-6: bottom sheets no mobile — Ranking, Ajustes e Como jogar sobem
-   de baixo como folhas; no desktop (>=960px) continuam centralizados */
-@keyframes sheetIn {
-  0% { transform: translateY(16%); opacity: 0; }
-  100% { transform: none; opacity: 1; }
-}
-@media (max-width: 959px) {
-  .panel.sheet {
-    position: fixed;
-    left: 0; right: 0; bottom: 0;
-    width: 100%;
-    max-width: none;
-    max-height: 88vh;
-    max-height: 88dvh;
-    margin: 0;
-    border-radius: 24px 24px 0 0;
-    border-bottom: none;
-    background: var(--surface-sheet);
-    backdrop-filter: none;
-    -webkit-backdrop-filter: none;
-    box-shadow: 0 -18px 50px rgba(2, 4, 12, 0.6);
-    padding-bottom: calc(var(--s4) + env(safe-area-inset-bottom));
-    animation: sheetIn var(--dur-in) var(--ease) both;
-  }
-}
+/* Painéis modal centralizados (desktop) */
 .panel-wide { width: min(94vw, 540px); }
 
 .panel-head {
@@ -308,7 +277,6 @@ body.q-baixa .power-chip {
   overflow: hidden;
   transition: transform var(--dur-1) var(--ease), box-shadow var(--dur-2),
     background var(--dur-2), border-color var(--dur-2), color var(--dur-2);
-  touch-action: manipulation;
 }
 .btn:hover { background: rgba(34, 230, 255, 0.1); border-color: rgba(34, 230, 255, 0.4); }
 .btn:active { transform: scale(0.97); }
@@ -543,52 +511,6 @@ body.reduce-motion .menu-main > * { animation: none; }
   min-height: 72px;
   font-size: 1rem;
   background: var(--surface-ghost);
-}
-
-/* Nível 2 (P0-3): barra-resumo de missões — só no mobile (vira bottom sheet) */
-.missions-summary {
-  display: none;
-  width: 100%;
-  align-items: center;
-  gap: var(--s2);
-  min-height: 48px;
-  padding: 0 var(--s4);
-  background: var(--surface-ghost);
-  border: 1px solid var(--line);
-  border-radius: var(--r-sm);
-  color: var(--text-1);
-  font-family: var(--font-display);
-  font-size: 0.85rem;
-  font-weight: 700;
-  cursor: pointer;
-}
-.missions-summary .ic { color: var(--primary); }
-.missions-summary .chev {
-  margin-left: auto;
-  color: var(--text-2);
-  transition: transform var(--dur-2) var(--ease);
-}
-.missions-summary[aria-expanded="true"] .chev { transform: rotate(180deg); }
-.missions-summary-frac {
-  color: var(--text-2);
-  font-size: var(--fs-caption);
-  font-variant-numeric: tabular-nums;
-}
-.missions-summary-track {
-  flex: 1;
-  min-width: 40px;
-  height: 5px;
-  border-radius: var(--r-full);
-  background: rgba(154, 166, 200, 0.18);
-  overflow: hidden;
-}
-.missions-summary-track > span {
-  display: block;
-  height: 100%;
-  width: 0;
-  border-radius: var(--r-full);
-  background: linear-gradient(90deg, var(--primary), var(--secondary));
-  transition: width var(--dur-3) var(--ease);
 }
 
 /* Nível 3 (P0-2): linha pequena de atalhos — Como jogar · Ajustes · Instalar */
@@ -1109,11 +1031,11 @@ body.reduce-motion .menu-main > * { animation: none; }
 /* Toasts no fim de jogo: descem para nunca cobrir o painel */
 body[data-screen="gameover"] .toasts {
   top: auto;
-  bottom: max(var(--s3), env(safe-area-inset-bottom));
+  bottom: var(--s3);
 }
 /* e o painel abre espaço para a faixa de toasts embaixo */
 #screen-gameover {
-  padding-bottom: calc(max(var(--s3), env(safe-area-inset-bottom)) + 60px);
+  padding-bottom: calc(var(--s3) + 60px);
 }
 
 /* ---------------------------------------------------------
@@ -1163,7 +1085,7 @@ body[data-screen="gameover"] .toasts {
 .cookie-banner {
   position: fixed;
   left: 50%;
-  bottom: max(var(--s3), env(safe-area-inset-bottom));
+  bottom: var(--s3);
   transform: translateX(-50%);
   z-index: 40;
   width: min(94vw, 520px);
@@ -1183,11 +1105,11 @@ body[data-screen="gameover"] .toasts {
 .cookie-actions .btn { width: 100%; }
 
 /* ---------------------------------------------------------
-   12. TOASTS (topo, safe-area, barra de tempo)
+   12. TOASTS (topo, barra de tempo)
 --------------------------------------------------------- */
 .toasts {
   position: fixed;
-  top: max(var(--s3), env(safe-area-inset-top));
+  top: var(--s3);
   left: 50%;
   transform: translateX(-50%);
   z-index: 50;
@@ -1238,18 +1160,14 @@ body[data-screen="gameover"] .toasts {
   inset: 0;
   z-index: 5;
   pointer-events: none;
-  padding:
-    max(var(--s3), env(safe-area-inset-top))
-    max(var(--s3), env(safe-area-inset-right))
-    max(var(--s3), env(safe-area-inset-bottom))
-    max(var(--s3), env(safe-area-inset-left));
+  padding: var(--s3);
   opacity: 0.87;                         /* HUD discreto ~0.85, sem esconder o jogo */
 }
 .hud .icon-btn { pointer-events: auto; position: absolute; top: inherit; }
 
 .hud-top {
   position: absolute;
-  top: max(var(--s3), env(safe-area-inset-top));
+  top: var(--s3);
   left: 0; right: 0;
   display: flex;
   flex-direction: column;
@@ -1345,8 +1263,8 @@ body[data-screen="gameover"] .toasts {
 
 .hud-pause {
   position: absolute;
-  top: max(var(--s3), env(safe-area-inset-top));
-  right: max(var(--s3), env(safe-area-inset-right));
+  top: var(--s3);
+  right: var(--s3);
   width: 46px;
   height: 46px;
 }
@@ -1454,7 +1372,7 @@ body[data-screen="gameover"] .toasts {
 .hud-evento {
   --ev-cor: var(--primary);
   position: absolute;
-  top: max(10px, env(safe-area-inset-top));
+  top: 10px;
   left: 50%;
   transform: translateX(-50%);
   display: flex;
@@ -1543,7 +1461,7 @@ body[data-screen="gameover"] .toasts {
 .tutorial {
   position: fixed;
   left: 50%;
-  bottom: max(var(--s6), env(safe-area-inset-bottom));
+  bottom: var(--s6);
   transform: translateX(-50%);
   z-index: 6;
   width: min(92vw, 420px);
@@ -1565,13 +1483,6 @@ body[data-screen="gameover"] .toasts {
   animation: panelIn var(--dur-3) var(--ease) both;
 }
 .tutorial-text .ic { color: var(--primary); width: 24px; height: 24px; }   /* P0-4 */
-/* Retrato: a dica fica NO topo, logo abaixo do placar (nunca sob a mão) */
-@media (orientation: portrait) {
-  .tutorial {
-    top: calc(max(var(--s3), env(safe-area-inset-top)) + 118px);
-    bottom: auto;
-  }
-}
 
 /* ---------------------------------------------------------
    15. MOVIMENTO REDUZIDO
@@ -1592,43 +1503,15 @@ body[data-screen="gameover"] .toasts {
 }
 
 /* ---------------------------------------------------------
-   16. RESPONSIVO
+   16. RESPONSIVO (janelas estreitas/baixas no desktop)
 --------------------------------------------------------- */
-/* Missões (P0-3): barra-resumo no fluxo + bottom sheet no mobile */
-@media (max-width: 959px) {
-  .missions-summary { display: flex; }
-  .missions-card {
-    position: fixed;
-    left: 0; right: 0; bottom: 0; top: auto;
-    width: 100%;
-    max-height: 70vh;
-    max-height: min(70dvh, 460px);
-    overflow-y: auto;
-    z-index: 20;                          /* acima do menu, abaixo de modais (30) */
-    border-radius: 24px 24px 0 0;
-    border-bottom: none;
-    background: var(--surface-sheet);
-    backdrop-filter: none;
-    -webkit-backdrop-filter: none;
-    box-shadow: 0 -18px 50px rgba(2, 4, 12, 0.6);
-    transform: translateY(110%);
-    transition: transform var(--dur-3) var(--ease);
-    padding-bottom: env(safe-area-inset-bottom);
-  }
-  .missions-card.sheet-open { transform: none; }
-  .missions-card:not(.sheet-open) { pointer-events: none; }
-  .missions-card .missions-toggle { display: none; }     /* o gatilho é a barra-resumo */
-  .missions-card.collapsed .missions-list { display: block; }  /* estado desktop não vaza pro sheet */
-  .missions-list { padding: var(--s3); }
-}
 
-/* Telas baixas (celular em paisagem) */
+/* Janelas baixas */
 @media (max-height: 540px) {
   .panel { padding: var(--s3) var(--s4); gap: var(--s3); }
   .logo { font-size: clamp(1.7rem, 6vh, 2.2rem); }
   .tagline { display: none; }
   .missions-card { display: none; }
-  .missions-summary { display: none; }
   .btn { min-height: 44px; }
   .btn-big { min-height: 48px; font-size: 1rem; }
   .go-stats { grid-template-columns: repeat(3, 1fr); }
@@ -1658,13 +1541,6 @@ body[data-screen="gameover"] .toasts {
   .rank-ach { margin-top: 0; }
 }
 
-/* Alvos de toque grandes */
-@media (pointer: coarse) {
-  .btn { min-height: 52px; }
-  .icon-btn { min-width: 48px; min-height: 48px; }
-  .menu-small .btn { min-height: 52px; }
-}
-
 /* ---------------------------------------------------------
    15. APELIDO (nickname) � chip no menu, campo e modal
 --------------------------------------------------------- */
@@ -1681,14 +1557,13 @@ body[data-screen="gameover"] .toasts {
 .nick-chip:hover { border-color: rgba(34, 230, 255, 0.4); color: var(--text-1); }
 .nick-chip .ic { color: var(--primary); }
 .nick-chip-pencil { opacity: 0.7; }
-@media (pointer: coarse) { .nick-chip { min-height: 44px; } }
 
 .nick-field { display: flex; flex-direction: column; gap: 6px; }
 .nick-label { font-size: var(--fs-caption); color: var(--text-2); font-weight: 600; letter-spacing: 0.4px; }
 .nick-inputwrap { position: relative; display: block; }
 .nick-input {
   width: 100%; min-height: 52px; padding: 0 58px 0 var(--s4);
-  font-family: var(--font-display); font-size: 16px; /* >=16px: sem zoom no teclado movel */
+  font-family: var(--font-display); font-size: 16px;
   letter-spacing: 0.5px; color: var(--text-1);
   background: rgba(8, 10, 26, 0.7); border: 1px solid var(--line);
   border-radius: var(--r-sm); outline: none;

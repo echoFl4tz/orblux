@@ -256,7 +256,7 @@ function boot() {
               showToast({
                 icon: 'ic-restart',
                 title: 'Versão nova disponível',
-                desc: 'Toque em Atualizar — leva 2 segundos.',
+                desc: 'Clique em Atualizar — leva 2 segundos.',
                 action: { label: 'Atualizar', fn: () => novo.postMessage({ type: 'SKIP_WAITING' }) },
                 ms: 15000,
               });

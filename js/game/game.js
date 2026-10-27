@@ -90,7 +90,6 @@ export function initGame(canvas) {
   game.reduceMotion = state.settings.reduceMotion;
   resize();
   window.addEventListener('resize', resize);
-  window.addEventListener('orientationchange', () => setTimeout(resize, 120));
 }
 
 export function setReduceMotion(v) { game.reduceMotion = v; }
@@ -101,7 +100,7 @@ export function resize() {
   const h = window.innerHeight || document.documentElement.clientHeight;
   // teto de devicePixelRatio POR QUALIDADE (auditoria Fase 2):
   // alta ≤3 (nítida, opt-in), média ≤2 (padrão/automática), baixa =1
-  // (celular modesto: menos pixels para a GPU preencher)
+  // (máquina modesta: menos pixels para a GPU preencher)
   const dprMax = state.settings.imageQuality === 'alta' ? 3
     : state.settings.imageQuality === 'baixa' ? 1 : 2;
   g.dpr = Math.min(window.devicePixelRatio || 1, dprMax);
@@ -777,9 +776,6 @@ function onHit() {
   addShake(16);                         // tremor mais forte (sensível a mov. reduzido)
   g.danoT = 0.35;                       // vinheta danger nas bordas 350 ms (§9)
   burst(p.x, p.y, COLORS.red, 20, 300, 3.4);
-  if (state.settings.haptics && navigator.vibrate) {
-    try { navigator.vibrate(60); } catch { /* ignore */ }
-  }
   emit('game:hit', { lives: g.lives });
   emit('game:lives', { lives: g.lives });
   emit('game:combo', { combo: 0, multiplier: 1, frac: 0 });
@@ -813,10 +809,6 @@ function collectPulse(pk) {
     // cresce com o multiplicador — x5 muito mais impactante que x2
     comboText(g.W / 2, g.H * 0.3, `x${g.multiplier}`, COLORS.yellow, 40 + g.multiplier * 7);
     if (!g.reduceMotion) burst(g.W / 2, g.H * 0.3, COLORS.yellow, 10, 220, 2.4);
-    // vibração sutil de recompensa (mesmo ajuste "Vibração" das opções)
-    if (state.settings.haptics && navigator.vibrate) {
-      try { navigator.vibrate(20); } catch { /* ignore */ }
-    }
   }
   emit('game:score', { score: Math.floor(g.score) });
   emit('game:combo', { combo: g.combo, multiplier: g.multiplier, frac: 1 });
@@ -827,9 +819,6 @@ function collectPowerup(pw) {
   const S = g.S;
   g.runStats.powerups += 1;
   sfx('powerup');
-  if (state.settings.haptics && navigator.vibrate) {
-    try { navigator.vibrate(30); } catch { /* ignore */ }
-  }
   if (pw.kind === 'shield') {
     g.player.shield = true;
     floatText(pw.x, pw.y - 20 * S, 'ESCUDO!', COLORS.green, 18);

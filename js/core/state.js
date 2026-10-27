@@ -43,7 +43,6 @@ const DEFAULT_SETTINGS = {
   sound: true,
   music: true,
   volume: 0.7,
-  haptics: true,
   // 1ª visita: respeita o que o usuário pediu no sistema operacional;
   // a escolha salva nos ajustes sempre sobrescreve este default.
   reduceMotion: prefersReducedMotion(),

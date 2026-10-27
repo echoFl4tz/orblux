@@ -205,7 +205,7 @@ export function returnToMenu() {
   renderMissions();
 
   // 10) o cache offscreen do fundo só depende de W/H/dpr (válidos); se a janela
-  //     mudou (ex.: barra de endereço mobile), resize() já o reconstruiu.
+  //     mudou (ex.: redimensionar a janela), resize() já o reconstruiu.
   emit('game:quit-menu');
 }
 
@@ -454,7 +454,7 @@ function renderMenuTop3() {
     try { nome = equippedLook()?.nome || 'Orbe'; } catch { /* skin quebrada: fica no padrão */ }
     skin.textContent = nome;
   }
-  box.hidden = false;                       // o CSS esconde no mobile
+  box.hidden = false;                       // o CSS esconde em janela estreita
 }
 
 // ---------------------------------------------------------
@@ -497,16 +497,9 @@ function bindModals() {
 //  Missões colapsáveis
 // ---------------------------------------------------------
 function collapseMissionsOnShortScreens() {
-  // mobile: o card é um bottom sheet — sempre começa fechado (a barra-resumo abre)
+  // janela curta: recolhe a lista para o menu não rolar
   const card = document.getElementById('missions-card');
   if (!card) return;
-  const ehMobile = window.matchMedia('(max-width: 959px)').matches;
-  if (ehMobile) {
-    card.classList.remove('sheet-open');
-    card.querySelectorAll('[aria-controls="missions-list"]').forEach((b) => b.setAttribute('aria-expanded', 'false'));
-    return;
-  }
-  // desktop curto: recolhe a lista para o menu não rolar
   if (window.innerHeight < 720 || window.innerWidth < 380) {
     card.classList.add('collapsed');
     card.querySelector('.missions-toggle')?.setAttribute('aria-expanded', 'false');
@@ -516,16 +509,9 @@ function collapseMissionsOnShortScreens() {
 function toggleMissions(btn) {
   const card = document.getElementById('missions-card');
   if (!card) return;
-  // o gatilho (barra-resumo no mobile, cabeçalho no desktop) e o estado
-  // do card são sincronizados via aria-expanded em ambos
-  const ehMobile = window.matchMedia('(max-width: 959px)').matches;
-  if (ehMobile) {
-    const open = card.classList.toggle('sheet-open');
-    card.querySelectorAll('[aria-controls="missions-list"]').forEach((b) => b.setAttribute('aria-expanded', String(open)));
-  } else {
-    const collapsed = card.classList.toggle('collapsed');
-    card.querySelectorAll('[aria-controls="missions-list"]').forEach((b) => b.setAttribute('aria-expanded', String(!collapsed)));
-  }
+  // o gatilho (cabeçalho do card) e o estado são sincronizados via aria-expanded
+  const collapsed = card.classList.toggle('collapsed');
+  card.querySelectorAll('[aria-controls="missions-list"]').forEach((b) => b.setAttribute('aria-expanded', String(!collapsed)));
 }
 
 // ---------------------------------------------------------
@@ -536,11 +522,6 @@ function bindActions() {
     const btn = e.target.closest('[data-action], [data-consent]');
     if (!btn) return;
     initAudio(); resumeAudio();
-
-    // vibração sutil de feedback nos botões (quando haptics ativo)
-    if (state.settings.haptics && navigator.vibrate) {
-      try { navigator.vibrate(10); } catch { /* ignore */ }
-    }
 
     const consent = btn.dataset.consent;
     if (consent) { emit('consent:answer', consent === 'accepted'); return; }
@@ -618,7 +599,6 @@ function bindSettings() {
   const sound = document.getElementById('set-sound');
   const music = document.getElementById('set-music');
   const volume = document.getElementById('set-volume');
-  const haptics = document.getElementById('set-haptics');
   const reduce = document.getElementById('set-reduce');
   const tut = document.getElementById('set-tutorial');
   const evts = document.getElementById('set-eventos');
@@ -633,9 +613,6 @@ function bindSettings() {
   });
   volume.addEventListener('input', () => {
     state.settings.volume = volume.value / 100; saveSettings(); applyVolume();
-  });
-  haptics.addEventListener('change', () => {
-    state.settings.haptics = haptics.checked; saveSettings();
   });
   reduce.addEventListener('change', () => {
     state.settings.reduceMotion = reduce.checked;
@@ -680,7 +657,6 @@ export function applySettingsToUI() {
   document.getElementById('set-sound').checked = s.sound;
   document.getElementById('set-music').checked = s.music;
   document.getElementById('set-volume').value = Math.round(s.volume * 100);
-  document.getElementById('set-haptics').checked = s.haptics;
   document.getElementById('set-reduce').checked = s.reduceMotion;
   document.getElementById('set-contrast').checked = !!s.highContrast;
   document.getElementById('set-quality').value = s.imageQuality || 'auto';

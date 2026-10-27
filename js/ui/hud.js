@@ -1,6 +1,6 @@
 /* =========================================================
    HUD — placar, combo, vidas, nível, power-ups e tutorial
-   Atualiza o DOM somente quando algo muda (barato p/ mobile)
+   Atualiza o DOM somente quando algo muda (barato)
    Vidas e power-ups usam o sprite SVG (sem emojis)
    ========================================================= */
 

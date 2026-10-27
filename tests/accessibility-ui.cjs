@@ -10,8 +10,7 @@
          FINAL na hora (sem contagem animada);
      (4) navegação por teclado: Tab foca com contorno visível;
      (5) aria nos controles do HUD e toasts como live region;
-     (6) safe-area (env(safe-area-inset-*)) presente nas regras
-         de HUD/telas/toasts;
+     (6) sem env(safe-area-inset-*) — versão desktop-only;
      (7) contraste de texto em 8 telas (§12): principal ≥ 7:1 e
          secundário ≥ 4,5:1 sobre o fundo efetivo (WCAG 2.1);
      (8) zero erros de console.
@@ -164,8 +163,8 @@ async function newPage(browser, size, query, reducedMotion) {
     `fim de jogo mostra a pontuação final na hora (${goImediato.texto})`);
   await a.context.close();
 
-  /* ============ (4)(5) teclado, aria e safe-area (sem reduced) ============ */
-  console.log('===== A11Y — teclado, aria e safe-area =====');
+  /* ============ (4)(5) teclado, aria e sem safe-area (sem reduced) ============ */
+  console.log('===== A11Y — teclado, aria e desktop-only =====');
   const b = await newPage(browser, { w: 390, h: 844 }, tag, false);
   const bp = b.page;
   await bp.keyboard.press('Tab');
@@ -185,11 +184,11 @@ async function newPage(browser, size, query, reducedMotion) {
   }));
   ok(aria.pause === 'Pausar jogo' && !!aria.lives && !!aria.wave && aria.toasts === 'polite',
     `aria nos controles (pausa="${aria.pause}", vidas=${!!aria.lives}, onda=${!!aria.wave}, toasts=${aria.toasts})`);
-  // safe-area: regras do CSS usam env(safe-area-inset-*) nas áreas críticas
+  // desktop-only: env(safe-area-inset-*) foi removido junto com o layout mobile
   const css = fs.readFileSync(path.join(ROOT, 'css', 'style.css'), 'utf8');
   const usoSafe = (css.match(/env\(safe-area-inset-/g) || []).length;
-  ok(usoSafe >= 10 && /\.hud[\s\S]{0,400}?env\(safe-area-inset-/.test(css),
-    `safe-area presente no CSS (${usoSafe} usos, incluindo no HUD)`);
+  ok(usoSafe === 0,
+    `sem env(safe-area-inset-) no CSS (${usoSafe} usos — versão desktop-only)`);
 
   /* ============ (7) contraste de texto por tela (§12) ============ */
   console.log('===== A11Y — contraste de texto (§12: 7:1 / 4,5:1) =====');
