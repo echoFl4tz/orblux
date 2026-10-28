@@ -2,9 +2,11 @@
 
 Fonte: análise externa de retenção (pontos observáveis + recomendações).
 Escopo: traduzir a análise para o estado real do código, separando o que já
-existe do que falta. **Status (27/10/2026): P1 (loja), P2 (Maestria), §4
-(tela de resultados) e §5 (medição local) implementados** — ver notas em
-cada seção; o resto continua como plano de produto.
+existe do que falta. **Status (28/10/2026): P1 (loja + missões semanais), P2
+(Maestria + títulos), §4 (tela de resultados), §5 (medição local, agora com
+tutorial/missões/desbloqueios) e P5 parcial (Desafio do Dia local com
+recorde dia/semana) implementados** — ver notas em cada seção; o resto
+continua como plano de produto.
 
 ## 1. O que já existe e deve ser aproveitado
 
@@ -15,7 +17,7 @@ cada seção; o resto continua como plano de produto.
 | Power-ups (escudo, ímã, turbo, dreno) | drops atuais | Variedade por partida |
 | Eventos aleatórios | chuva de pulsos etc. | Ritmo |
 | Moedas + carteira | `js/core/` prefixo `pn_` | Sustenta progressão |
-| Missões diárias | card no menu | Objetivo de curto prazo |
+| Missões diárias + semanais | card no menu | Objetivo de curto e longo prazo |
 | Recompensa diária | presente/btn daily | Motivo de retorno |
 | Skins (paleta/rastro/aura) | `skins.js` + `skinrender.js` | Coleção em potencial |
 | Ranking local + estrutura global | `state.ranking` | Competição |
@@ -36,6 +38,13 @@ cada seção; o resto continua como plano de produto.
 ### P1 — Consolidar o que existe
 - Garantir salvamento/recuperação, missões, moedas, ranking e Corrida do Dia
   ponta a ponta.
+- ~~Missões semanais junto das diárias.~~ **Feito:** o card ganhou a trilha
+  "Semana" (`js/ui/missions.js`): 3 objetivos de semana inteira semeados por
+  `weekKey()` (segunda-feira local, `state.js`), reset automático na segunda,
+  recompensas próprias `WEEKLY_MISSION_COINS = {60, 100, 160}` (`economy.js` —
+  acima da diária e abaixo de 7× a diária), tudo na mesma chave `pn_missions`
+  (campo `semana`, com migração de save antigo). Partida reporta as DUAS
+  listas de uma vez; `tests/missions.test.mjs` (7/7).
 - ~~Verificar a percepção de "loja indisponível".~~ **Feito:** o card mostrava
   "Indisponível" sem preço da Play, mesmo com compra por moedas ativa no
   detalhe. Cards agora exibem o preço em moedas (destaque amarelo), o banner
@@ -51,6 +60,11 @@ cada seção; o resto continua como plano de produto.
   2/5/10/20/30/50 concede skins por habilidade (fonte `maestria` — imune a
   revogação do billing, apagada junto com o XP no reset); chip no topbar,
   bloco "Próxima recompensa" no menu, barra no fim de jogo e toast de nível.
+- ~~Títulos/emblemas por nível.~~ **Feito:** `TITULOS` (8 faixas, de
+  "Iniciante do Pulso" a "Orblux Supremo") + `tituloDeNivel()` em
+  `js/core/maestria.js`; exibido no card de Maestria do menu (substituiu o
+  label genérico), no `aria-label` do chip, na linha do fim de jogo e no
+  toast quando um título novo cai. Cosmético puro.
 - Regra: habilidade continua sendo o fator de pontuação; maestria só dá status.
 
 ### P3 — Skins como objetivos
@@ -63,9 +77,19 @@ cada seção; o resto continua como plano de produto.
   começar por UM bem feito.
 
 ### P5 — Corrida do Dia como competição
-- Ranking diário/semanal/histórico, medalhas, tentativas limitadas, validação
-  no servidor para reduzir fraude.
-- Semente já é determinística — base pronta.
+- ~~Partida reproduzível com as mesmas condições + recorde dia/semana.~~
+  **Feito (LOCAL):** `js/core/desafio.js` — semente 100% do calendário
+  (`dia-YYYY-MM-DD`): o mesmo `mulberry32/hashSeed` gera o MESMO percurso em
+  qualquer aparelho que jogue no mesmo dia, sem servidor. Recorde do dia e da
+  semana em `pn_desafio` (reset automático por período), card "Desafio do
+  Dia" no Ranking sempre visível (antes do gate de flags), botão que usa
+  `startGame({ seed })` — mesmo mecanismo da Corrida do Dia do servidor — e
+  toast de recorde no fim. `tests/desafio.test.mjs` (6).
+- Falta (**exige backend** — nada foi simulado): ranking diário/semanal/
+  histórico entre jogadores, medalhas, tentativas limitadas e validação no
+  servidor para reduzir fraude. A Corrida do Dia de servidor (`#daily-race`,
+  flags `TOURNAMENTS_ENABLED`/`GLOBAL_RANKING_ENABLED`) permanece intacta e
+  oculta em produção — ver `net/api.js` e `SOCIAL.md`.
 
 ### P6 — Jornada dos 30 dias
 - Missões encadeadas que ensinam mecânicas ("Primeiro Contato" → skin).
@@ -85,11 +109,14 @@ cada seção; o resto continua como plano de produto.
   (próxima skin, missões e maestria) e as ações JOGAR NOVAMENTE / MENU.
 
 ## 5. Medição mínima (antes de crescer)
-- ~~Instrumentação local agregada primeiro~~ **Feito (base):**
-  `js/core/metricas.js` — sessões, partidas, partidas/sessão e retorno
-  aproximado D+1/D+7 (local e anônimo, `pn_metricas`), exibido em
-  Ajustes > Dados. Falta instrumentar: conclusão de tutorial, duração de
-  sessão, conclusão de missões e desbloqueios.
+- ~~Instrumentação local agregada primeiro~~ **Feito (base + extras):**
+  `js/core/metricas.js` — sessões, partidas, partidas/sessão, retorno
+  aproximado D+1/D+7 **e agora** conclusão de tutorial (idempotente, só o
+  `tutorial:done` real), missões concluídas (diárias+semanais, via
+  `missions:completed`) e desbloqueios de skin (`skins:changed` com
+  `owned:true` — só `grantSkin`). Tudo local/anônimo em `pn_metricas`,
+  resumo em Ajustes > Dados (re-renderiza a cada abertura). Falta
+  instrumentar: duração de sessão.
 - Comparar antes/depois de cada mudança.
 
 ## 6. Regras do projeto (invioláveis)
