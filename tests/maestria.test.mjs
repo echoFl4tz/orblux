@@ -11,7 +11,8 @@ import assert from 'node:assert/strict';
 
 import {
   xpParaNivel, xpTotalParaNivel, nivelDeXp, xpDaPartida,
-  RECOMPENSAS, xpAtual, progresso, proximaRecompensa, creditarPartida,
+  RECOMPENSAS, TITULOS, tituloDeNivel, xpAtual, progresso,
+  proximaRecompensa, creditarPartida,
 } from '../js/core/maestria.js';
 import { getSkin } from '../js/game/skins.js';
 import { ownsSkin } from '../js/core/state.js';
@@ -54,6 +55,33 @@ test('trilha: recompensas existem no catálogo e são cosméticas', () => {
     assert.equal(s.nome, r.nome, `nome da recompensa = nome da skin (${r.nome})`);
     assert.ok(Number.isInteger(s.coinPrice) && s.coinPrice > 0,
       `${r.nome}: é uma skin real (também comprável com moedas)`);
+  }
+});
+
+test('trilha de títulos: identidade por nível, cosmética e crescente', () => {
+  assert.ok(TITULOS.length >= 5, 'há trilha de títulos');
+  assert.equal(TITULOS[0].nivel, 1, 'todo jogador já começa com um título');
+  let nivelAnterior = 0;
+  for (const t of TITULOS) {
+    assert.ok(t.nivel > nivelAnterior, `níveis crescentes (nível ${t.nivel})`);
+    assert.ok(typeof t.nome === 'string' && t.nome.length > 0, 'título é texto');
+    nivelAnterior = t.nivel;
+  }
+  // o título nunca depende de compra/vantagem: só do nível
+  assert.equal(tituloDeNivel(0), TITULOS[0].nome, 'nível inválido cai no primeiro');
+  assert.equal(tituloDeNivel(1), TITULOS[0].nome);
+  assert.equal(tituloDeNivel(TITULOS[1].nivel), TITULOS[1].nome, 'bordo exato do 2º título');
+  const ultimo = TITULOS[TITULOS.length - 1];
+  assert.equal(tituloDeNivel(ultimo.nivel), ultimo.nome);
+  assert.equal(tituloDeNivel(9999), ultimo.nome, 'acima da trilha: último título');
+  // monotônico: nunca volta de título ao subir de nível
+  let anterior = tituloDeNivel(1);
+  for (let n = 2; n <= 60; n++) {
+    const t = tituloDeNivel(n);
+    const iAnt = TITULOS.findIndex((x) => x.nome === anterior);
+    const iNow = TITULOS.findIndex((x) => x.nome === t);
+    assert.ok(iNow >= iAnt, `nível ${n}: título não regride`);
+    anterior = t;
   }
 });
 

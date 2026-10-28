@@ -2290,13 +2290,13 @@ body.reduce-motion .coins-progress-bar span { transition: none; }
 }
 .maestria-next-head { display: flex; align-items: center; gap: 6px; }
 .maestria-next-head .ic { color: var(--secondary-text); flex: none; }
-.maestria-next-label {
+.maestria-next-titulo {
   flex: 1;
   min-width: 0;
   font-family: var(--font-sans);
   font-size: var(--fs-caption);
-  color: var(--text-2);
-  font-weight: 600;
+  color: var(--primary);
+  font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.06em;
   overflow: hidden;

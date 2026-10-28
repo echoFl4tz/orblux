@@ -189,12 +189,16 @@ function boot() {
     if (mxp && mxp.subiu) {
       sfx('achievement');
       const nomes = mxp.recompensas.map((r) => r.nome);
+      const tit = maestria.tituloDeNivel(mxp.nivel);
+      const novoTitulo = tit !== maestria.tituloDeNivel(mxp.nivelAntes);
       showToast({
         icon: 'ic-medal',
-        title: `Maestria — nível ${mxp.nivel}`,
+        title: novoTitulo ? `${tit} — nível ${mxp.nivel}` : `Maestria — nível ${mxp.nivel}`,
         desc: nomes.length
           ? `${nomes.slice(0, 2).join(' · ')} desbloqueada${nomes.length > 1 ? 's' : ''}`
-          : `+${mxp.xp} XP nesta corrida`,
+          : novoTitulo
+            ? 'Novo título conquistado'
+            : `+${mxp.xp} XP nesta corrida`,
       });
     }
     return { position, bestAnterior, isRecord, granted: creditado.ok ? creditado.granted : 0, xpM: mxp };

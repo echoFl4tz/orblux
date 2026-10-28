@@ -377,8 +377,12 @@ function renderMaestriaUI() {
   if (fill) fill.style.width = `${pctChip}%`;
   if (chip) {
     chip.setAttribute('aria-label',
-      `Maestria nível ${p.nivel}${prox ? ` — próxima recompensa: ${prox.nome}` : ''}`);
+      `Maestria nível ${p.nivel} — ${maestria.tituloDeNivel(p.nivel)}${prox ? ` — próxima recompensa: ${prox.nome}` : ''}`);
   }
+
+  // título do jogador (identidade cosmética — sem poder)
+  const tituloEl = document.getElementById('maestria-titulo');
+  if (tituloEl) tituloEl.textContent = maestria.tituloDeNivel(p.nivel);
 
   const box = document.getElementById('maestria-next');
   if (!box) return;
@@ -441,6 +445,7 @@ function renderEndProgress() {
   if (rowMae) {
     const p = maestria.progresso();
     const proxR = maestria.proximaRecompensa();
+    const titulo = maestria.tituloDeNivel(p.nivel);   // identidade cosmética
     rowMae.hidden = false;
     const label = document.getElementById('go-prog-maestria-label');
     const frac = document.getElementById('go-prog-maestria-frac');
@@ -448,11 +453,11 @@ function renderEndProgress() {
     if (proxR) {
       const total = maestria.xpTotalParaNivel(proxR.nivel);
       const atual = maestria.xpAtual();
-      if (label) label.textContent = `Maestria · Nv. ${p.nivel} → ${proxR.nome}`;
+      if (label) label.textContent = `${titulo} · Nv. ${p.nivel} → ${proxR.nome}`;
       if (frac) frac.textContent = `${atual}/${total}`;
       if (fillM) fillM.style.width = `${Math.min(100, Math.round((atual / total) * 100))}%`;
     } else {
-      if (label) label.textContent = `Maestria · Nv. ${p.nivel}`;
+      if (label) label.textContent = `${titulo} · Nv. ${p.nivel}`;
       if (frac) frac.textContent = `${p.xpNoNivel}/${p.xpNecessario}`;
       if (fillM) fillM.style.width =
         `${Math.round((p.xpNoNivel / p.xpNecessario) * 100)}%`;

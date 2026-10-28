@@ -61,6 +61,33 @@ export const RECOMPENSAS = [
   { nivel: 50, skin: 'orblux_lendaria', nome: 'Lendária Orblux' },
 ];
 
+/**
+ * Trilha de TÍTULOS — identidade permanente por nível.
+ * Cosmético puro: rotula o jogador no menu e no fim de jogo,
+ * SEM nenhum poder ou vantagem (regra inviolável da maestria).
+ */
+export const TITULOS = [
+  { nivel: 1, nome: 'Iniciante do Pulso' },
+  { nivel: 3, nome: 'Corredor' },
+  { nivel: 6, nome: 'Caçador de Orbitais' },
+  { nivel: 10, nome: 'Veterano do Túnel' },
+  { nivel: 15, nome: 'Guardião da Faixa' },
+  { nivel: 22, nome: 'Mestre das Faíscas' },
+  { nivel: 32, nome: 'Lenda de Neon' },
+  { nivel: 50, nome: 'Orblux Supremo' },
+];
+
+/** Título vigente de um nível (o último cujo nível já foi alcançado). */
+export function tituloDeNivel(nivel) {
+  const n = Math.max(1, Math.floor(nivel || 1));
+  let atual = TITULOS[0].nome;
+  for (const t of TITULOS) {
+    if (t.nivel <= n) atual = t.nome;
+    else break;
+  }
+  return atual;
+}
+
 function load() {
   const raw = getItem(KEY);
   const xp = raw && Number.isFinite(raw.xp) ? Math.max(0, Math.floor(raw.xp)) : 0;
