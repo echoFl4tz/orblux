@@ -7,7 +7,7 @@
 import { on, emit } from '../core/events.js';
 import { state, saveSettings, resetAllProgress, resetTutorialFlag, markTutorialDone, ownsSkin } from '../core/state.js';
 import { getCoins, earn } from '../core/wallet.js';
-import { SKINS } from '../game/skins.js';
+import { SKINS, getSkin } from '../game/skins.js';
 import { startGame, pauseGame, resumeGame, quitToMenu, game, setReduceMotion } from '../game/game.js';
 import { sfx, initAudio, applyVolume, setMusicEnabled, resumeAudio } from '../core/audio.js';
 import { showToast, trimToasts, clearToasts } from './toasts.js';
@@ -533,7 +533,8 @@ function renderMenuSkin() {
   let look = null;
   try { look = equippedLook(); } catch { /* look indisponível: mantém padrão */ }
   if (!look) return;
-  nome.textContent = look.nome || 'Orbe';
+  // o look (resolveLook) traz o id; o nome vive na skin do catálogo
+  nome.textContent = getSkin(look.id).nome || 'Orbe';
   try {
     const spr = getBodySprite(look);         // canvas 160x160 em cache
     const g = cv.getContext('2d');
