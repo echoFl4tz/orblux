@@ -765,6 +765,8 @@ export function applySettingsToUI() {
   if (met) {
     const m = metricas.resumoMetricas();
     met.textContent = `${m.sessoes} sessões · ${m.partidas} partidas · `
-      + `retorno 1d: ${m.d1} · 7d: ${m.d7}`;
+      + `retorno 1d: ${m.d1} · 7d: ${m.d7} · `
+      + `tutorial: ${m.tutorial ? 'concluído' : 'pendente'} · `
+      + `missões: ${m.missoes} · desbloqueios: ${m.desbloqueios}`;
   }
 }

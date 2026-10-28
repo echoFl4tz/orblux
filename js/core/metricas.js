@@ -9,7 +9,9 @@
    • sessões e partidas totais;
    • retorno após ≥1 dia (d1) e ≥7 dias (d7) desde a visita
      anterior (aproximação local de D+1/D+7);
-   • partidas da sessão atual (vivo, não persistido).
+   • partidas da sessão atual (vivo, não persistido);
+   • tutorial concluído (0/1), missões concluídas (total) e
+     desbloqueios de skin (total) — Fase 4 do prompt de retenção.
    ========================================================= */
 
 import { getItem, setItem } from './storage.js';
@@ -26,6 +28,9 @@ function load() {
     ultimaSessao: typeof raw.ultimaSessao === 'string' ? raw.ultimaSessao : '',
     d1: nat(raw.d1),
     d7: nat(raw.d7),
+    tutorial: nat(raw.tutorial) > 0 ? 1 : 0,
+    missoes: nat(raw.missoes),
+    desbloqueios: nat(raw.desbloqueios),
   };
 }
 
@@ -36,6 +41,9 @@ function save(m) {
     ultimaSessao: m.ultimaSessao,
     d1: m.d1,
     d7: m.d7,
+    tutorial: m.tutorial,
+    missoes: m.missoes,
+    desbloqueios: m.desbloqueios,
   });
 }
 
@@ -67,6 +75,31 @@ export function registrarPartida() {
   partidasSessao += 1;
   const m = load();
   m.partidas += 1;
+  save(m);
+}
+
+/**
+ * Tutorial concluído de verdade (tutorial:done — não conta o skip
+ * nem o toggle de Ajustes). Idempotente: vira 1 e nunca volta a 0.
+ */
+export function registrarTutorial() {
+  const m = load();
+  if (m.tutorial) return;
+  m.tutorial = 1;
+  save(m);
+}
+
+/** Uma missão concluída (diária ou semanal — missions:completed). */
+export function registrarMissao() {
+  const m = load();
+  m.missoes += 1;
+  save(m);
+}
+
+/** Uma skin desbloqueada (skins:changed com owned:true — maestria/compra). */
+export function registrarDesbloqueio() {
+  const m = load();
+  m.desbloqueios += 1;
   save(m);
 }
 

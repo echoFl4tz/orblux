@@ -102,3 +102,55 @@ test('dado corrompido é validado, não explode', async () => {
   assert.equal(m.resumoMetricas().partidas, 1, 'partidas reconstruídas');
   removeItem('pn_metricas');
 });
+
+// ---- Fase 4 (retenção): tutorial, missões e desbloqueios ----
+
+test('save antigo sem os campos novos: começam zerados', async () => {
+  setItem('pn_metricas', { sessoes: 2, partidas: 4, ultimaSessao: '', d1: 0, d7: 0 });
+  const m = await importar('v8');
+  const r = m.resumoMetricas();
+  assert.equal(r.tutorial, 0, 'tutorial pendente por padrão');
+  assert.equal(r.missoes, 0, 'missões começam em 0');
+  assert.equal(r.desbloqueios, 0, 'desbloqueios começam em 0');
+  assert.equal(r.sessoes, 2, 'campos legados intactos');
+  assert.equal(r.partidas, 4);
+});
+
+test('registrarTutorial é idempotente (só vira 1, nunca volta)', async () => {
+  removeItem('pn_metricas');
+  const m = await importar('v9');
+  assert.equal(m.resumoMetricas().tutorial, 0);
+  m.registrarTutorial();
+  assert.equal(m.resumoMetricas().tutorial, 1);
+  m.registrarTutorial();
+  m.registrarTutorial();
+  assert.equal(m.resumoMetricas().tutorial, 1, 'segundas chamadas não mudam nada');
+  assert.equal(getItem('pn_metricas').tutorial, 1, 'persistido');
+});
+
+test('registrarMissao e registrarDesbloqueio acumulam e persistem', async () => {
+  removeItem('pn_metricas');
+  const m = await importar('v10');
+  m.registrarMissao();
+  m.registrarMissao();
+  m.registrarMissao();
+  m.registrarDesbloqueio();
+  const r = m.resumoMetricas();
+  assert.equal(r.missoes, 3, 'missões concluídas somadas (diárias+semanais)');
+  assert.equal(r.desbloqueios, 1, 'desbloqueio de skin contado');
+  // outra instância lê o mesmo valor (persistência real)
+  const m2 = await importar('v11');
+  assert.equal(m2.resumoMetricas().missoes, 3, 'persistido em pn_metricas');
+  assert.equal(m2.resumoMetricas().desbloqueios, 1);
+  removeItem('pn_metricas');
+});
+
+test('contadores novos validam dado inválido (não explodem)', async () => {
+  setItem('pn_metricas', { tutorial: 'sim', missoes: 'várias', desbloqueios: -4 });
+  const m = await importar('v12');
+  const r = m.resumoMetricas();
+  assert.equal(r.tutorial, 0, 'string vira 0 (pendente)');
+  assert.equal(r.missoes, 0, 'inválido vira 0');
+  assert.equal(r.desbloqueios, 0, 'negativo vira 0');
+  removeItem('pn_metricas');
+});

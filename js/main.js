@@ -262,6 +262,14 @@ function boot() {
   on('game:start', () => { flushPendente(); metricas.registrarPartida(); });
   on('game:quit', flushPendente);
 
+  // Fase 4 (retenção): contadores extras da linha de base — tutorial
+  // concluído (só o finish real), missões concluídas (diárias+semanais)
+  // e desbloqueios de skin (grantSkin emite owned:true; equipar/revogar
+  // não conta). Tudo local/anônimo em pn_metricas.
+  on('tutorial:done', () => metricas.registrarTutorial());
+  on('missions:completed', () => metricas.registrarMissao());
+  on('skins:changed', (p) => { if (p && p.owned === true) metricas.registrarDesbloqueio(); });
+
   // ---- reviver via anúncio recompensado ----
   on('ads:rewarded-revive', () => {
     showRewarded(() => {
