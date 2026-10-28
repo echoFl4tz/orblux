@@ -24,6 +24,7 @@ import { showScreen } from './screens.js';
 import { flag } from '../../net/flags.js';
 import { getApi } from '../../net/api.js';
 import { validateRun } from '../../net/rules.js';
+import { sementeDoDia, recordes } from '../core/desafio.js';
 
 const GLOBAL_LIMIT = 10;
 const RUN_VERSION = '1.0.0';   // versão da partida enviada (espelho de OX.version)
@@ -41,10 +42,21 @@ let diariaCarregando = false;
 export function initRanking() {
   on('screen:ranking', () => {
     renderRanking();
+    renderDesafioLocal();
     if (escopo === 'global') carregarGlobal(0);   // refresh ao (re)abrir a tela
     if (diariaVisivel()) carregarDiaria();        // refresh da Corrida do Dia
   });
   on('stats:changed', () => { renderRanking(); });
+
+  // Desafio do Dia LOCAL: SEMPRE visível — não depende de flag nem de
+  // servidor (a rota sai do calendário e o recorde fica neste aparelho).
+  const desafioCard = document.getElementById('daily-local');
+  if (desafioCard) {
+    desafioCard.hidden = false;
+    renderDesafioLocal();
+    const playL = document.getElementById('daily-local-play');
+    if (playL) playL.addEventListener('click', () => { sfx('ui'); jogarDesafioLocal(); });
+  }
 
   const scopes = document.getElementById('ranking-scopes');
   const ligado = flag('GLOBAL_RANKING_ENABLED');
@@ -150,6 +162,33 @@ async function jogarDiaria() {
     diariaStatus('Não foi possível abrir a corrida de hoje. Tente de novo.');
     if (play) play.disabled = false;
   }
+}
+
+/* ------------------------------------------------------------------
+   DESAFIO DO DIA (LOCAL) — visível SEM flag/servidor.
+   A semente vem do calendário (desafio.js): mesmo percurso para
+   quem joga hoje em qualquer aparelho; o RECORDE é local e honesto
+   (sem ranking global fictício — isso exige backend, ver SOCIAL.md).
+   ------------------------------------------------------------------ */
+function jogarDesafioLocal() {
+  initAudio();
+  resumeAudio();
+  startGame({ seed: sementeDoDia() });  // mesmo mecanismo da Corrida do Dia
+  showScreen(null);
+}
+
+function renderDesafioLocal() {
+  const dateEl = document.getElementById('daily-local-date');
+  const bestEl = document.getElementById('daily-local-best');
+  if (!dateEl) return;
+  const d = new Date();
+  dateEl.textContent = `Hoje: ${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')} — mesmo percurso para quem jogar hoje; a rota sai do calendário, sem servidor.`;
+  const r = recordes();
+  const dia = r.melhorDia ? `${r.melhorDia.toLocaleString('pt-BR')} pts` : '—';
+  const sem = r.melhorSemana ? `${r.melhorSemana.toLocaleString('pt-BR')} pts` : '—';
+  bestEl.textContent = (r.melhorDia || r.melhorSemana)
+    ? `Seu recorde de hoje: ${dia} · da semana: ${sem} (neste aparelho)`
+    : 'Bata seu primeiro recorde de hoje!';
 }
 
 /* ------------------------------------------------------------------

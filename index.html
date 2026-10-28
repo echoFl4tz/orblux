@@ -408,6 +408,20 @@
           </div>
         </div>
 
+        <!-- Desafio do Dia (LOCAL): semente do calendário, sem servidor.
+             Recorde local honesto — o ranking global continua só com backend -->
+        <div id="daily-local" hidden>
+          <h3 class="card-title">
+            <svg class="ic" aria-hidden="true"><use href="#ic-flame"/></svg> Desafio do Dia
+          </h3>
+          <p class="small muted">Mesmo percurso para todo mundo que jogar hoje, gerado do calendário — sem servidor e sem moedas extras. O recorde fica guardado neste aparelho.</p>
+          <p id="daily-local-date" class="small"></p>
+          <p id="daily-local-best" class="small muted">—</p>
+          <div class="panel-foot column">
+            <button class="btn btn-primary" id="daily-local-play">Jogar Desafio do Dia</button>
+          </div>
+        </div>
+
         <!-- Corrida do Dia (Fase 5): semente do servidor; mesma rota p/ todos -->
         <div id="daily-race" hidden>
           <h3 class="card-title">

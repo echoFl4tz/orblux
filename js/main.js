@@ -31,6 +31,7 @@ import { getApi } from '../net/api.js';
 import { createRunFlow } from './core/run-flow.js';
 import * as maestria from './core/maestria.js';
 import * as metricas from './core/metricas.js';
+import { registrarPartidaDesafio } from './core/desafio.js';
 import { burst, ring, shockwave, floatText, comboText, levelBanner, setPoolMax, countActive } from './game/particles.js';
 
 /**
@@ -182,6 +183,18 @@ function boot() {
       sfx('record');
       const nick = state.profile?.nickname || 'Jogador';
       showToast({ icon: 'ic-trophy', title: `Novo recorde, ${nick}!`, desc: `${run.score.toLocaleString('pt-BR')} pontos` });
+    }
+
+    // Desafio do Dia (LOCAL): recorde do dia/semana quando a corrida usou
+    // a semente de hoje — sem servidor, honesto (só neste aparelho).
+    const dres = registrarPartidaDesafio(run);
+    if (dres && dres.bateuDia) {
+      sfx('achievement');
+      showToast({
+        icon: 'ic-flame',
+        title: 'Novo recorde do Desafio do Dia',
+        desc: `${run.score.toLocaleString('pt-BR')} pontos na rota de hoje`,
+      });
     }
 
     // subiu de nível na maestria: reconhecimento imediato (análise) —

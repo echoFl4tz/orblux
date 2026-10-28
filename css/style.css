@@ -2258,7 +2258,7 @@ body.reduce-motion .coins-progress-bar span { transition: none; }
 }
 .tourn-reward-main { flex: 1; min-width: 120px; display: flex; flex-direction: column; gap: 2px; }
 .tourn-reward-main b { font-family: var(--font-display); color: var(--text-1); font-size: 0.95rem; }
-#daily-race { margin-top: var(--s3); display: flex; flex-direction: column; gap: var(--s1); }
+#daily-race, #daily-local { margin-top: var(--s3); display: flex; flex-direction: column; gap: var(--s1); }
 
 /* ---------------------------------------------------------
    12b. MAESTRIA � chip do menu, pr�xima recompensa (reten��o)
