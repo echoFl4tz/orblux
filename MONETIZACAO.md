@@ -129,7 +129,8 @@ Automatizado: `node tests/skins-shop-ui.cjs` (27 asserções) +
 
 1. Abra o app num navegador comum → menu → **Skins**.
 2. Confira: selo "Novo" antes da 1ª visita; grade com 21 skins + pacote;
-   preços "Indisponível" e compra desabilitada (chip "Loja indisponível").
+   preço em MOEDAS em cada card e compra com moedas ativa (dinheiro
+   desabilitado — chip "Sem compras em dinheiro").
 3. Detalhe de uma skin: pré-visualização animada + "Experimentar"
    (não dá vantagem; nada muda na partida).
 

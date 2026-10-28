@@ -29,6 +29,8 @@ import * as wallet from './core/wallet.js';
 import * as economy from './core/economy.js';
 import { getApi } from '../net/api.js';
 import { createRunFlow } from './core/run-flow.js';
+import * as maestria from './core/maestria.js';
+import * as metricas from './core/metricas.js';
 import { burst, ring, shockwave, floatText, comboText, levelBanner, setPoolMax, countActive } from './game/particles.js';
 
 /**
@@ -73,6 +75,10 @@ function sondaQualidade() {
 }
 
 function boot() {
+  // métricas locais de retenção (análise): abre a sessão e mede o
+  // retorno D1/D7 — anônimas, somente neste dispositivo (metricas.js)
+  metricas.abrirSessao();
+
   const canvas = document.getElementById('game-canvas');
 
   // ---- núcleo ----
@@ -161,6 +167,10 @@ function boot() {
 
     saveStats();
 
+    // Maestria (retenção): XP permanente, creditado 1× por corrida —
+    // a dedupe por runId em maestria.js + o run-flow fecham o farm.
+    const mxp = maestria.creditarPartida(run.runId, run.score);
+
     const position = addScoreToRanking(run.score);
     emit('stats:changed');
 
@@ -173,7 +183,21 @@ function boot() {
       const nick = state.profile?.nickname || 'Jogador';
       showToast({ icon: 'ic-trophy', title: `Novo recorde, ${nick}!`, desc: `${run.score.toLocaleString('pt-BR')} pontos` });
     }
-    return { position, bestAnterior, isRecord, granted: creditado.ok ? creditado.granted : 0 };
+
+    // subiu de nível na maestria: reconhecimento imediato (análise) —
+    // as recompensas da trilha são SÓ cosméticas (skins por habilidade)
+    if (mxp && mxp.subiu) {
+      sfx('achievement');
+      const nomes = mxp.recompensas.map((r) => r.nome);
+      showToast({
+        icon: 'ic-medal',
+        title: `Maestria — nível ${mxp.nivel}`,
+        desc: nomes.length
+          ? `${nomes.slice(0, 2).join(' · ')} desbloqueada${nomes.length > 1 ? 's' : ''}`
+          : `+${mxp.xp} XP nesta corrida`,
+      });
+    }
+    return { position, bestAnterior, isRecord, granted: creditado.ok ? creditado.granted : 0, xpM: mxp };
   };
 
   on('game:over', (run) => {
@@ -202,6 +226,7 @@ function boot() {
     showGameOver({
       ...run, best, bestAnterior, isRecord,
       position: fin ? fin.position : null,
+      maestriaXp: fin && fin.xpM ? fin.xpM.xp : 0,   // XP creditado (0 = revive pendente)
     });
     adsOnRunEnd();
 
@@ -215,7 +240,9 @@ function boot() {
   // jogador desistiu do revive (menu/replay): a corrida pendente é
   // contabilizada na hora, antes da próxima partida começar
   const flushPendente = () => { const f = runFlow.onRunBoundary(); if (f) accountRun(f); };
-  on('game:start', flushPendente);
+  // 'game:start': descarrega a corrida pendente e conta a partida
+  // nova na linha de base de retenção (metricas.js — local/anônima)
+  on('game:start', () => { flushPendente(); metricas.registrarPartida(); });
   on('game:quit', flushPendente);
 
   // ---- reviver via anúncio recompensado ----

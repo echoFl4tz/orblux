@@ -2,7 +2,9 @@
 
 Fonte: análise externa de retenção (pontos observáveis + recomendações).
 Escopo: traduzir a análise para o estado real do código, separando o que já
-existe do que falta. Nada aqui foi implementado; é um plano de produto.
+existe do que falta. **Status (27/10/2026): P1 (loja), P2 (Maestria), §4
+(tela de resultados) e §5 (medição local) implementados** — ver notas em
+cada seção; o resto continua como plano de produto.
 
 ## 1. O que já existe e deve ser aproveitado
 
@@ -34,12 +36,21 @@ existe do que falta. Nada aqui foi implementado; é um plano de produto.
 ### P1 — Consolidar o que existe
 - Garantir salvamento/recuperação, missões, moedas, ranking e Corrida do Dia
   ponta a ponta.
-- Verificar a percepção de "loja indisponível".
+- ~~Verificar a percepção de "loja indisponível".~~ **Feito:** o card mostrava
+  "Indisponível" sem preço da Play, mesmo com compra por moedas ativa no
+  detalhe. Cards agora exibem o preço em moedas (destaque amarelo), o banner
+  explica que só o DINHEIRO depende da Play e o chip virou "Sem compras em
+  dinheiro" (`js/ui/skins-shop.js` stateText/stateClass/renderShopStatus).
 - Medir antes de mexer em balanceamento.
 
 ### P2 — Progressão permanente (Maestria)
-- XP de maestria por jogar/completar desafios, com níveis e recompensas
-  **cosméticas** (não poder). Títulos, emblemas, rastros, auras, skins.
+- ~~XP de maestria por jogar, com níveis e recompensas **cosméticas**.~~
+  **Feito:** `js/core/maestria.js` — XP = 10% do placar (piso 10/teto 500),
+  creditado 1× por corrida dentro de `accountRun` (dedupe por runId + run-flow);
+  curva `xpParaNivel(n) = 100 + (n-1)·40`; trilha de recompensas nos níveis
+  2/5/10/20/30/50 concede skins por habilidade (fonte `maestria` — imune a
+  revogação do billing, apagada junto com o XP no reset); chip no topbar,
+  bloco "Próxima recompensa" no menu, barra no fim de jogo e toast de nível.
 - Regra: habilidade continua sendo o fator de pontuação; maestria só dá status.
 
 ### P3 — Skins como objetivos
@@ -68,13 +79,18 @@ existe do que falta. Nada aqui foi implementado; é um plano de produto.
 - 4 semanas, temática, trilha cosmética gratuita, sem vantagem comprável.
 
 ## 4. Tela de resultados (ganho rápido)
-- Mostrar pontuação, recorde, XP de maestria, moedas, missões concluídas,
-  progresso p/ próxima recompensa + 3 ações: JOGAR NOVAMENTE / VER RECOMPENSAS / MENU.
+- ~~Mostrar pontuação, recorde, XP de maestria, moedas, missões concluídas,
+  progresso p/ próxima recompensa~~ **Feito:** placar/recorde já existiam;
+  agora há a linha "+N XP" (só quando creditado), as 3 barras de progresso
+  (próxima skin, missões e maestria) e as ações JOGAR NOVAMENTE / MENU.
 
 ## 5. Medição mínima (antes de crescer)
-- Início de partida, conclusão de tutorial, duração de sessão, partidas por
-  sessão, retorno D+1 e D+7, conclusão de missões, desbloqueios.
-- Instrumentação local agregada primeiro; comparar antes/depois de cada mudança.
+- ~~Instrumentação local agregada primeiro~~ **Feito (base):**
+  `js/core/metricas.js` — sessões, partidas, partidas/sessão e retorno
+  aproximado D+1/D+7 (local e anônimo, `pn_metricas`), exibido em
+  Ajustes > Dados. Falta instrumentar: conclusão de tutorial, duração de
+  sessão, conclusão de missões e desbloqueios.
+- Comparar antes/depois de cada mudança.
 
 ## 6. Regras do projeto (invioláveis)
 - Determinismo da Corrida do Dia preservado (spawner intocado).

@@ -175,6 +175,11 @@
           <svg class="ic ic-sm nick-chip-pencil" aria-hidden="true"><use href="#ic-edit"/></svg>
         </button>
         <div class="coin-row">
+          <span id="maestria-chip" class="maestria-chip" aria-label="Maestria">
+            <svg class="ic ic-sm" aria-hidden="true"><use href="#ic-medal"/></svg>
+            <span id="maestria-level">Nv. 1</span>
+            <span class="maestria-track" aria-hidden="true"><span id="maestria-fill"></span></span>
+          </span>
           <span id="coin-chip" class="coin-chip" aria-label="Suas moedas">
             <svg class="ic ic-sm" aria-hidden="true"><use href="#ic-coin"/></svg>
             <span id="menu-coins">0</span>
@@ -259,6 +264,17 @@
           </button>
           <ul id="missions-list" class="missions-list"></ul>
         </section>
+
+        <!-- Análise de retenção: próxima recompensa da Maestria (cosmética) -->
+        <div id="maestria-next" class="maestria-next" aria-label="Próxima recompensa da Maestria">
+          <span class="maestria-next-head">
+            <svg class="ic ic-sm" aria-hidden="true"><use href="#ic-medal"/></svg>
+            <span class="maestria-next-label">Próxima recompensa</span>
+            <span id="maestria-next-frac" class="maestria-next-frac">0/0 XP</span>
+          </span>
+          <b id="maestria-next-name" class="maestria-next-name">—</b>
+          <div class="go-prog-track"><span id="maestria-next-fill"></span></div>
+        </div>
 
         <!-- P2: skin equipada — card visual clicável (abre a loja de skins) -->
         <button id="menu-skin-card" class="menu-skin-card" data-action="skins" type="button">
@@ -551,6 +567,10 @@
         <div class="settings-group">
           <h3>Dados</h3>
           <p class="small muted" style="padding:8px 4px">Seu recorde e progresso ficam salvos apenas neste dispositivo (localStorage). Ao apagar o progresso, as skins compradas com dinheiro na Play Store são mantidas; moedas e skins compradas com moedas são apagadas (você escolhe no aviso).</p>
+          <div class="setting-row">
+            <span class="label">Suas métricas locais</span>
+            <span class="small" id="metrics-summary">—</span>
+          </div>
           <button class="btn btn-danger" data-action="reset" style="width:100%">
             <svg class="ic" aria-hidden="true"><use href="#ic-trash"/></svg> Apagar progresso
           </button>
@@ -567,7 +587,7 @@
     <div class="panel panel-wide">
       <div class="panel-head">
         <h2 class="panel-title"><svg class="ic" aria-hidden="true"><use href="#ic-skin"/></svg> Skins</h2>
-        <span id="shop-store-chip" class="chip chip-warn" hidden>Loja indisponível</span>
+        <span id="shop-store-chip" class="chip chip-warn" hidden>Sem compras em dinheiro</span>
         <button class="icon-btn" data-action="menu" aria-label="Fechar">
           <svg class="ic" aria-hidden="true"><use href="#ic-close"/></svg>
         </button>
@@ -1225,6 +1245,14 @@
             <span class="go-prog-frac" id="go-prog-missions-frac">0/0</span>
           </div>
           <div class="go-prog-track"><span id="go-prog-missions-fill"></span></div>
+        </div>
+        <div class="go-prog" id="go-prog-maestria" hidden>
+          <div class="go-prog-head">
+            <svg class="ic ic-sm" aria-hidden="true"><use href="#ic-medal"/></svg>
+            <span class="go-prog-label" id="go-prog-maestria-label">Maestria</span>
+            <span class="go-prog-frac" id="go-prog-maestria-frac">0/0</span>
+          </div>
+          <div class="go-prog-track"><span id="go-prog-maestria-fill"></span></div>
         </div>
       </div>
       <div class="panel-foot column">

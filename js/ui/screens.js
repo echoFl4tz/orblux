@@ -15,6 +15,8 @@ import { updateHudMenuBest, resetHud } from './hud.js';
 import { closeAllAds, showRewarded } from '../monetization/ads.js';
 import { renderMissions } from './missions.js';
 import { equippedLook, getBodySprite } from '../game/skinrender.js';   // P1-1: orbe do logo = skin equipada
+import * as maestria from '../core/maestria.js';
+import * as metricas from '../core/metricas.js';
 
 const SCREEN_IDS = {
   menu: 'screen-menu',
@@ -84,11 +86,13 @@ export function initScreens() {
   });
 
   on('stats:changed', updateBestDisplay);
-  on('state:reset', () => { updateBestDisplay(); applySettingsToUI(); });
+  on('state:reset', () => { updateBestDisplay(); applySettingsToUI(); renderMaestriaUI(); });
   on('skins:changed', () => { applyLogoSkin(); renderMenuTop3(); renderMenuSkin(); });  // P1-1/P2
   on('wallet:run-coins', ({ coins }) => { lastRunCoins = coins || 0; });  // P1-5: dobrar
+  on('maestria:changed', renderMaestriaUI);         // chip + próxima recompensa
   applyLogoSkin();                           // P1-1 no boot
   renderMenuSkin();                          // P2: card da skin equipada no menu
+  renderMaestriaUI();                        // retenção: chip e trilha da maestria
 }
 
 /** P1-1: a "O" do logo é a orbe da skin equipada — gradiente e anéis
@@ -195,6 +199,8 @@ export function returnToMenu() {
   if (goProgSkin) goProgSkin.hidden = true;
   const goProgMis = document.getElementById('go-prog-missions');
   if (goProgMis) goProgMis.hidden = true;
+  const goProgMae = document.getElementById('go-prog-maestria');
+  if (goProgMae) goProgMae.hidden = true;
   const pauseScore = document.getElementById('pause-score');
   if (pauseScore) pauseScore.textContent = '0';
 
@@ -211,7 +217,7 @@ export function returnToMenu() {
 }
 
 /** Tela de fim de jogo com contagem animada do placar. */
-export function showGameOver({ score, best, bestAnterior, isRecord, position, elapsed, pickups, maxCombo, level, wave, nearMiss, revived, drops = 0, events = 0 }) {
+export function showGameOver({ score, best, bestAnterior, isRecord, position, elapsed, pickups, maxCombo, level, wave, nearMiss, revived, drops = 0, events = 0, maestriaXp = 0 }) {
   const scoreEl = document.getElementById('go-score');
   document.getElementById('go-best').textContent = (best || 0).toLocaleString('pt-BR');
   document.getElementById('go-record').hidden = !isRecord;
@@ -237,6 +243,7 @@ export function showGameOver({ score, best, bestAnterior, isRecord, position, el
     <div class="go-stat">${icon('ic-flame')}máx <b>x${maxCombo}</b></div>
     ${drops > 0 ? `<div class="go-stat">${icon('ic-magnet')}<b>${drops}</b> drops</div>` : ''}
     ${events > 0 ? `<div class="go-stat">${icon('ic-flag')}<b>${events}</b> eventos</div>` : ''}
+    ${maestriaXp > 0 ? `<div class="go-stat">${icon('ic-medal')}<b>+${maestriaXp}</b> XP</div>` : ''}
     ${position && position <= 5 ? `<div class="go-stat go-rank">${icon('ic-trophy')}<b>${position}º</b> lugar</div>` : ''}`;
 
   // com recorde, Compartilhar vira primário ao lado do replay (P1-5)
@@ -351,6 +358,46 @@ function paraContagem() {
 }
 
 /**
+ * Chip da Maestria no topo do menu + bloco "Próxima recompensa"
+ * no lateral (análise de retenção: ver o objetivo de longo prazo
+ * sem precisar procurar). Recompensas são cosméticas.
+ */
+function renderMaestriaUI() {
+  const p = maestria.progresso();
+  const prox = maestria.proximaRecompensa();
+
+  const chip = document.getElementById('maestria-chip');
+  const nivelEl = document.getElementById('maestria-level');
+  const fill = document.getElementById('maestria-fill');
+  if (nivelEl) nivelEl.textContent = `Nv. ${p.nivel}`;
+  // barra do chip: até a próxima recompensa (ou o nível atual, sem trilha)
+  const pctChip = prox
+    ? Math.min(100, Math.round((maestria.xpAtual() / maestria.xpTotalParaNivel(prox.nivel)) * 100))
+    : Math.min(100, Math.round((p.xpNoNivel / p.xpNecessario) * 100));
+  if (fill) fill.style.width = `${pctChip}%`;
+  if (chip) {
+    chip.setAttribute('aria-label',
+      `Maestria nível ${p.nivel}${prox ? ` — próxima recompensa: ${prox.nome}` : ''}`);
+  }
+
+  const box = document.getElementById('maestria-next');
+  if (!box) return;
+  if (prox) {
+    const total = maestria.xpTotalParaNivel(prox.nivel);
+    const atual = maestria.xpAtual();
+    box.hidden = false;
+    const nome = document.getElementById('maestria-next-name');
+    const frac = document.getElementById('maestria-next-frac');
+    const nfill = document.getElementById('maestria-next-fill');
+    if (nome) nome.textContent = prox.nome;
+    if (frac) frac.textContent = `${atual}/${total} XP`;
+    if (nfill) nfill.style.width = `${Math.min(100, Math.round((atual / total) * 100))}%`;
+  } else {
+    box.hidden = true;               // trilha completa: nada a mostrar
+  }
+}
+
+/**
  * Barras de progresso do fim de jogo: próxima skin de moedas e
  * missões do dia. Lê o estado REAL — roda depois de missions:report
  * e do crédito da partida (main.js reporta antes de chamar aqui).
@@ -389,7 +436,30 @@ function renderEndProgress() {
     rowMis.hidden = true;
   }
 
-  box.hidden = rowSkin.hidden && rowMis.hidden;
+  // 3) maestria: nível atual e XP até a próxima recompensa (cosmética)
+  const rowMae = document.getElementById('go-prog-maestria');
+  if (rowMae) {
+    const p = maestria.progresso();
+    const proxR = maestria.proximaRecompensa();
+    rowMae.hidden = false;
+    const label = document.getElementById('go-prog-maestria-label');
+    const frac = document.getElementById('go-prog-maestria-frac');
+    const fillM = document.getElementById('go-prog-maestria-fill');
+    if (proxR) {
+      const total = maestria.xpTotalParaNivel(proxR.nivel);
+      const atual = maestria.xpAtual();
+      if (label) label.textContent = `Maestria · Nv. ${p.nivel} → ${proxR.nome}`;
+      if (frac) frac.textContent = `${atual}/${total}`;
+      if (fillM) fillM.style.width = `${Math.min(100, Math.round((atual / total) * 100))}%`;
+    } else {
+      if (label) label.textContent = `Maestria · Nv. ${p.nivel}`;
+      if (frac) frac.textContent = `${p.xpNoNivel}/${p.xpNecessario}`;
+      if (fillM) fillM.style.width =
+        `${Math.round((p.xpNoNivel / p.xpNecessario) * 100)}%`;
+    }
+  }
+
+  box.hidden = rowSkin.hidden && rowMis.hidden && (rowMae ? rowMae.hidden : true);
 }
 
 /** Confetes dourados em volta do selo NOVO RECORDE (poucos elementos, uma vez). */
@@ -682,4 +752,13 @@ export function applySettingsToUI() {
   document.body.classList.toggle('reduce-motion', s.reduceMotion);
   setReduceMotion(s.reduceMotion);
   applyGlassMode();                      // P0-5
+
+  // linha de base de retenção (análise): local e anônima — nada
+  // sai deste dispositivo (metricas.js); só o resumo é exibido aqui
+  const met = document.getElementById('metrics-summary');
+  if (met) {
+    const m = metricas.resumoMetricas();
+    met.textContent = `${m.sessoes} sessões · ${m.partidas} partidas · `
+      + `retorno 1d: ${m.d1} · 7d: ${m.d7}`;
+  }
 }

@@ -83,8 +83,8 @@ function renderShopStatus() {
   if (!isStoreAvailable()) {
     chip.hidden = false;
     st.hidden = false;
-    st.textContent = 'Compras indisponíveis fora da Play Store (modo demonstração). '
-      + 'Você pode ver e experimentar as skins, mas não comprá-las.';
+    st.textContent = 'Compras com dinheiro só funcionam na Play Store (aqui é modo demonstração). '
+      + 'Todas as skins podem ser compradas com moedas ganhas jogando.';
   } else {
     chip.hidden = true;
     st.hidden = true;
@@ -102,12 +102,18 @@ function priceOf(sku) {
 function stateClass(s) {
   if (state.skins.equipped === s.id) return 'is-eq';
   if (ownsSkin(s.id)) return 'is-owned';
+  // moedas compram em QUALQUER loja: só o preço em dinheiro (cyano)
+  // depende da Play — o caminho de moedas fica visível e amarelo.
+  if (s.coinPrice) return 'is-price is-coins';
   return isStoreAvailable() && priceOf(s.sku) ? 'is-price' : 'is-off';
 }
 
 function stateText(s) {
   if (state.skins.equipped === s.id) return '✓ Equipada';
   if (ownsSkin(s.id)) return 'Comprada · Equipar';
+  // preço em moedas existe sempre (vem do catálogo, não da Play):
+  // escondê-lo faria a loja parecer fechada com moedas na mão.
+  if (s.coinPrice) return `${s.coinPrice.toLocaleString('pt-BR')} moedas`;
   const p = priceOf(s.sku);
   if (p) return p;
   return 'Indisponível'; // sem preço vindo da Play: nunca um valor fixo

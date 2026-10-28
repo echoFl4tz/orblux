@@ -308,8 +308,16 @@ assert(t <= 110, 'não é impossível sobreviver um tempo com jogo ativo');
 console.log('\n— Etapa K: persistência e reset —');
 quitToMenu();                                  // desiste do revive: pendente é contabilizada
 assert(state.stats.runs === 2, 'sair do menu descarrega a corrida pendente (2 corridas no total)');
+// retenção (análise): maestria e métricas locais coerentes com a sessão
+const maestriaMod = await import('../js/core/maestria.js');
+const metricasMod = await import('../js/core/metricas.js');
+assert(maestriaMod.xpAtual() >= 20, `maestria: 2 corridas contabilizadas creditaram XP (${maestriaMod.xpAtual()})`);
+assert(metricasMod.resumoMetricas().sessoes >= 1, 'métricas: sessão aberta no boot (pn_metricas)');
+assert(metricasMod.resumoMetricas().partidas >= 2, 'métricas: partidas contadas em game:start');
 resetAllProgress();
 assert(state.stats.runs === 0 && state.ranking.length === 0, 'reset de progresso limpa tudo');
+assert(maestriaMod.xpAtual() === 0, 'reset apaga o XP da maestria (pn_maestria)');
+assert(metricasMod.resumoMetricas().sessoes === 0, 'reset apaga as métricas (pn_metricas)');
 
 console.log(`\n════════════════════════════════\n${pass} testes passaram, ${fail} falharam\n`);
 process.exit(fail > 0 ? 1 : 0);

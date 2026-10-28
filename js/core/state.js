@@ -118,7 +118,7 @@ function loadSkins() {
   const equipped = (typeof raw.equipped === 'string' && getSkin(raw.equipped).id === raw.equipped)
     ? raw.equipped : 'classic';
 
-  // possuídas: só ids válidos com { at: timestamp, source: 'coins'|'play' }.
+  // possuídas: só ids válidos com { at: timestamp, source: 'coins'|'play'|'maestria' }.
   // Entrada NUMÉRICA legada (antiga "só Play") migra para source:'play'.
   // A posse REAL de compras com dinheiro é confirmada pelo billing.
   const owned = {};
@@ -128,7 +128,7 @@ function loadSkins() {
       if (typeof val === 'number' && isFinite(val)) {
         owned[id] = { at: Math.max(0, Math.floor(val)), source: 'play' };
       } else if (val && typeof val === 'object' && typeof val.at === 'number' && isFinite(val.at)
-          && (val.source === 'coins' || val.source === 'play')) {
+          && (val.source === 'coins' || val.source === 'play' || val.source === 'maestria')) {
         owned[id] = { at: Math.max(0, Math.floor(val.at)), source: val.source };
       }
     }
@@ -360,14 +360,15 @@ export function skinSource(id) {
 }
 
 /**
- * Concede uma skin (billing → 'play'; compra com moedas → 'coins').
+ * Concede uma skin (billing → 'play'; compra com moedas → 'coins';
+ * conquista de nível na Maestria → 'maestria').
  * Se a gravação falhar, desfaz e retorna false (gasto atômico com wallet).
- * @param {string} id @param {'play'|'coins'} [source]
+ * @param {string} id @param {'play'|'coins'|'maestria'} [source]
  */
 export function grantSkin(id, source = 'play') {
   const s = getSkin(id);
   if (!s || s.tier === 'free' || state.skins.owned[id]) return false;
-  const src = source === 'coins' ? 'coins' : 'play';
+  const src = source === 'coins' ? 'coins' : source === 'maestria' ? 'maestria' : 'play';
   state.skins.owned[id] = { at: Date.now(), source: src };
   if (!saveSkins()) {
     delete state.skins.owned[id];
@@ -432,6 +433,8 @@ export function markSkinSeen(id) {
  * Apaga TODO o progresso.
  * - Skins compradas com DINHEIRO (Google Play) são mantidas sempre:
  *   o Play as restaura e é dinheiro do jogador.
+ * - Skins conquistadas na MAESTRIA são apagadas junto com o XP
+ *   (é progresso — dá para reconquistar jogando).
  * - Moedas e skins compradas com moedas são apagadas POR PADRÃO;
  *   `opts.keepCoins = true` (opção no modal) mantém moedas e as
  *   skins compradas com moedas também.
@@ -446,7 +449,9 @@ export function resetAllProgress(opts = {}) {
   const keptOwned = {};
   for (const [id, ent] of Object.entries(prevOwned)) {
     const src = ent && typeof ent === 'object' ? ent.source : 'play';   // legado = dinheiro
-    if (src === 'play' || keepCoins) keptOwned[id] = ent;
+    if (src === 'play') keptOwned[id] = ent;            // dinheiro: mantida sempre
+    else if (src === 'coins' && keepCoins) keptOwned[id] = ent;   // moedas: pela opção
+    // 'maestria': conquista de progresso — apagada junto com o XP
   }
   clearAll('pn_');
   state.settings = { ...DEFAULT_SETTINGS };

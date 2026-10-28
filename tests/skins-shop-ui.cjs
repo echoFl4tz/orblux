@@ -220,9 +220,9 @@ const skinsState = (page) =>
   await p3.waitForSelector('#screen-menu.active');
   await p3.click('#btn-skins');
   await p3.waitForSelector('#shop-grid .skin-card');
-  ok(await p3.locator('#shop-store-chip').isVisible(), '(8) chip "Loja indisponível" aparece');
-  ok((await p3.locator('[data-id="supernova"] .skin-card-state').textContent()) === 'Indisponível',
-    '(8) preço vira "Indisponível" sem provedor');
+  ok(await p3.locator('#shop-store-chip').isVisible(), '(8) chip "Sem compras em dinheiro" aparece');
+  ok((await p3.locator('[data-id="supernova"] .skin-card-state').textContent()).includes('moedas'),
+    '(8) card mostra o preço em MOEDAS mesmo sem provedor (loja não parece fechada)');
   await p3.click('[data-id="supernova"]');
   await p3.waitForSelector('#shop-detail:not([hidden])');
   ok(await p3.locator('#detail-actions .btn-primary').isDisabled(), '(8) botão de compra desabilitado');
@@ -251,8 +251,8 @@ const skinsState = (page) =>
   await p5.waitForSelector('#screen-menu.active');
   await p5.click('#btn-skins');
   await p5.waitForSelector('#shop-grid .skin-card');
-  ok((await p5.locator('[data-id="supernova"] .skin-card-state').textContent()) === 'Indisponível',
-    '(11) mock sem preços mostra "Indisponível" (nunca valor fixo em reais)');
+  ok((await p5.locator('[data-id="supernova"] .skin-card-state').textContent()).includes('moedas'),
+    '(11) mock sem preços: card mostra MOEDAS (nunca valor fixo em reais)');
   const textoGrade = await p5.locator('#shop-grid').innerText();
   ok(!/R\$\s*\d/.test(textoGrade), '(11) nenhum "R$ + número" na grade');
   ok(!/desconto|urgente|últim/i.test(textoGrade), '(11) card do pacote sem linguagem de desconto/urgência');

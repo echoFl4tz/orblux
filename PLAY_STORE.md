@@ -56,7 +56,7 @@ Gere o fingerprint com:
 
 | Ambiente | Provedor de compra | Preço |
 |----------|--------------------|-------|
-| Navegador comum | Vitrine (demonstração) | "Indisponível" — sem compra |
+| Navegador comum | Vitrine (demonstração) | Sem preço em dinheiro — compra com MOEDAS disponível |
 | TWA no ar (Play) | Google Play Billing (Digital Goods) | `localizedPrice` real do Play |
 | `localhost/?debug=1` | MockProvider (dev/testes) | Preços simulados pt-BR |
 
