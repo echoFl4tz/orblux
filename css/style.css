@@ -584,6 +584,23 @@ body.reduce-motion .menu-main > * { animation: none; }
 .missions-toggle[aria-expanded="true"] .chev { transform: rotate(180deg); }
 .missions-list { list-style: none; padding: 0 var(--s3) var(--s3); }
 .missions-card.collapsed .missions-list { display: none; }
+/* cabeçalho da seção semanal (Fase 2 — retenção) */
+.missions-week-title {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+  padding: 8px var(--s3) 2px;
+  border-top: 1px dashed rgba(154, 166, 200, 0.16);
+  font-family: var(--font-sans);
+  font-size: var(--fs-caption);
+  color: var(--text-2);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+.missions-week-title .ic { color: var(--secondary-text); flex: none; }
+.missions-card.collapsed .missions-week-title { display: none; }
 
 .mission-row {
   display: flex;

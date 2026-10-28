@@ -41,6 +41,13 @@ export const BONUS_PRIMEIRA_DIA = 10;
 /** Recompensas das missões por dificuldade (facil/media/dificil). */
 export const MISSION_COINS = { facil: 25, medio: 40, dificil: 60 };
 
+/**
+ * Recompensas das missões SEMANAIS (objetivos bem maiores que os
+ * diários — semana inteira de jogabilidade; ~2,5× o diário, ainda
+ * abaixo do que 7 dias de missões diárias pagam, pra não inflar).
+ */
+export const WEEKLY_MISSION_COINS = { facil: 60, medio: 100, dificil: 160 };
+
 /** Recompensas das conquistas por porte (pequena/media/grande). */
 export const ACHIEVEMENT_COINS = { pequena: 25, media: 40, grande: 60 };
 
@@ -74,6 +81,11 @@ export function calcRunCoins(run = {}) {
 /** @param {'facil'|'media'|'dificil'} difficulty @returns {number} moedas da missão */
 export function missionCoins(difficulty) {
   return MISSION_COINS[difficulty] || MISSION_COINS.facil;
+}
+
+/** @param {'facil'|'media'|'dificil'} difficulty @returns {number} moedas da missão SEMANAL */
+export function weeklyMissionCoins(difficulty) {
+  return WEEKLY_MISSION_COINS[difficulty] || WEEKLY_MISSION_COINS.facil;
 }
 
 /** @param {'pequena'|'media'|'grande'} tier @returns {number} moedas da conquista */

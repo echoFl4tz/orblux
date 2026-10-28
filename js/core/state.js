@@ -500,3 +500,14 @@ export function todayKey() {
   const d = new Date();
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 }
+
+/**
+ * Chave da semana local (segunda a domingo) no formato YYYY-MM-DD
+ * da SEGUNDA-FEIRA — missões semanais resetam na segunda.
+ */
+export function weekKey() {
+  const d = new Date();
+  const dow = (d.getDay() + 6) % 7;          // 0 = segunda, 6 = domingo
+  d.setDate(d.getDate() - dow);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}

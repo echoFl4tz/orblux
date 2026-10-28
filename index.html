@@ -255,7 +255,7 @@
       </div>
 
       <aside class="menu-side">
-        <section id="missions-card" class="missions-card" aria-label="Missões do dia">
+        <section id="missions-card" class="missions-card" aria-label="Missões do dia e da semana">
           <button class="missions-toggle" data-action="toggle-missions" aria-expanded="true" aria-controls="missions-list">
             <svg class="ic" aria-hidden="true"><use href="#ic-mission"/></svg>
             <span>Missões do dia</span>
@@ -263,6 +263,13 @@
             <svg class="ic chev" aria-hidden="true"><use href="#ic-chevron"/></svg>
           </button>
           <ul id="missions-list" class="missions-list"></ul>
+          <!-- Fase 2 (retenção): missões semanais — reset na segunda -->
+          <p class="missions-week-title" id="missions-week-title">
+            <svg class="ic ic-sm" aria-hidden="true"><use href="#ic-trophy"/></svg>
+            <span>Semana</span>
+            <span id="missions-week-count" class="chip"></span>
+          </p>
+          <ul id="missions-week-list" class="missions-list"></ul>
         </section>
 
         <!-- Análise de retenção: próxima recompensa da Maestria (cosmética) -->
